@@ -1,0 +1,5 @@
+include AUTHORS
+include *.md
+recursive-include docs *.md *.png *.rst *.bat *.pickle *.doctree *.html *.inv *.js *.txt *.gif *.css *.1 *.py
+recursive-include sql *.sh *.sql
+include docs/Makefile
