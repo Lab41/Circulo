@@ -19,65 +19,42 @@ def main(argv):
     results_list = list()
 
     with open(results_file) as f:
-        for line in f:
-            items = map(int, line.split())
-            results_list.append(items)
-
+        results_list = [map(int, line.split()) for line in f]
 
     with open(truth_file) as f:
-        for line in f:
-            items = map(int, line.split())
-            ground_truth_list.append(items)
-  
+        ground_truth_list = [map(int, line.split()) for line in f]
+
     print "Evaluating F1 score"
     print "{} Communities in ground truth".format(len(ground_truth_list))
     print "{} Communities in results".format(len(results_list))
 
-
-    #from the perspective of the ground truth communities
-    f1_sum_0 = 0.0
-
-    for ground_truth_comm in ground_truth_list:
-        best_result_match = match_community(ground_truth_comm, results_list)
-        if best_result_match is not None:
-            f1_sum_0 += f1_score(ground_truth_comm, best_result_match)
-
-
-    #from the perspective of the results communities
-    f1_sum_1 = 0.0
-
-    for result_comm in results_list:
-        best_ground_truth_match = match_community(result_comm, ground_truth_list)
-        
-        if best_ground_truth_match is not None:
-            f1_sum_1 += f1_score(result_comm, best_ground_truth_match)
-
+    f1_sum_0 = sum([get_highest_f1(x, results_list) for x in ground_truth_list])
+    f1_sum_1 = sum([get_highest_f1(x, ground_truth_list) for x in results_list])
     
-
     final_score = .5 * (  1.0/float(len(ground_truth_list)) * f1_sum_0 + 1.0/float(len(results_list)) * f1_sum_1)
     
     print "F1 Score: {}".format(final_score)
 
 
 
-def match_community(src_community, community_list):
+def get_highest_f1(src_community, community_list):
     """
-    Find the best matching community in the list 
+    Find the best matching community in the list using f1, then return highest score 
 
     :param src_community:   community to base search on
     :param community_list:  list of communities to search in 
     """
     
-    max_f1 = 0
-    best_matchee = None
+    max_f1 = 0.0
 
     for matchee in community_list:
         score = f1_score(src_community, matchee)
         if score > max_f1:
-            best_matchee = matchee
-
+            max_f1 = score
     
-    return best_matchee
+    return max_f1
+
+
 
 def f1_score(community_a, community_b):
     """
