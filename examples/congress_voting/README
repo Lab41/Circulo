@@ -1,0 +1,20 @@
+
+Congress Voting Data Analysis
+
+
+The data can be found at https://www.govtrack.us/developers/data
+
+
+##To download it locally for 2014 votes use the rsync command as follows
+
+rsync -avz --delete --delete-excluded --exclude **/text-versions/ \
+        govtrack.us::govtrackdata/congress/113/votes/2014 .
+
+
+
+##To download the legislator list that matches to the ids
+
+rsync -avz --delete --delete-excluded --exclude **/text-versions/ \
+        govtrack.us::govtrackdata/congress-legislators/legislators-current.csv .
+
+
