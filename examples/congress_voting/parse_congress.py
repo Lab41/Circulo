@@ -43,100 +43,65 @@ def main(argv):
     os.makedirs("senate")
     os.makedirs("house")
 
-    senate_data = {}
-    house_data = {}
+    #just creates the nodes
+    G_senate, G_house = load_congress("legislators-current.csv")
 
+    #now create the edges
     for fname in files_list:
             with open(fname,'r') as inputfile:
                     data = json.load(inputfile)
                    
                     if data["chamber"] == "s":
-                        current_dict = senate_data
+                        G = G_senate
                     else:
-                        current_dict = house_data
+                        G = G_house
 
                     for vt in data['votes']:
                             
                         node_ids = [n['id'] for n in data['votes'][vt]]
                         
                         pairs = itertools.permutations(node_ids,2)
-                        for rep0, rep1 in pairs:
-                            if (rep0, rep1) not in current_dict:
-                                current_dict[(rep0, rep1)] = 1
+                        
+                        #assumes lists are always alphabetical so that pairs will only occur in one direction
+                        for u, v in pairs:
+                           
+                            if G.has_edge(u, v):
+                                G[u][v]['weight']+=1
                             else:
-                                current_dict[(rep0, rep1)] +=1
+                                G.add_edge(u, v, weight=1)
 
-    max_senate_vote = max(senate_data.iteritems(), key=operator.itemgetter(1))[1]
-    max_house_vote = max(house_data.iteritems(), key=operator.itemgetter(1))[1]
+     
+    nx.write_graphml(G_senate, "senate/senate.graphml")
+    nx.write_graphml(G_house, "house/house.graphml") 
+
     
-    threshold_senate = float(max_senate_vote) * SENATE_THRES
-    threshold_house =  float(max_house_vote) * HOUSE_THRES
-
-    write_edge_list(senate_data, threshold_senate, "edges_senate.txt")
-    write_edge_list(house_data, threshold_house, "edges_house.txt")
-
-    senators, reps = load_congress("legislators-current.csv")
-    create_graph(senate_data, senators, "senate.graphml", threshold_senate)
-    create_graph(house_data, reps,  "house.graphml", threshold_house)
-    
-
-
 
 def load_congress(congress_file):
-    
+ 
+    G_senate = nx.Graph()
+    G_house = nx.Graph()
+
     with open(congress_file, 'r') as f:
     
         csvreader = csv.reader(f,delimiter=',',quotechar='"')
         #skip the headers
         next(csvreader, None)  # skip the headers
-        senators = {}
-        reps = {}
         for row in csvreader:
             
-            name = "{} {}".format(row[1],row[0]).decode('utf-8')
-            state = row[5]
-            party = row[6]
-
+          
             if row[4] == "sen":
-                senators[row[20]] = (name, state, party) 
+                node_id = row[20]
+                G = G_senate
+            elif row[4] == "rep":
+                node_id = row[17]
+                G = G_house
             else:
-                reps[row[17]] = (name, state, party)
+                continue
 
-    return senators, reps
+            G.add_node(node_id, name="{} {}".format(row[1],row[0]).decode('utf-8'), party=row[6], state=row[5])
 
+    return G_senate, G_house
 
-
-def create_graph(edge_dict, node_dict, out, threshold=None):
-
-    G = nx.Graph()
-    for(p0, p1), count in edge_dict.iteritems():
-        if threshold == None:
-            G.add_edge(p0.decode('utf-8'), p1.decode('utf-8'), weight=count)
-        elif count > threshold:
-            G.add_edge(p0.decode('utf-8'), p1.decode('utf-8'))
-    
-
-    for node_id in node_dict:
-        if node_id not in G.node:
-            G.add_node(node_id)
-
-        G.node[node_id]['name'] = node_dict[node_id][0] 
-        G.node[node_id]['state'] = node_dict[node_id][1]
-        G.node[node_id]['party'] = node_dict[node_id][2]
-    
-    nx.write_graphml(G,out)
-
-
-def write_edge_list(curr_dict, threshold, filename):
-    with open(filename, 'w') as edgesoutput:
-        csvwriter = csv.writer(edgesoutput,delimiter='\t')
-        
-        edge_count = 0
-        for (p0, p1), count in curr_dict.iteritems():
-            if float(count) > threshold:
-                edge_count+=1
-                row = [p0,p1]
-                csvwriter.writerow(row)
 
 if __name__ == "__main__":
         main(sys.argv[1:])
