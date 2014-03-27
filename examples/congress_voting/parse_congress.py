@@ -73,8 +73,18 @@ def main(argv):
      
     nx.write_graphml(G_senate, "senate/senate.graphml")
     nx.write_graphml(G_house, "house/house.graphml") 
-
+    write_node_list(G_senate, "senate/senate_nodes.txt")
+    write_node_list(G_house, "house/house_nodes.txt")
     
+
+def write_node_list(G, out):
+    with open(out, 'w') as f:
+        
+        csvwriter = csv.writer(f, delimiter="\t", quoting=csv.QUOTE_ALL)
+        for n,d in G.nodes(data=True):
+            if 'party' in d and 'name' in d:
+                csvwriter.writerow((n, d['name'].encode('utf-8'), d['party']))
+             
 
 def load_congress(congress_file):
  
@@ -97,7 +107,7 @@ def load_congress(congress_file):
                 G = G_house
             else:
                 continue
-
+            
             G.add_node(node_id, name="{} {}".format(row[1],row[0]).decode('utf-8'), party=row[6], state=row[5])
 
     return G_senate, G_house
