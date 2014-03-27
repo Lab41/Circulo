@@ -26,6 +26,9 @@ import operator
 import os
 import shutil
 
+SENATE_THRES = .8
+HOUSE_THRES = .9
+
 def main(argv):
 
     # get list of json files
@@ -66,20 +69,15 @@ def main(argv):
     max_senate_vote = max(senate_data.iteritems(), key=operator.itemgetter(1))[1]
     max_house_vote = max(house_data.iteritems(), key=operator.itemgetter(1))[1]
     
-    print max_senate_vote
-    print max_house_vote
-    threshold_senate = float(max_senate_vote) * .8
-    threshold_house =  float(max_house_vote) * .8
-
-    print "Senate Thres: {}".format(threshold_senate)
-    print "House Thres: {}".format(threshold_house)
+    threshold_senate = float(max_senate_vote) * SENATE_THRES
+    threshold_house =  float(max_house_vote) * HOUSE_THRES
 
     write_edge_list(senate_data, threshold_senate, "edges_senate.txt")
     write_edge_list(house_data, threshold_house, "edges_house.txt")
 
     senators, reps = load_congress("legislators-current.csv")
-    create_graph(senate_data, senators, "senate.graphml")
-    create_graph(house_data, reps, "house.graphml")
+    create_graph(senate_data, senators, "senate.graphml", threshold_senate)
+    create_graph(house_data, reps,  "house.graphml", threshold_house)
     
 
 
@@ -108,32 +106,37 @@ def load_congress(congress_file):
 
 
 
-def create_graph(edge_dict, node_dict, out):
+def create_graph(edge_dict, node_dict, out, threshold=None):
 
     G = nx.Graph()
     for(p0, p1), count in edge_dict.iteritems():
-        G.add_edge(p0.decode('utf-8'), p1.decode('utf-8'), weight=count)
+        if threshold == None:
+            G.add_edge(p0.decode('utf-8'), p1.decode('utf-8'), weight=count)
+        elif count > threshold:
+            G.add_edge(p0.decode('utf-8'), p1.decode('utf-8'))
     
-    for node_id in G.nodes_iter():
 
-        if node_id in node_dict:
-            G.node[node_id]['name'] = node_dict[node_id][0] 
-            G.node[node_id]['state'] = node_dict[node_id][1]
-            G.node[node_id]['party'] = node_dict[node_id][2]
-        else:
-            print "Node Id: {} not found in node_dict".format(node_id)
+    for node_id in node_dict:
+        if node_id not in G.node:
+            G.add_node(node_id)
+
+        G.node[node_id]['name'] = node_dict[node_id][0] 
+        G.node[node_id]['state'] = node_dict[node_id][1]
+        G.node[node_id]['party'] = node_dict[node_id][2]
+    
     nx.write_graphml(G,out)
 
 
 def write_edge_list(curr_dict, threshold, filename):
     with open(filename, 'w') as edgesoutput:
         csvwriter = csv.writer(edgesoutput,delimiter='\t')
+        
+        edge_count = 0
         for (p0, p1), count in curr_dict.iteritems():
-            if count > threshold:
+            if float(count) > threshold:
+                edge_count+=1
                 row = [p0,p1]
                 csvwriter.writerow(row)
-
-
 
 if __name__ == "__main__":
         main(sys.argv[1:])
