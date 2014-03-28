@@ -2,7 +2,8 @@
 
 import sys
 
-#Script takes number of nodes, edgelist file, and community file as inputs 
+#Script takes number of nodes, edge list, and community list as inputs and calculates metrics
+
 
 
 def main(argv):
