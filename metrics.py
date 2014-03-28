@@ -2,9 +2,6 @@
 
 import sys
 
-#Script takes number of nodes, edgelist file, and community file as inputs 
-
-
 def main(argv):
     
     #num_nodes = Total number of nodes in graph
