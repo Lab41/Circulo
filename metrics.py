@@ -2,6 +2,10 @@
 
 import sys
 
+#Script takes number of nodes, edge list, and community list as inputs and calculates metrics
+
+
+
 def main(argv):
     
     #num_nodes = Total number of nodes in graph
