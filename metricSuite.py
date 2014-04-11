@@ -8,13 +8,16 @@ import scipy
 import matplotlib.pyplot as plt
 
 #Most variable names follow naming conventions of leskovec/yang papers
-
+#Only for undirected graphs
+#Assuming nodes are ints
 
 def main(argv):
     
     #File IO Handling/Reading in Graph
     f_edge = open(argv[0], 'rb')
     f_comm = open(argv[1])
+    #with open error checking
+    #pass in path, check for error cases for G
     G = nx.read_edgelist(f_edge,comments='#',nodetype=int,edgetype=int)
     f_edge.close()
     
@@ -22,21 +25,25 @@ def main(argv):
     #Initializing Important Var
     num_nodes = len(G)
     num_edges = nx.number_of_edges(G)
-    comm_set = set()
     degree_dict = G.degree(G.nodes_iter())
+    #better name for d_m
     d_m = np.median(list(degree_dict.values()))
     
     
     #Iterating through community file
     for line in f_comm:
-
+        
         comm_line = map(int, line.split())
         comm_line.sort()
         S = G.subgraph(comm_line)
 
-
+        #Dictionary with nodes as keys and internal degree (Only edges within S) as values for all nodes in this community S
         int_deg_dict = S.degree()
+
+        #Dictionary with nodes as keys and degree (Includes edges both inside and outside of S) as values 
         t_ext_deg_dict = G.degree(comm_line)
+
+        #Dictionary with nodes as keys and external degree (edges on the boundary of S) as values 
         ext_deg_dict = {key:t_ext_deg_dict[key] - int_deg_dict[key] for key in int_deg_dict.keys()}
         
         
@@ -58,6 +65,7 @@ def main(argv):
 
 
 def intConnectMetrics(n_s,m_s,int_deg_dict,S, d_m) :
+    #create functions with explanation
     internal_density = float(m_s / ((n_s*(n_s - 1)) / 2))        
     edges_inside = m_s
     avg_degree = (2 * m_s) / n_s
@@ -67,6 +75,7 @@ def intConnectMetrics(n_s,m_s,int_deg_dict,S, d_m) :
     fomd = node_greater_dm/n_s 
         
     #TPR
+    #key is node and 
     tri_dict = nx.triangles(S)
     tri_count = np.count_nonzero(tri_dict.values())
     tpr = tri_count / n_s
