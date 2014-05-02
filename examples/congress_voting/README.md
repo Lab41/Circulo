@@ -26,6 +26,10 @@ __Requirements__
 
 From the iPython QtConsole 
 
+	#inline images
+	import matplotlib
+	%matplotlib inline  
+
 	#set the inline image size to be larger
  	import matplotlib.pylab as pylab
  	pylab.rcParams['figure.figsize'] = (14.0, 12.0)
@@ -38,14 +42,12 @@ From the iPython QtConsole
 	#from the senate dir, read in the senate data (you can do the house data too)
 	G = nx.read_graphml('senate/senate.graphml')
 	
-	#let's filter by edge weight for only co-voting of greater than 160
- 	FG = nx.Graph([(u,v,d) for u,v,d in G.edges(data=True) if d['weight'] > 160])
-	
 	#set the layout
-	pos = nx.fruchterman_reingold_layout(G, k=3)
-	
-	#draw the figure
-	nx.draw(FG, pos = pos, node_size=60, node_color="red")
+	pos = nx.fruchterman_reingold_layout(G, k=2)
+
+	labels=dict((n,d['party']) for n,d in G.nodes(data=True) if d.has_key('party') and d.has_key('party'))
+
+	nx.draw(G, pos = pos, node_size=60, node_color="red", with_labels=True, labels=labels)
 
 
 

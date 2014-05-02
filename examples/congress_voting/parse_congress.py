@@ -31,6 +31,11 @@ HOUSE_THRES = .9
 
 def main(argv):
 
+    do_filter = False
+
+    if len(argv) > 0 and argv[0] == 'Filter':
+        do_filter = True
+
     # get list of json files
     files_list = glob.glob("2014/*/*.json")
     #files_list = ['2014/h12/data.json']
@@ -70,7 +75,13 @@ def main(argv):
                             else:
                                 G.add_edge(u, v, weight=1)
 
-     
+    if do_filter:
+        for u, v, d in G_senate.edges(data=True):
+            if d['weight'] < 160:
+                print "removing edge"
+                G.remove_edge(u,v)
+
+
     nx.write_graphml(G_senate, "senate/senate.graphml")
     nx.write_graphml(G_house, "house/house.graphml") 
     write_node_list(G_senate, "senate/senate_nodes.txt")
