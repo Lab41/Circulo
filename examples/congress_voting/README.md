@@ -35,7 +35,7 @@ From the iPython QtConsole
  	pylab.rcParams['figure.figsize'] = (14.0, 12.0)
 
 	#ETL the congress voting data
-	%run parse_congress.py
+	%run parse_congress.py Filter
 	
 	import networkx as nx
 	
