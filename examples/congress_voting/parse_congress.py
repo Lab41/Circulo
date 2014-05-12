@@ -113,7 +113,12 @@ def main(argv):
         for u, v, d in G_senate.edges(data=True):
             if d['weight'] < threshold_senate:
                 #we filter out edges based on our filter settings (in the case 160)
-                G.remove_edge(u,v)
+                G_senate.remove_edge(u,v)
+        for u, v, d in G_house.edges(data=True):
+            if d['weight'] < threshold_house:
+                #we filter out edges based on our filter settings (in the case 160)
+                G_house.remove_edge(u,v)
+
 
     nx.write_graphml(G_senate, "senate/senate.graphml")
     nx.write_graphml(G_house, "house/house.graphml") 
