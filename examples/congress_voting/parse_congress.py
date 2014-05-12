@@ -69,25 +69,51 @@ def main(argv):
                         
                         #assumes lists are always alphabetical so that pairs will only occur in one direction
                         for u, v in pairs:
-                            
+                           
                             try:
                                 x = id_dict[u]
                                 y = id_dict[v]
+                            
                             except KeyError as e:
                                 #TODO: there are many congress IDs not in the legistature file... not sure why
                                 continue
-
+                            
+                            #to avoid duplicate we only accept pairs with x less y
+                            if x > y:
+                                continue
                             if G.has_edge(x, y):
                                 G[x][y]['weight']+=1
                             else:
                                 G.add_edge(x, y, weight=1)
 
+
+    max_paired_votes_senate = 0
+    max_paired_votes_house = 0
+
+    for u,v,d in G_senate.edges(data=True):
+        if d['weight'] > max_paired_votes_senate:
+            max_paired_votes_senate = d['weight']
+
+    for u,v,d in G_house.edges(data=True):
+        if d['weight'] > max_paired_votes_house:
+            max_paired_votes_house = d['weight']
+
+
+    print "MAX PAIRED VOTES SENATE: {}".format(max_paired_votes_senate)
+    print "MAX PAIRED VOTES HOUSE:  {}".format(max_paired_votes_house)
+    
+    threshold_senate = SENATE_THRES * max_paired_votes_senate
+    threshold_house = HOUSE_THRES * max_paired_votes_house
+
+    print "Threshold Senate: {}".format(threshold_senate)
+    print "Threshold house: {}".format(threshold_house)
+
+
     if do_filter:
         for u, v, d in G_senate.edges(data=True):
-            if d['weight'] < 160:
+            if d['weight'] < threshold_senate:
                 #we filter out edges based on our filter settings (in the case 160)
                 G.remove_edge(u,v)
-
 
     nx.write_graphml(G_senate, "senate/senate.graphml")
     nx.write_graphml(G_house, "house/house.graphml") 
