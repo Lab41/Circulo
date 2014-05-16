@@ -76,9 +76,6 @@ class GoodnessIndicatorTests:
         #sort in place by conductance
         self.metrics_ground_truth.sort(key=lambda x: x.conductance, reverse=True) 
        
-        for m in self.metrics_ground_truth[:10]:
-            print m
-        
         plt.plot(x_values, running_avg([x.separability for x in self.metrics_ground_truth][:k]))
         
         #sort in place by tpr
@@ -86,8 +83,9 @@ class GoodnessIndicatorTests:
         plt.plot(x_values, running_avg([x.separability for x in self.metrics_ground_truth][:k]))
         
         #sort in place by density
-        self.metrics_ground_truth.sort(key=lambda x: x.density, reverse=True) 
-        plt.plot(x_values, running_avg(x.separability for x in self.metrics_ground_truth][:k]))
+        self.metrics_ground_truth.sort(key=lambda x: x.density, reverse=True)
+
+        plt.plot(x_values, running_avg([x.separability for x in self.metrics_ground_truth][:k]))
         
         plt.legend(['U', 'c', 'tpr', 'density'], loc='upper right')        
         plt.ylabel("Separability")
@@ -95,14 +93,26 @@ class GoodnessIndicatorTests:
         plt.show()
 
     def test_density(self):
+        '''
+        To Be Implemented
+        '''
+        
         pass
 
 
     def test_cohesiveness(self):
+        '''
+        To be Implemented
+        '''
+        
         pass
 
 
     def test_clustering_coefficient(self):
+        '''
+        To be implmented
+        '''
+        
         pass
 
 
