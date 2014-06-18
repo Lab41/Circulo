@@ -1,5 +1,6 @@
 from subprocess import call
 import os
+import shutil
 import igraph as ig
 
 import parse_school
@@ -11,7 +12,7 @@ def download():
 	and saves them in a directory schoolData. If schoolData already exists, it is cleared.
 	"""
 	if os.path.exists("schoolData"):
-		os.rmdir("schoolData")
+		shutil.rmtree("schoolData")
 	os.mkdir("schoolData")
 	os.chdir("schoolData")
 	try:
@@ -54,12 +55,12 @@ def example():
 		print "It looks like Cairo isn't properly installed. Refer to the wiki."
 		exit(1)
 
+
 def main():
 	download()
 	prepare()
 	example()
 
-	
 
 if __name__ == "__main__":
 	main()
