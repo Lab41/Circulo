@@ -1,4 +1,5 @@
 import sys
+import os
 import networkx as nx
 
 def main(gexfFiles):
@@ -18,11 +19,13 @@ def writeGraphML(filename):
 	for node in G.node:
 		for attrib in G.node[node]:
 			if type(G.node[node][attrib]) == dict:
-				# graphML doesn't play nice with dictionaries.
-				# this just deletes positional information.
+				# graphML doesn't play nice with dictionaries as attributes.
+				# this line just deletes positional information.
 				G.node[node][attrib] = 0
 	newFileName = filename[:filename.rfind('.')] + ".graphml"
 	nx.write_graphml(G, newFileName)
+	# removes original file
+	os.remove(filename)
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
