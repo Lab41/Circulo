@@ -2,7 +2,9 @@
 #Primary School - Cumulative Networks
 
 
-Run `python do_example.py` to automatically perform all steps outlined below.
+Run `python do_example.py` to automatically perform all steps outlined below. Note: the example doesn't currently work in all environments -- very finicky about Cairo.
+However, the `download` and `prepare` functions should work fine.
+
 
 ###Data Prep
 
