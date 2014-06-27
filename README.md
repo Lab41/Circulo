@@ -22,4 +22,12 @@ iGraph is the base Graph framework for Circulo. Currently, we are using a branch
 ####OS X
 Refer to the iGraph homepage
 
+Also will need py2cairo (for python 2.7.5)
+
+To install with brew
+    
+    brew install cairo
+    brew install py2cairo
+- Note: Make sure you get cairo in your site-packages either by creating a symbolic link to the folder or adding the site-packages of brew to your system path
+
 
