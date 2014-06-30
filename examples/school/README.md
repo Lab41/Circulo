@@ -2,8 +2,7 @@
 #Primary School - Cumulative Networks
 
 
-Run `python do_example.py` to automatically perform all steps outlined below. Note: the example doesn't currently work in all environments -- very finicky about Cairo.
-However, the `download` and `prepare` functions should work fine.
+Run `python do_example.py` to automatically perform all steps outlined below. Note: the example relies on the python plotting framework "Cairo", which sometimes can be difficult to install. For directions on how to install Cairo for python refer to the main README for the Circulo project.
 
 
 ###Data Prep
@@ -21,32 +20,17 @@ However, the `download` and `prepare` functions should work fine.
 
 There should now be two new .graphml files in the working directory.
 	
+- NOTE: The Download code does this slightly differently for simplicity
+
 ## Exercise
 
 __Requirements__
 
 - NetworkX from https://networkx.github.io
 - iGraph from http://igraph.org
-- Unfortunately, plotting also requires Cairo from http://cairographics.org, along with its Python bindings. (py2cairo). So far, I've been unsuccessful downloading these bindings on OSX, so this script has to be run on GNU/Linux. You can download Cairo on Ubuntu with `sudo apt-get install libcairo2-dev`
+- Cairo from http://cairographics.org along with its Python bindings. (py2cairo).
 
+__Code__
 
-```
-import igraph as ig
-
-g = ig.load("sp_data_school_day_1_g.graphml") # whichever file you would like
-
-# Assigning colors to genders for plotting
-colorDict = {"M": "blue", "F": "pink", "Unknown": "black"}
-
-for vertex in g.vs:
-	# each vertex is labeled as its classname and colored as its gender.
-    vertex["label"] = vertex["classname"]
-    vertex["color"] = colorDict[vertex["gender"]]
-
-
-layout = g.layout("fr") # Fruchterman-Reingold layout
-
-# If Cairo is improperly installed, raises TypeError: plotting not available
-ig.plot(g, layout=layout) 
-```
-
+- Please refer to do_example.py
+- The example illustrates how to visualize the school data using an igraph layout
