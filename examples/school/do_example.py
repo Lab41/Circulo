@@ -18,7 +18,7 @@ def download():
     try:
         call(["curl", "--create-dirs","-o", "schoolData/out_#1.gexf.gz","http://www.sociopatterns.org/wp-content/uploads/2014/05/sp_data_school_day_[1-2]_g.gexf_.gz"])
     except Exception as e:
-        print "cURL failed -- make sure you have cURL, and make sure the site still has the graph data."
+        print("cURL failed -- make sure you have cURL, and make sure the site still has the graph data.")
         raise(e)
     for filename in glob.glob("schoolData/*.gz"):
         call(["gunzip", filename])
@@ -67,10 +67,9 @@ def example():
 
     # If Cairo is improperly installed, raises TypeError: plotting not available
     try:
-        print "about to plot"
         ig.plot(g, layout=layout)
     except TypeError as e:
-        print "It looks like Cairo isn't properly installed. Refer to the wiki."
+        print("It looks like Cairo isn't properly installed. Refer to the wiki.")
         exit(1)
 
 def main():
