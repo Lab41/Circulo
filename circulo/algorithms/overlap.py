@@ -16,7 +16,7 @@ def zhang_modularity(G, cover):
         complex networks using fuzzy C-means clustering'""")
 
 def nicosia_modularity(G, cover):
-    raise NotImplementedError("""See 'Extending the definition of 
+    raise NotImplementedError("""See 'Extending the definition of
         modularity to directed graphs with overlapping communities'""")
 
 
@@ -29,7 +29,7 @@ def count_communities(G, cover):
     Helper for lazar_modularity.
 
     Returns a dict {v:count} where v is a vertex id and
-    count is the number of different communities it is 
+    count is the number of different communities it is
     assigned to.
     """
     counts = {i.index : 0 for i in G.vs}
@@ -37,11 +37,11 @@ def count_communities(G, cover):
         for v in community:
             counts[v] += 1
     return counts
-    
+
 
 def count_internal_edges(G, vertex, cluster):
     """
-    Given a graph, a vertex in the graph, and a list of vertex 
+    Given a graph, a vertex in the graph, and a list of vertex
     ids "cluster", returns a set of edge ids that are internal
     to the cluster, as well as the difference between the number of
     internal edges and external edges.
@@ -74,7 +74,7 @@ def lazar_modularity(G, cover):
         for vertex in cluster:
             neighbors = G.neighbors(vertex)
             internalEdges, internalExternalCount = count_internal_edges(G, vertex, clusterSet)
-            
+
             # Counting internal edges in a set so we don't repeat.
             edgeSet |= internalEdges
 
@@ -88,7 +88,7 @@ def lazar_modularity(G, cover):
         try:
             edgeDensity = numEdges / ((numVertices * numVertices-1) / 2)
         except ZeroDivisionError:
-            # Not well defined for single vertex communities. 
+            # Not well defined for single vertex communities.
             # We can assume it is a bad cover, however,
             # so we return a 0 modularity.
             return 0
@@ -115,17 +115,17 @@ class CrispOverlap(object):
             Graph: The graph to which the object refers
             covers: a dict of VertexCovers, also referring to this graph, of the form {k : v}
                 where k is the number of clusters and v is the vertexCluste
-            modularities (optional): a dict of modularities of the form {c:m} where c is 
+            modularities (optional): a dict of modularities of the form {c:m} where c is
                 the number of clusters and m is the modularity.
             optimal_count (optional): A hint for the number of clusters to use.
-            modularity_measure (optional): The name of the modularity function to use. 
-                Right now, the only choice is "lazar." 
+            modularity_measure (optional): The name of the modularity function to use.
+                Right now, the only choice is "lazar."
         """
-        # Possibly figure out a better data structure like a merge 
+        # Possibly figure out a better data structure like a merge
         # list that contains all information needed?
 
         # So far only know of Lazar's measure for crisp overlapping.
-        self._measureDict = {"lazar" : lazar_modularity} 
+        self._measureDict = {"lazar" : lazar_modularity}
         self._covers = covers
         self._graph = graph
         self._optimal_count = optimal_count
@@ -147,7 +147,7 @@ class CrispOverlap(object):
         """
         Iterates over the covers in the list.
         """
-        return self._covers.iteritems
+        return (v for v in self._covers.values())
 
     def __len__(self):
         """
@@ -157,7 +157,7 @@ class CrispOverlap(object):
 
     def __nonzero__(self):
         """
-        Returns True when there is at least one cover in the list. 
+        Returns True when there is at least one cover in the list.
         """
         return bool(self._covers)
 
@@ -192,7 +192,7 @@ class CrispOverlap(object):
 
     def recalculate_modularities(self):
         """
-        Recalculates the modularities and optimal count using the modularity_measure. 
+        Recalculates the modularities and optimal count using the modularity_measure.
         """
         modDict = {}
         for cover in self._covers.itervalues():
@@ -208,7 +208,7 @@ class CrispOverlap(object):
         Returns the a dict {c : m} where c is the number of clusters
         in the cover and m is the modularity. If modularity has not
         been calculated, it recalculates it for all covers. Otherwise,
-        it returns the stored dict. 
+        it returns the stored dict.
 
         Note: Call recalculate_modularities to recalculate the modularity.
         """
@@ -222,9 +222,9 @@ class CrispOverlap(object):
     def optimal_count(self):
         """Returns the optimal number of clusters for this dendrogram.
 
-        If an optimal count hint was given at construction time and 
-        recalculate_modularities has not been called, this property simply returns the 
-        hint. If such a count was not given, this method calculates the optimal cover 
+        If an optimal count hint was given at construction time and
+        recalculate_modularities has not been called, this property simply returns the
+        hint. If such a count was not given, this method calculates the optimal cover
         by maximizing the modularity along all possible covers in the object.
 
         Note: Call recalculate_modularities to recalculate the optimal count.
@@ -233,7 +233,7 @@ class CrispOverlap(object):
             return self._optimal_count
         else:
             modularities = self.modularities
-            self._optimal_count = max(modularities.iteritems(), key=operator.itemgetter(1))[0]
+            self._optimal_count = max(modularities.items(), key=operator.itemgetter(1))[0]
             return self._optimal_count
 
 
@@ -248,7 +248,7 @@ class CrispOverlap(object):
 
 # TODO. Other algorithms like FOG return a fuzzy overlapping.
 
-# Nothing below this line has been implemented. 
+# Nothing below this line has been implemented.
 ###############################################
 
 class FuzzyOverlap(object):
@@ -266,10 +266,10 @@ class FuzzyOverlap(object):
         if modularity_measure in modularityDict:
             self._modularity_measure = modularity_measure
         else: raise KeyError("Modularity measure not found.")
-        self._mod_flag = False 
-        self.fuzzyDict = {"nepusz" : nepusz_modularity, 
-                          "zhang": zhang_modularity, 
-                          "nicosia" : nicosia_modularity} 
+        self._mod_flag = False
+        self.fuzzyDict = {"nepusz" : nepusz_modularity,
+                          "zhang": zhang_modularity,
+                          "nicosia" : nicosia_modularity}
 
 
     @property
