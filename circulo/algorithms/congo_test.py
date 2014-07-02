@@ -26,16 +26,7 @@ class TestCongoFunctions(unittest.TestCase):
 		self.assertEqual(self.graph.edge_betweenness(), eb)
 
 
-	def test_vertex_betweeenness_from_eb(self):
-		"""
-		Checks that the implementation of vertex_betweeenness_from_eb
-		yields the same results as that of igraph's graph.betweenness
-		"""
-		eb = self.graph.edge_betweenness()
-		vbtheirs = self.graph.betweenness()
-		vbmine = CONGO.vertex_betweeenness_from_eb(self.graph, eb)
-		for i in range(self.graph.vcount()):
-			self.assertAlmostEqual(vbtheirs[i], vbmine[i]) 
+
 
 
 	def test_edge_betweenness(self):
@@ -47,7 +38,7 @@ class TestCongoFunctions(unittest.TestCase):
 		ebtheirs = self.graph.edge_betweenness()
 		ebmine, _ = CONGO.edge_and_pair_betweenness(self.graph)
 		for e in self.graph.es:
-			self.assertAlmostEqual(ebtheirs[e.index], ebmine[frozenset(e.tuple)])
+			self.assertAlmostEqual(ebtheirs[e.index], ebmine[e.tuple])
 
 
 	def test_pair_betweenness(self):
@@ -59,6 +50,19 @@ class TestCongoFunctions(unittest.TestCase):
 		vb = self.graph.betweenness()
 		for v in pb:
 			self.assertAlmostEqual(sum(pb[v].values()), vb[v])
+
+
+	def test_vertex_betweeenness_from_eb(self):
+		"""
+		Checks that the implementation of vertex_betweeenness_from_eb
+		yields the same results as that of igraph's graph.betweenness
+		"""
+		eb = self.graph.edge_betweenness()
+		ebmine, _ = CONGO.edge_and_pair_betweenness(self.graph)
+		vbtheirs = self.graph.betweenness()
+		vbmine = CONGO.vertex_betweeenness_from_eb(self.graph, ebmine)
+		for v in self.graph.vs:
+			self.assertAlmostEqual(vbtheirs[v.index], vbmine[v.index])
 
 
 def suite():

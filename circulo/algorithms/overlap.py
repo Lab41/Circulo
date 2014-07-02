@@ -149,6 +149,7 @@ class CrispOverlap(object):
         """
         return (v for v in self._covers.values())
 
+
     def __len__(self):
         """
         Returns the number of covers in the list.
@@ -235,6 +236,27 @@ class CrispOverlap(object):
             modularities = self.modularities
             self._optimal_count = max(modularities.items(), key=operator.itemgetter(1))[0]
             return self._optimal_count
+
+
+    def pretty_print_cover(self, numClusters, label='CONGA_index'):
+        """
+        Takes a cover in vertex-id form and prints it nicely
+        using label as each vertex's name.
+        """
+        cover = self._covers[numClusters]
+        #if label == 'CONGA_index':
+        pp = [self._graph.vs[num] for num in [cluster for cluster in cover]]
+        #else: 
+        #    pp = [G.vs[num][label] for num in [cluster for cluster in cover]]
+        for count, comm in enumerate(pp):
+            print "Community {0}:".format(count)
+            for v in comm:
+                print "\t",
+                if label == 'CONGA_index':
+                    print v.index
+                else:
+                    print v[label]
+            print
 
 
     def make_fuzzy(self):
