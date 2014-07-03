@@ -27,6 +27,7 @@ def CONGO(OG, h):
 
     while G.es:
         split, edgeBetweenness, pairBetweenness = remove_edge_or_split_vertex(G, edgeBetweenness, pairBetweenness, h)
+        print len(G.es)
         #print edgeBetweenness, pairBetweenness
         #edgeBetweenness, pairBetweenness = recalculate_betweenness(G, edgeBetweenness, pairBetweenness)
         if split:
@@ -47,6 +48,7 @@ def edge_and_pair_betweenness(G, region):
     pair_betweenness = initialize_pair_betweenness_dict(G)
 
     for i in range(len(region)):
+        print i, "/", len(region)
         pathCounts = Counter()
         # Only find the shortest paths that we haven't already seen
         shortest_paths_from_v = G.get_all_shortest_paths(region[i], to=region[i+1:])
@@ -428,4 +430,4 @@ def matrix_min(mat):
 
 
 if __name__ == "__main__":
-    CONGO(ig.read("football.gml"), 3).pretty_print_cover(24, label='label')
+    CONGO(ig.read("oregon.edgelist").as_undirected(), 3).pretty_print_cover(24, label='label')
