@@ -1,5 +1,3 @@
-#Rewrite of RolX code using iGraph.
-
 import sys
 import math
 import igraph
@@ -79,7 +77,7 @@ def recursive_feature(G, f, n):
     return np.matrix(recursive_feature_array(G,f,n))
 
 
-def is_approx_linear_dependent(w, A, threshold=1e-15):
+def approx_linear_solution(w, A, threshold=1e-15):
     '''
     Checks if w is linearly dependent on the columns of A, this is done by solving the least squares problem (LSP)
         min || w - Ax ||_2^2
@@ -133,26 +131,40 @@ def vertex_features(g):
 
     next_feature_col = 0
     for feature in features:
-        accepted_recursive_features = 1
-        level = 0
-        while accepted_recursive_features > 0 :
-            rec_feat_mat_transpose = recursive_feature(G, feature, level).transpose()
-            level += 1
-            grow_by = accepted_recursive_features
-            accepted_recursive_features = 0
-            for row in rec_feat_mat_transpose :
-                row = row/norm(row)
-                if (next_feature_col == 0 or
-                    not is_approx_linear_dependent(row.transpose(), V[:, :next_feature_col],
-                                              threshold(level))[0] ) :
-                    if next_feature_col == V.shape[1]: # need to resize V
-                        zeros = np.matrix(np.zeros((V.shape[0], grow_by)))
-                        V = np.concatenate((V, zeros), axis=1)
-                    V[:,next_feature_col] = row.transpose()
+        base = recursive_feature(G, feature, 0)
+        base = base/norm(base)
+        V = add_col(V, base, next_feature_col)
+
+        next_feature_col += 1
+        level = 1
+
+        accepted_features = True
+        while accepted_features:
+            accepted_features = False
+            feature_matrix = recursive_feature(G, feature, level)
+            rows, cols = feature_matrix.shape
+
+            for i in range(cols):
+                b = feature_matrix[:,i]
+                b = b/norm(b)
+
+                mat = V[:,:next_feature_col]
+                (is_approx_soln, _, _) = approx_linear_solution(b, mat, threshold(level))
+                if not is_approx_soln:
+                    V = add_col(V, b, next_feature_col)
                     next_feature_col += 1
-                    accepted_recursive_features += 1
+                    accepted_features = True
+            level += 1
 
     return V[:, :next_feature_col]
+
+def add_col(V, b, insert_col):
+    rows, cols = V.shape
+    if insert_col == cols: # need to resize V
+        zeros = np.matrix(np.zeros((rows, 1)))
+        V = np.concatenate((V, zeros), axis=1)
+    V[:, insert_col] = b
+    return V
 
 def kmeans_quantize(M, bits):
     k = 2**bits
