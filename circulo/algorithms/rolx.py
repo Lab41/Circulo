@@ -19,9 +19,14 @@ def main(argv):
         model = extract_rolx_roles(G)
 
     H = model.basis()
+    print("Node-role matrix is of dimensions %s by %s" % H.shape)
+    print(H)
+
     K = make_sense(G, H)
+    print("Role-feature matrix is of dimensions %s by %s" % K.shape)
     print(K)
-    return K
+
+    return H, K
 
 def extract_rolx_roles(G, roles=2):
     print("Creating Vertex Features matrix")
@@ -29,6 +34,19 @@ def extract_rolx_roles(G, roles=2):
     print("V is a %s by %s matrix." % V.shape)
 
     return get_factorization(V, roles)
+
+def make_sense(G, H):
+    features = [ 'betweenness', 'closeness', 'degree', 'diversity', 'eccentricity', 'pagerank', 'personalized_pagerank', 'strength' ]
+    feature_fns = [ getattr(G, f) for f in features ]
+    feature_matrix = [ func() for func in feature_fns ]
+    feature_matrix = np.matrix(feature_matrix).transpose()
+    print(feature_matrix)
+
+    M = feature_matrix
+    K = complete_factor(H, M, h_on_left=True)
+    print(K)
+
+    return K
 
 def threshold(level):
     return 10.0**(-15+level)
@@ -295,18 +313,6 @@ def get_optimal_factorization(V, min_roles=2, max_roles=6, min_bits=1, max_bits=
 
     return mat_fctr_res[min_role_index]
 
-def make_sense(G, H):
-    features = [ 'betweenness', 'closeness', 'degree', 'diversity', 'eccentricity', 'pagerank', 'personalized_pagerank', 'strength' ]
-    feature_fns = [ getattr(G, f) for f in features ]
-    feature_matrix = [ func() for func in feature_fns ]
-    feature_matrix = np.matrix(feature_matrix).transpose()
-    print(feature_matrix)
-
-    M = feature_matrix
-    K = complete_factor(H, M, h_on_left=True)
-    print(K)
-
-    return K
 
 def sense_residual_left_factor(W, H, M):
     W = np.matrix(W).reshape((M.shape[0], H.shape[0]))
