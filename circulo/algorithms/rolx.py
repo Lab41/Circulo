@@ -14,8 +14,8 @@ from scipy.optimize import minimize
 def main(argv):
     G = igraph.Graph.Read_GML(argv[0])
 
-    if len(argv) > 0:
-        roles = int(argv[0])
+    if len(argv) > 1:
+        roles = int(argv[1])
         model = extract_rolx_roles(G, roles=roles)
     else:
         model = extract_rolx_roles(G)
@@ -35,22 +35,21 @@ def extract_rolx_roles(G, roles=2):
 def threshold(level):
     return 10.0**(-15+level)
 
-def recursive_feature_array(G, f, n):
-    attr_name = "_rolx_" + f + "_" + str(n)
+def recursive_feature_array(G, func, n):
+    attr_name = "_rolx_" + func.__name__ + "_" + str(n)
 
     if attr_name in G.vs.attributes():
         result = np.array(G.vs[attr_name])
         return result
 
     if n==0:
-        func = getattr(G,f)
-        stats = func() #must return a 
+        stats = func(G) #must return a 
         result = np.array([[x] for x in stats]) # wrapping to create 2D-array
         result = result * 1.0 # ensure that we're using floating-points
         G.vs[attr_name] = result
         return result
 
-    prev_stats = recursive_feature_array(G, f, n-1)
+    prev_stats = recursive_feature_array(G, func, n-1)
     all_neighbor_stats = [0] * G.vcount()
     for v in G.vs:
         neighbors = G.neighbors(v)
@@ -97,6 +96,9 @@ def is_approx_linear_dependent(w, A, threshold=1e-15):
     result = True if norm_residual <= threshold else False
     return (result, norm_residual, x_star)
 
+def degree(G):
+    return G.degree()
+
 def vertex_egonet(G, v):
     ego_network = G.induced_subgraph(G.neighborhood(v))
     ego_edges = ego_network.ecount()
@@ -116,37 +118,25 @@ def vertex_egonet_out(G, v):
 def egonet_out(G):
     return [vertex_egonet_out(G, v) for v in G.vs]
 
-
 def threshold(level):
     return 10.0**(-15+level)
 
 def vertex_features(g):
-    '''
-    Constructs a Vertex Feature Matrix
-    '''
-    #features = [ 'betweenness', 'closeness', 'constraint',
-    #             'degree', 'diversity', 'eccentricity',
-    #             'pagerank', 'personalized_pagerank', 'strength' ]
-
-    #features = [ 'degree', 'indegree', 'betweenness', 'pagerank', 'personalized_pagerank', 'diversity', 'eccentricity', 'closeness']
-    #features = [ 'degree', 'indegree', 'betweenness', 'pagerank', 'personalized_pagerank' ]
-
+    """ 
+    Constructs a vertex feature matrix using recursive 
+    """
     G = g.copy()
-    features = [ 'degree', '__rolx_egonet', '__rolx_egonet_out' ]
-
-    igraph.Graph.__rolx_egonet = egonet
-    igraph.Graph.__rolx_egonet_out = egonet_out
-
     num_rows = G.vcount()
+
+    features = [degree, egonet, egonet_out]
     V = np.matrix(np.zeros((num_rows, 16*len(features))))
 
     next_feature_col = 0
-    for feature in features :
+    for feature in features:
         accepted_recursive_features = 1
         level = 0
         while accepted_recursive_features > 0 :
-            rec_feat_mat_transpose = recursive_feature(G, feature,
-                    level).transpose()
+            rec_feat_mat_transpose = recursive_feature(G, feature, level).transpose()
             level += 1
             grow_by = accepted_recursive_features
             accepted_recursive_features = 0
