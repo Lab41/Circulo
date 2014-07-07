@@ -1,24 +1,24 @@
 import sys
 import math
 import igraph
-import nimfa
 import numpy as np
 from numpy.linalg import lstsq
 from numpy import dot
 from scipy.cluster.vq import kmeans2, vq
 from scipy.linalg import norm
 from scipy.optimize import minimize
+from sklearn.decomposition import NMF
 
 def main(argv):
     G = igraph.Graph.Read_GML(argv[0])
 
     if len(argv) > 1:
         roles = int(argv[1])
-        model = extract_rolx_roles(G, roles=roles)
+        basis, coef = extract_rolx_roles(G, roles=roles)
     else:
-        model = extract_rolx_roles(G)
+        basis, coef = extract_rolx_roles(G)
 
-    H = model.basis()
+    H = basis
     print("Node-role matrix is of dimensions %s by %s" % H.shape)
     print(H)
 
@@ -216,8 +216,8 @@ def kl_divergence_2(A,B):
     return np.sum(np.where(a != 0, a * np.log(a / b), 0))
 
 def description_length(V, fctr_res, bits=10):
-    W = fctr_res.basis()
-    H = fctr_res.coef()
+    W = fctr_res[0]
+    H = fctr_res[1]
 
     enc_W, enc_W_cost = kmeans_quantize(W, bits)
     enc_H, enc_H_cost = kmeans_quantize(H, bits)
@@ -244,11 +244,13 @@ def standardize_rows(M):
 #    return m_flat.reshape(M.shape)
 
 def get_factorization(V, num_roles):
-    # http://nimfa.biolab.si/nimfa.methods.factorization.pmf.html?highlight=probabilistic
-    # http://scikit-learn.org/stable/modules/generated/sklearn.decomposition.NMF.html
-    fctr = nimfa.mf(V, rank=num_roles, method="nmf", max_iter=65, update='divergence', objective='div')
-    fctr_res = nimfa.mf_run(fctr)
-    return fctr_res
+    model = NMF(n_components=num_roles, init='random', random_state=0)
+    model.fit(V)
+    
+    node_roles = model.transform(V)
+    role_features = model.components_
+    
+    return node_roles, role_features
 
 def get_optimal_factorization(V, min_roles=2, max_roles=6, min_bits=1, max_bits=10):
     max_roles = min(max_roles, V.shape[1]) # Can't have more possible roles than features
