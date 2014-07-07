@@ -2,34 +2,50 @@ import igraph as ig
 
 def radicchi(G):
     """
-    Uses the Radicchi et al. algorithm to find the communities in a graph.
+    Uses the Radicchi et al. algorithm to find the communities in a graph. Returns a list of the splits in the graph.
     """
     g = G.copy()
-    splits = []
 
     degree = g.degree()
     neighbors = [set(g.neighbors(v)) for v in g.vs]
     edges = {e.tuple for e in g.es}
 
+    communities = set()
+
     while len(edges) > 0:
         min_edge = None
-        min_ecc = float('inf') # not float('inf') because edge_clustering_coefficient may actually return that; instead we just check for None
+        min_ecc = None
         for edge in edges:
             ecc = edge_clustering_coefficient(edge[0], edge[1], degree, neighbors)
             if not min_edge or ecc < min_ecc:
                 min_edge = edge
                 min_ecc = ecc
 
-        # print "Min edge is %s, %s" % min_edge
         g.delete_edges(min_edge); edges.discard(min_edge)
         u, v = min_edge
         neighbors[u].discard(v); neighbors[v].discard(u)
         degree[u] -= 1; degree[v] -= 1
 
-        if g.edge_connectivity(source=u, target=v) == 0: #if no path exists from u to v...
-            splits.append([u, v])
+        if g.edge_connectivity(source=u, target=v) == 0:
+            components = g.components()
 
-    return splits
+            ucomp = components.membership[u]
+            ucomp_members = frozenset(components[ucomp])
+
+            vcomp = components.membership[v]
+            vcomp_members = frozenset(components[vcomp])
+
+            if is_weak_community(G, ucomp_members) and is_weak_community(G, vcomp_members):
+                remaining_vertices = set(g.vs) - (ucomp_members | vcomp_members)
+                communities.add(ucomp_members)
+                communities.add(vcomp_members)
+
+                g = g.subgraph(remaining_vertices)
+                degree = g.degree()
+                neighbors = [set(g.neighbors(v)) for v in g.vs]
+                edges = {e.tuple for e in g.es}
+
+    return communities
 
 def is_strong_community(G, nodes):
     """
@@ -118,4 +134,4 @@ def replaceOccurences(splits, n, edge):
 if __name__ == "__main__":
     g = ig.Graph.Read_GML('netscience.gml')
     splits = radicchi(g)
-    print splits
+    print(splits)
