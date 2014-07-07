@@ -5,6 +5,9 @@ import shutil
 import igraph as ig
 import sys
 import glob
+import getopt
+from circulo import metrics
+
 
 def download():
     """
@@ -36,6 +39,11 @@ def prepare():
     files =  glob.glob("schoolData/*.gexf")
 
     for f in files:
+        newFileName = f[:f.rfind('.')] + ".graphml"
+
+        if os.path.exists(newFileName):
+            continue
+
         G = nx.read_gexf(f)
         for node in G.node:
             for attrib in G.node[node]:
@@ -48,7 +56,7 @@ def prepare():
 
 
 
-def example():
+def example0():
     """
     Performs the example outlined in the README. Draws the graph of one dataset.
     """
@@ -72,11 +80,44 @@ def example():
         print("It looks like Cairo isn't properly installed. Refer to the wiki.")
         exit(1)
 
-def main():
+
+def example1():
+    g = ig.load("schoolData/out_1.graphml") # whichever file you would like
+    dend = g.community_fastgreedy()
+
+    #get the clustering object
+    c = dend.as_clustering()
+
+
+    result = metrics.run_analysis(c)
+
+    print(c)
+
+def main(args):
+
+    try:
+        opts, arglist = getopt.getopt(args, 'e:')
+
+    except getopt.GetoptError as err:
+        print(err) # will print something like "option -a not recognized"
+        sys.exit(2)
+
+    for o, a in opts:
+        if o == "-e":
+            example=a
+        else:
+            assert False, "unhandled option"
+
     download()
     prepare()
-    example()
+
+    if example is "0":
+        example0()
+    elif example is "1":
+        example1()
+    else:
+        pass
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

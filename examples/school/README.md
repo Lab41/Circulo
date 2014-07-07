@@ -1,6 +1,7 @@
 
 #Primary School - Cumulative Networks
 
+- If circulo is not installed, be sure to set the PYTHONPATH to the project home directory, otherwise the circulo package will not be found
 
 Run `python do_example.py` to automatically perform all steps outlined below. Note: the example relies on the python plotting framework "Cairo", which sometimes can be difficult to install. For directions on how to install Cairo for python refer to the main README for the Circulo project.
 
