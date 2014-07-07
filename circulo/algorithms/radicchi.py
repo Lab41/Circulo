@@ -5,6 +5,7 @@ def radicchi(G):
     Uses the Radicchi et al. algorithm to find the communities in a graph. Returns a list of the splits in the graph.
     """
     g = G.copy()
+    g.vs['id'] = list(range(g.vcount()))
 
     degree = g.degree()
     neighbors = [set(g.neighbors(v)) for v in g.vs]
@@ -30,20 +31,23 @@ def radicchi(G):
             components = g.components()
 
             ucomp = components.membership[u]
-            ucomp_members = frozenset(components[ucomp])
+            ucomp_members = components[ucomp]
+            ucomp_ids = [g.vs[n]['id'] for n in ucomp_members]
 
             vcomp = components.membership[v]
-            vcomp_members = frozenset(components[vcomp])
+            vcomp_members = components[vcomp]
+            vcomp_ids = [g.vs[n]['id'] for n in vcomp_members]
 
-            if is_weak_community(G, ucomp_members) and is_weak_community(G, vcomp_members):
-                remaining_vertices = set(g.vs) - (ucomp_members | vcomp_members)
-                communities.add(ucomp_members)
-                communities.add(vcomp_members)
+            if is_weak_community(G, ucomp_ids) and is_weak_community(G, vcomp_ids):
+                remaining_vertices = list(set(range(g.vcount())) - (set(ucomp_members) | set(vcomp_members)))
+                communities.add(frozenset(ucomp_ids))
+                communities.add(frozenset(vcomp_ids))
 
-                g = g.subgraph(remaining_vertices)
-                degree = g.degree()
-                neighbors = [set(g.neighbors(v)) for v in g.vs]
-                edges = {e.tuple for e in g.es}
+                h = g.subgraph(remaining_vertices)
+                degree = h.degree()
+                neighbors = [set(h.neighbors(v)) for v in h.vs]
+                edges = {e.tuple for e in h.es}
+                g = h
 
     return communities
 
@@ -131,7 +135,11 @@ def replaceOccurences(splits, n, edge):
                             splits[i][j] = n
     return splits
 
-if __name__ == "__main__":
+def main(argv):
     g = ig.Graph.Read_GML('netscience.gml')
-    splits = radicchi(g)
-    print(splits)
+    communities = radicchi(g)
+    print(communities)
+    return communities
+
+if __name__ == "__main__":
+    main(sys.arv[1:])
