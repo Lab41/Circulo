@@ -3,57 +3,42 @@ import igraph as ig
 def radicchi(G):
     g = G.copy()
     splits = []
-    while g.ecount() > 0:
+
+    degree = g.degree()
+    neighbors = [set(g.neighbors(v)) for v in g.vs]
+    edges = {e.tuple for e in g.es}
+
+    while len(edges) > 0:
         min_edge = None
         min_ecc = None # not float('inf') because edge_clustering_coefficient may actually return that; instead we just check for None
-        degree = g.degree()
-        neighbors = [set(g.neighbors(v)) for v in g.vs]
-        for e in g.es:
-            u, v = e.tuple
-            ecc = edge_clustering_coefficient_1(u, v, degree, neighbors)
-            # ecc = edge_clustering_coefficient_2(G, u, v, degree)
+        for edge in edges:
+            ecc = edge_clustering_coefficient(edge[0], edge[1], degree, neighbors)
             if not min_edge or ecc < min_ecc:
-                min_edge = (u, v)
+                min_edge = edge
                 min_ecc = ecc
 
-        g.delete_edges(min_edge)
+        # print "Min edge is %s, %s" % min_edge
+        g.delete_edges(min_edge); edges.discard(min_edge)
         u, v = min_edge
-        if not in_same_component(g, u, v):
-            # print "ALSO APPENDING %s, %s" % min_edge
+        neighbors[u].discard(v); neighbors[v].discard(u)
+        degree[u] -= 1; degree[v] -= 1
+
+        if g.edge_connectivity(source=u, target=v) == 0: #if no path exists from u to v...
             splits.append([u, v])
 
     return splits
 
-def in_same_component(G, u, v):
-    return G.edge_disjoint_paths(source=u, target=v) > 0
-
-def edge_clustering_coefficient_1(u, v, degree, neighbors):
-    udeg = degree[u]
-    vdeg = degree[v]
-    mdeg = min(udeg-1, vdeg-1)
-    if mdeg ==0:
-        return float('inf')
-    else:
-        cdeg = common_neighbors_1(u, v, neighbors)
-        return (cdeg + 1.0) / mdeg
-
-def edge_clustering_coefficient_2(G, u, v, degree):
+def edge_clustering_coefficient(u, v, degree, neighbors):
     udeg = degree[u]
     vdeg = degree[v]
     mdeg = min(udeg-1, vdeg-1)
     if mdeg == 0:
         return float('inf')
     else:
-        cdeg = common_neighbors_2(G, u, v, udeg, vdeg)
+        cdeg = len(neighbors[u] & neighbors[v])
         return (cdeg + 1.0) / mdeg
 
-def common_neighbors_1(u, v, neighbors):
-    return len(neighbors[u] & neighbors[v])
-
-def common_neighbors_2(G, u, v, udeg, vdeg):
-    dice = G.similarity_dice(pairs=[(u,v)], loops=False)[0]
-    result = dice * (udeg + vdeg) * 0.5
-    return result
+# def is_cluster 
 
 def createDendrogram(G, splits):
    """
