@@ -1,6 +1,9 @@
 import igraph as ig
 
 def radicchi(G):
+    """
+    Uses the Radicchi et al. algorithm to find the communities in a graph.
+    """
     g = G.copy()
     splits = []
 
@@ -10,7 +13,7 @@ def radicchi(G):
 
     while len(edges) > 0:
         min_edge = None
-        min_ecc = None # not float('inf') because edge_clustering_coefficient may actually return that; instead we just check for None
+        min_ecc = float('inf') # not float('inf') because edge_clustering_coefficient may actually return that; instead we just check for None
         for edge in edges:
             ecc = edge_clustering_coefficient(edge[0], edge[1], degree, neighbors)
             if not min_edge or ecc < min_ecc:
@@ -28,7 +31,39 @@ def radicchi(G):
 
     return splits
 
+def is_strong_community(G, nodes):
+    """
+    Checks whether the provided set of nodes form a strong community in the graph G.
+    """
+    # precondition: nodes must be sorted
+    subgraph = G.subgraph(nodes)
+    degree = G.degree(nodes)
+    indegree = subgraph.degree()
+    for i in range(len(nodes)):
+        if not indegree[i] > (degree[i] - indegree[i]):
+            return False
+
+    return True
+
+def is_weak_community(G, nodes):
+    """
+    Checks whether the provided set of nodes form a weak community in the graph G.
+    """
+    # precondition: nodes must be sorted
+    subgraph = G.subgraph(nodes)
+    degree = G.degree(nodes)
+    indegree = subgraph.degree()
+    tsum = sum(degree)
+    insum = sum(indegree)
+    outsum = tsum - insum
+
+    return insum > outsum
+
 def edge_clustering_coefficient(u, v, degree, neighbors):
+    """
+    Computes the "edge clustering coefficient" of the given edge, defined as the number of triangles
+    in which it participates compared to the maximum number of triangles of which it could be a part.
+    """
     udeg = degree[u]
     vdeg = degree[v]
     mdeg = min(udeg-1, vdeg-1)
@@ -37,8 +72,6 @@ def edge_clustering_coefficient(u, v, degree, neighbors):
     else:
         cdeg = len(neighbors[u] & neighbors[v])
         return (cdeg + 1.0) / mdeg
-
-# def is_cluster 
 
 def createDendrogram(G, splits):
    """
