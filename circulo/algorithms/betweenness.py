@@ -1,6 +1,7 @@
 import igraph as ig
 import itertools
 from collections import Counter
+import time
 
 
 def edge_and_pair_betweenness(G):
@@ -8,17 +9,27 @@ def edge_and_pair_betweenness(G):
 	pb = {vertex.index : {uw : 0 for uw in itertools.combinations(G.neighbors(vertex), 2)} for vertex in G.vs}
 
 	for v in G.vs:
-		get_flows(G, v.index, eb, pb)
+		flows, pairFlows = get_flows(G, v.index, eb, pb)
+
+
+
+		for flow in flows: # pythonify
+			eb[flow] += flows[flow] / 2. # counted twice.
+
+		for pflow in pairFlows:
+			for uw in pairFlows[pflow]:
+				pb[pflow][uw] += pairFlows[pflow][uw] / 2. # not sure about this one.
+
+	return eb, pb
 
 def get_flows(G, index, eb, pb):
 	# don't reinitialize these dicts each time.
 	flows = {edge.tuple : 0 for edge in G.es}
 	pairFlows = {vertex.index : {uw : 0 for uw in itertools.combinations(G.neighbors(vertex), 2)} for vertex in G.vs}
-	numPaths = {vertex.index: 0 for vertex in G.vs}
 
 
 
-	numPaths[index] = 1
+	#numPaths[index] = 1
 	bfs = G.bfsiter(index, advanced=True)
 	bfsList = [bfs.next()[0].index]
 	# skipping root, manually adding it
@@ -50,13 +61,13 @@ def get_flows(G, index, eb, pb):
 			bfsDict[p]["flow"] += flow
 
 			grandparents = bfsDict[p]["parents"]
-			totalGrandparentPaths = float(sum(bfsDict[g]["numPaths"]) for g in set(grandparents))
+			totalGrandparentPaths = float(sum(bfsDict[g]["numPaths"] for g in set(grandparents)))
 			for g in grandparents:
 				# questionable
 				gCount = Counter(grandparents)
-				gFlowProportion = bfsDict[g]["numPaths"] / totalGrandparentPaths / gCount[g]
-				gFlow = flowProportion * bfsDict[v]["flow"]
-				pairFlows[p][order_tuple(v, g)] = gFlow
+				gFlowProportion = bfsDict[g]["numPaths"] / totalPaths / float(gCount[g])
+				gFlow = gFlowProportion * bfsDict[v]["flow"] # works better with flowProportion, look into this!
+				pairFlows[p][order_tuple((v, g))] = gFlow
 
 
 
@@ -65,8 +76,10 @@ def get_flows(G, index, eb, pb):
 	# print
 	# print flows
 	# print
-	# print
- 
+	# print pairFlows
+ # 	print
+ # 	print
+ 	return flows, pairFlows
 
 def order_tuple(toOrder):
     if toOrder[0] <= toOrder[1]:
@@ -96,6 +109,28 @@ def order_tuple(toOrder):
 
 
 
-tg = ig.read("testGraph.gml")
+#tg = ig.Graph.GRG(200, .2)
+tg = ig.Graph.Growing_Random(200, 8)
+#tg = ig.read("football.gml")
 tg = tg.as_undirected()
-edge_and_pair_betweenness(tg);
+time1 = time.time()
+eb, pb = edge_and_pair_betweenness(tg);
+time2 = time.time()
+import CONGO
+time3 = time.time()
+ebC, pbC = CONGO.edge_and_pair_betweenness(tg, tg.vs)
+time4 = time.time()
+
+
+counter = 0
+bad = 0
+for key, val in pb.items():
+    for key1, val1 in val.items():
+    	counter += 1
+        if abs(pb[key][key1] - pbC[key][key1]) > 1e-10:
+        	bad += 1
+        	print abs(pb[key][key1] - pbC[key][key1])
+        	print key, key1
+        	print "FAILED."
+print counter, bad, float(bad)/counter
+print time2-time1, time4-time3
