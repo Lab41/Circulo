@@ -195,9 +195,6 @@ def kmeans_quantize(M, bits):
 
     return enc_M, (bits * enc_M.size)
 
-def log_bin_quantize(M, bits):
-    pass
-
 def kl_divergence(A,B):
     rv = 0
     for i in range(A.shape[0]):
@@ -225,7 +222,7 @@ def description_length(V, fctr_res, bits=10):
     enc_cost = enc_W_cost + enc_H_cost
     err_cost = kl_divergence(V, dot(enc_W,enc_H))
 
-    return enc_cost, err_cost
+    return enc_W, enc_H, enc_cost, err_cost
 
 def standardize_rows(M):
     rv = np.matrix(M)
@@ -260,19 +257,19 @@ def get_optimal_factorization(V, min_roles=2, max_roles=6, min_bits=1, max_bits=
 
     mat_enc_cost = np.zeros((num_role_options, num_bit_options))
     mat_err_cost = np.zeros((num_role_options, num_bit_options))
-    mat_fctr_res = [] * num_role_options
+    mat_fctr_res = [[0] * num_bit_options] * num_role_options
 
     # Setup and run the factorization problem
     for i in range(num_role_options):
         rank = min_roles + i
         fctr_res = get_factorization(V, rank)
-        mat_fctr_res[i] = fctr_res
 
         for j in range(num_bit_options):
             bits = min_bits + j
-            enc_cost, err_cost = description_length(V, fctr_res, bits)
+            enc_W, enc_H, enc_cost, err_cost = description_length(V, fctr_res, bits)
             mat_enc_cost[i,j] = enc_cost
             mat_err_cost[i,j] = err_cost
+            mat_fctr_res[i][j] = (enc_W, enc_H) 
 
     mat_std_enc_cost = standardize_rows(mat_enc_cost)
     mat_std_err_cost = standardize_rows(mat_err_cost)
@@ -313,7 +310,7 @@ def get_optimal_factorization(V, min_roles=2, max_roles=6, min_bits=1, max_bits=
     min_total_std_cost = mat_total_std_cost[min_coord]
     print("%s, %s, (%s, %s, %s)" % (min_role_value, min_bit_value, min_std_enc_cost, min_std_err_cost, min_total_std_cost))
 
-    return mat_fctr_res[min_role_index]
+    return mat_fctr_res[min_role_index][min_bit_index]
 
 
 def sense_residual_left_factor(W, H, M):
