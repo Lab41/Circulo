@@ -6,7 +6,7 @@ import igraph as ig
 import sys
 import glob
 
-from circulo.algorithms.conga import conga
+#from circulo.algorithms.conga import conga
 
 def download():
     """
@@ -44,7 +44,7 @@ def example():
 
     for comm in optimal_cover:
         for n in comm:
-            print G.vs[n]['label']
+            print(G.vs[n]['label'])
         print("\n")
 
 
