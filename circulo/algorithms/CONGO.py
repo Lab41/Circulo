@@ -411,6 +411,8 @@ def matrix_min(mat):
     # with some algebra.
     triN = mat.shape[0] - 1
     row = 0
+    
+    
     while minDex >= triN:
         minDex -= triN
         triN -= 1

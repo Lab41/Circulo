@@ -82,7 +82,7 @@ def remove_edge_or_split_vertex(G):
 
     # Only consider vertices with vertex betweenness >= max
     # edge betweenness. From Gregory 2007 step 3
-    vi = [i for i, b in enumerate(vb) if b > 0] 
+    vi = [i for i, b in enumerate(vb) if b > maxEb] #HERE TODO TODO
 
     edge = G.es[maxIndex].tuple
 
@@ -202,11 +202,11 @@ def pair_betweenness(G, relevant):
     pair_betweenness = {vertex : {uw : 0 for uw in itertools.combinations(G.neighbors(vertex), 2)} for vertex in relevant}
 
 
-    for i in relevant:
+    for i in G.vs:
         #print i, "/", len(region)
         pathCounts = Counter()
         # Only find the shortest paths that we haven't already seen
-        shortest_paths_from_v = G.get_all_shortest_paths(i)
+        shortest_paths_from_v = G.get_all_shortest_paths(i) # here too. need all shortest paths. too bad.
         for path in shortest_paths_from_v: # reads twice. Can I get it down to once?
             pathCounts[path[-1]] += 1
         for path in shortest_paths_from_v:
