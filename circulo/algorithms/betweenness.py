@@ -110,8 +110,8 @@ def order_tuple(toOrder):
 
 
 #tg = ig.Graph.GRG(200, .2)
-tg = ig.Graph.Growing_Random(200, 8)
-#tg = ig.read("football.gml")
+#tg = ig.Graph.Growing_Random(200, 8)
+tg = ig.read("football.gml")
 tg = tg.as_undirected()
 time1 = time.time()
 eb, pb = edge_and_pair_betweenness(tg);

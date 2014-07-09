@@ -80,6 +80,7 @@ def lazar_modularity(G, cover):
 
             # Normalizing by the vertex's degree and the number of communities it is in.
             normalization = G.vs[vertex].degree() * counts[vertex]
+            if normalization == 0: return 0
             totalNormalizedDiff += (internalExternalCount)/float(normalization)
 
         # Multiplying by the edge density.

@@ -123,8 +123,8 @@ def initialize_pair_betweenness_dict(G):
     where v is the index of the middle vertex, u and w its neighbors
     in the calculation, and score the group's pair betweenness.
     """
-    return {vertex.index : {order_tuple(uw) : 0 for uw in 
-                                itertools.permutations(G.neighbors(vertex), 2)}
+    return {vertex.index : {uw : 0 for uw in 
+                                itertools.combinations(G.neighbors(vertex), 2)}
                                     for vertex in G.vs}
 
 
@@ -367,8 +367,11 @@ def check_for_split(G, edge):
     True. Otherwise, False.
     """
     # Possibly keep a record of splits.
-    return not G.edge_disjoint_paths(source=edge[0], target=edge[1])
-
+    try:
+        return not G.edge_disjoint_paths(source=edge[0], target=edge[1])
+        # specify exception
+    except Exception as e:
+        return False
 
 
 
@@ -430,5 +433,11 @@ def matrix_min(mat):
 
 
 if __name__ == "__main__":
-
-    CONGO(ig.read("football.gml").as_undirected(), 2).pretty_print_cover(1, label='label')
+    #tg = ig.Graph.Growing_Random(100, 5, citation=True)
+    tg = ig.read("football.gml")
+    tg = tg.as_undirected()
+    print "starting"
+    result = CONGO(tg, 200)
+    print "done."
+    result.pretty_print_cover(result.optimal_count, label='label')
+#    CONGO(ig.read("football.gml").as_undirected(), 2).pretty_print_cover(10, label='label')
