@@ -17,10 +17,6 @@ from time import sleep
 #       * Right now, we store a lot of redundant information with a new
 #           VertexCover item for every split.
 
-
-
-
-
 def CONGA(OG, calculate_modularities=None, optimal_count=None):
     """
     Defines the CONGA algorithm outlined in the Gregory 2007 paper 
@@ -61,8 +57,6 @@ def CONGA(OG, calculate_modularities=None, optimal_count=None):
                                     optimal_count=optimal_count)
 
 
-
-
 def remove_edge_or_split_vertex(G):
     """
     The heart of the CONGA algorithm. Decides which edge should be
@@ -75,10 +69,9 @@ def remove_edge_or_split_vertex(G):
 
     maxIndex, maxEb = max(enumerate(eb), key=operator.itemgetter(1))
     # We might be able to calculate vertex betweenness and edge 
-    # betweenness at the same time. Not a bottleneck, though.
+    # betweenness at the same time. The current implementation is slower
+    # than the builtin, though.
     vb = G.betweenness()
-
-    #vb = vertex_betweeenness_from_eb(G, eb)
 
     # Only consider vertices with vertex betweenness >= max
     # edge betweenness. From Gregory 2007 step 3
@@ -88,16 +81,13 @@ def remove_edge_or_split_vertex(G):
 
     if not vi:
         split = delete_edge(G, edge)
-        print split, "deleted", edge
     else: 
         pb = pair_betweenness(G, vi)
         maxSplit, vNum, splitInstructions = max_split_betweenness(G, pb)
         if maxSplit > maxEb:
             split = split_vertex(G, vNum, splitInstructions[0])
-            print split, "split", vNum, splitInstructions
         else:
             split = delete_edge(G, edge)
-            print split, "deletedd", edge
     return split
 
 
@@ -141,7 +131,6 @@ def split_vertex(G, v, splitInstructions):
     """
     new_index = G.vcount()
     G.add_vertex()
- #   G.vs[new_index]['label'] = G.vs[v]['label']
     G.vs[new_index]['CONGA_orig'] = G.vs[v]['CONGA_orig']
     
     # adding all relevant edges to new vertex, deleting from old one.
@@ -153,19 +142,11 @@ def split_vertex(G, v, splitInstructions):
     return check_for_split(G, (v, new_index))
 
 
-def get_triplets(a, n):
-    """
-    Given a list a, yields all sublists of length 3.
-    """
-    # Currently unused, but left in to show purpose of while
-    # loop in pair_betweenness.
-    back = 3
-    while back <= n:
-        yield a[back-3:back]
-        back += 1
-
-
 def order_tuple(toOrder):
+    """
+    Given a tuple (a, b), returns (a, b) if a <= b,
+    else (b, a).
+    """
     if toOrder[0] <= toOrder[1]:
         return toOrder
     return (toOrder[1], toOrder[0])
@@ -177,19 +158,12 @@ def update_betweenness(G, path, pair, count, relevant):
     that length, to determine weight, updates the edge and
     pair betweenness dicts with the path's new information.
     """
-    weight = .5/count
+    weight = 1./count
     pos = 0
     while pos < len(path) - 2:
-    #    print path[pos + 1], relevant
         if path[pos + 1] in relevant:
             pair[path[pos + 1]][order_tuple((path[pos], path[pos + 2]))] += weight
-        #    pair[path[pos + 1]][(path[pos + 2], path[pos])] += weight
-        #edge[order_tuple((path[pos], path[pos + 1]))] += weight
         pos += 1
-    # while pos < len(path) - 1:
-    #     edge[order_tuple((path[pos], path[pos + 1]))] += weight
-    #     pos += 1
-
 
 
 def pair_betweenness(G, relevant):
@@ -201,70 +175,15 @@ def pair_betweenness(G, relevant):
     """
     pair_betweenness = {vertex : {uw : 0 for uw in itertools.combinations(G.neighbors(vertex), 2)} for vertex in relevant}
 
-
     for i in G.vs:
-        #print i, "/", len(region)
         pathCounts = Counter()
         # Only find the shortest paths that we haven't already seen
-        shortest_paths_from_v = G.get_all_shortest_paths(i) # here too. need all shortest paths. too bad.
+        shortest_paths_from_v = G.get_all_shortest_paths(i, to=G.vs[i.index+1:]) # here too. need all shortest paths. too bad.
         for path in shortest_paths_from_v: # reads twice. Can I get it down to once?
             pathCounts[path[-1]] += 1
         for path in shortest_paths_from_v:
             update_betweenness(G, path, pair_betweenness, pathCounts[path[-1]], set(relevant))
     return pair_betweenness
-
-
-
-    # # To count the pair betweennesses, we find all of the shortest paths and consider all
-    # # sub-arrays of length 3. Anytime a u, v, w triplet appears, we add one to dic[v][(u, w)].
-
-    # allPairsShortestPaths = []
-    # for vertex in G.vs:
-    #     allPairsShortestPaths += G.get_all_shortest_paths(vertex) # flow`
-
-    # seen = set()               
-    # for path in allPairsShortestPaths:
-    #     # u -> -> v == v -> -> u for shortest paths, we only need to examine one.
-    #     if (path[0], path[-1]) not in seen:
-    #         seen.add((path[-1], path[0]))
-    #         n = len(path)
-    #         # The next 6 lines are just a faster implementation of get_triplets above.
-    #         back = 3
-    #         while back <= n:
-    #             if path[back - 2] in dic:
-    #                 # Add path to dict in both directions.
-    #                 dic[path[back-2]][(path[back - 3], path[back - 1])] += 2
-    #                 dic[path[back-2]][(path[back - 1], path[back - 3])] += 2
-    #             back += 1
-
-    # return dic
-
-
-# def create_clique(G, v, pb):
-#     """
-#     Given a vertex and its pair betweennesses, returns a k-clique 
-#     representing all of its neighbors, with edge weights determined by the pair
-#     betweenness scores. Algorithm discussed on page 5 of the CONGA paper. 
-#     """
-#     neighbors = G.neighbors(v)
-
-#     # map each neighbor to its index in the adjacency matrix
-#     mapping = {neigh : i for i, neigh in enumerate(neighbors)}
-#     n = len(neighbors)
-
-#     # Can use ints instead: (dtype=int). Only works if we use matrix_min
-#     # instead of mat_min.
-#     clique = np.matrix(np.zeros((n, n)))
-
-#     for uw, score in pb.iteritems():
-
-#         clique[mapping[uw[0]], mapping[uw[1]]] = score
-
-#     # Ignore any self loops if they're there. If not, this line
-#     # does nothing and can be removed.
-#     np.fill_diagonal(clique, 0)
-#     return clique
-
 
 
 def create_clique(G, v, pb):
@@ -397,10 +316,7 @@ def pretty_print_cover(G, cover, label='CONGA_index'):
     Takes a cover in vertex-id form and prints it nicely
     using label as each vertex's name.
     """
-    #if label == 'CONGA_index':
     pp = [G.vs[num] for num in [cluster for cluster in cover]]
-    #else: 
-    #    pp = [G.vs[num][label] for num in [cluster for cluster in cover]]
     for count, comm in enumerate(pp):
         print "Community {0}:".format(count)
         for v in comm:
@@ -442,7 +358,9 @@ def main():
         print "CONGA.py: error: no file specified.\n"
         print parser.parse_args('-h'.split())
         return
-    G = ig.read(args.file).as_undirected() # as undirected?
+
+    # only works for undirected
+    G = ig.read(args.file).as_undirected()
     result = CONGA(G, calculate_modularities=args.modularity_measure, optimal_count=args.num_clusters)
     pretty_print_cover(G, result.as_cover(), label=args.label)
 
