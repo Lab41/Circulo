@@ -7,8 +7,6 @@ import argparse
 from collections import Counter
 import overlap
 
-from time import sleep
-
 # Possible optimizations and notes:
 #   * Calculating the pair betweennesses is the large bottleneck.
 #       * However, calculation of all-pairs-shortest-paths 
@@ -41,6 +39,7 @@ def CONGA(OG, calculate_modularities=None, optimal_count=None):
     else: modDict = None
     allCovers = {nClusters : ig.VertexCover(OG)}
     while G.es:
+        print len(G.es)
         split = remove_edge_or_split_vertex(G)
         if split:
             comm = G.components().membership

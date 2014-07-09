@@ -7,16 +7,23 @@ import operator
 import overlap
 
 
-
-# NOTE: for karate test, use random seed 2. 
 def CONGO(OG, h):
     """
     TODO
     """
     G = OG.copy()
     G.vs['CONGA_orig'] = [i.index for i in OG.vs]
-    edgeBetweenness, pairBetweenness = edge_and_pair_betweenness(G, G.vs)
+    G.es['eb'] = 0
+    G.vs['pb'] = [{uw : 0 for uw in itertools.combinations(G.neighbors(vertex), 2)} for vertex in G.vs]
+
+
+    # initializing all pair and edge betweennesses
+
+    do_initial_betweenness(G, h)
     
+
+    G.vs['vb'] = G.betweenness(cutoff=h)
+ 
     comm = G.components()
 
     # Just in case the original graph is disconnected
@@ -26,80 +33,350 @@ def CONGO(OG, h):
 
 
     while G.es:
-        split, edgeBetweenness, pairBetweenness = remove_edge_or_split_vertex(G, edgeBetweenness, pairBetweenness, h)
+        maxEdge, maxEb = max(enumerate(G.es['eb']), key=operator.itemgetter(1))
+
+        #G.vs['vb'] = vertex_betweeenness_from_eb(G, G.es['eb'])
+
+        G.vs['vb'] = G.betweenness(cutoff=h + 1)
+        #print G.vs['vb']
+        vInteresting = [i for i, b in enumerate(G.vs['vb'])]# if b > maxEb] # check if I need to multiply by 2
+
+        print vInteresting
+
+        splitInstr = max_split_betweenness(G, vInteresting)
+
+        if splitInstr is None or splitInstr[0] <= maxEb:
+
+            split = delete_edge(G, maxEdge, h)
+
+        else:
+
+            split = split_vertex(G, splitInstr[1], splitInstr[2], h)
+
         print len(G.es)
-        #print edgeBetweenness, pairBetweenness
-        #edgeBetweenness, pairBetweenness = recalculate_betweenness(G, edgeBetweenness, pairBetweenness)
+
         if split:
             comm = G.components().membership
             cover = get_cover(G, OG, comm)
             nClusters += 1
             # short circuit stuff would go here.
             allCovers[nClusters] = cover
+
     return overlap.CrispOverlap(OG, allCovers)
 
 
-def edge_and_pair_betweenness(G, region):
+
+def delete_edge(G, edge, h):
+    """ 
+    Given a graph G and one of its edges in tuple form, checks if the deletion 
+    splits the graph.
     """
-    TODO
+    #print "Deleted:", edge
+    tup = G.es[edge].tuple
+
+    neighborhood = get_neighborhood_edge(G, tup, h)
+
+    do_local_betweenness(G, neighborhood, h, operator.neg)
+
+    G.delete_edges(edge)
+
+    fix_betweennesses(G)
+
+    do_local_betweenness(G, neighborhood, h, operator.pos)
+
+    return check_for_split(G, tup)
+
+
+
+def fix_pair_betweennesses(G):
+    for v in G.vs:
+        #print v['pb']
+        toDel = []
+        neededPairs = {uw for uw in itertools.combinations(G.neighbors(v), 2)}
+        for pair in v['pb']:
+            if pair not in neededPairs:
+                toDel.append(pair)
+        for d in toDel:
+            del v['pb'][d]
+        for pair in neededPairs:
+            if pair not in v['pb']:
+                v['pb'][pair] = 0
+
+
+def fix_edge_betweennesses(G):
+    for e in G.es:
+        if e['eb'] is None:
+            e['eb'] = 0
+
+
+def fix_betweennesses(G):
+    fix_pair_betweennesses(G)
+    fix_edge_betweennesses(G)
+
+
+
+def split_vertex(G, vToSplit, instr, h):
     """
-    
-    edge_betweenness = initialize_edge_betweenness_dict(G)
-    pair_betweenness = initialize_pair_betweenness_dict(G)
+    Splits the vertex v into two new vertices, each with
+    edges depending on s. Returns True if the split 
+    divided the graph, else False.
+    """
+    neighborhood = get_neighborhood_vertex(G, vToSplit, h)
 
-    for i in range(len(region)):
-        #print i, "/", len(region)
-        pathCounts = Counter()
-        # Only find the shortest paths that we haven't already seen
-        shortest_paths_from_v = G.get_all_shortest_paths(region[i], to=region[i+1:])
-        for path in shortest_paths_from_v: # reads twice. Can I get it down to once?
-            pathCounts[path[-1]] += 1
-        for path in shortest_paths_from_v:
-            update_betweenness(G, path, pair_betweenness, edge_betweenness, pathCounts[path[-1]])
-    return edge_betweenness, pair_betweenness
+    do_local_betweenness(G, neighborhood, h, operator.neg)
 
-
-
-
-def add_or_subtract_betweenness(G, region, ebOld, pbOld, op=operator.pos):
-    ebNew, pbNew = edge_and_pair_betweenness(G, region)
-    for edge in ebNew:
-        ebNew[edge] = op(ebNew[edge])
-        if edge in ebOld:
-            ebNew[edge] += ebOld[edge]
-    for v in pbNew: # PYTHONIFY!
-        for uw in pbNew[v]:
-            pbNew[v][uw] = op(pbNew[v][uw])
-            if v in pbOld and uw in pbOld[v]:
-                pbNew[v][uw] += pbOld[v][uw]
-    return ebNew, pbNew
-
+    new_index = G.vcount()
 
     
 
+    G.add_vertex()
+ #   G.vs[new_index]['label'] = G.vs[v]['label']
+    G.vs[new_index]['CONGA_orig'] = G.vs[vToSplit]['CONGA_orig']
+
+    # TODO
+    G.vs[new_index]['pb'] = {uw : 0 for uw in itertools.combinations(G.neighbors(vToSplit), 2)}
+    
+    # adding all relevant edges to new vertex, deleting from old one.
+    toAdd = zip(itertools.repeat(new_index), instr[0])
+    toDelete = zip(itertools.repeat(vToSplit), instr[0])
+
+    G.add_edges(toAdd)
+
+    # adding edge betweenness attribute
+    # for edge in toAdd:
+    #     G.es[G.get_eid(edge)]['eb'] = 0
+
+    # # adding pair betweenness attribute
+    # G.vs[new_index]['pb'] = {uw : 0 for uw in itertools.combinations(G.neighbors(new_index), 2)}
+
+    G.delete_edges(toDelete)
+
+    neighborhood.append(new_index)
+
+    fix_betweennesses(G)
+
+    #print "split:", v, splitInstructions
+    do_local_betweenness(G, neighborhood, h, operator.pos)
+
+    # check if the two new vertices are disconnected.
+    return check_for_split(G, (vToSplit, new_index))
 
 
-def initialize_edge_betweenness_dict(G):
-    return {e.tuple : 0 for e in G.es}
 
 
-def remove_edge_or_split_vertex(G, eb, pb, h):
-    maxEdge = max(eb, key=eb.get)
-    maxEb = eb[maxEdge]
-    vertexBetweenness = vertex_betweeenness_from_eb(G, eb)
-    vInteresting = [i for i, b in enumerate(vertexBetweenness) if b > maxEb]
-    if vInteresting:
-        maxSplitBetweenness, vToSplit, splitInstructions = \
-          max_split_betweenness(G, pb, vInteresting)
-        if maxSplitBetweenness > maxEb: # check is this guaranteed?
-            return split_vertex(G, vToSplit, splitInstructions, eb, pb, h)
-    return delete_edge(G, maxEdge, eb, pb, h)
+def max_split_betweenness(G, vInteresting):
+    maxSplitBetweenness = 0   
+
+    vToSplit = None
+    # for every vertex of interest, we want to figure out the maximum score achievable
+    # by splitting the vertices in various ways, and return that optimal split
+    for v in vInteresting:
+        clique = create_clique(G, v, G.vs['pb'][v])
+
+        if clique.size < 4:
+            continue
+        # initialize a list on how we will map the neighbors to the collapsing matrix
+        vMap = [[ve] for ve in G.neighbors(v)]
+        
+        # we want to keep collapsing the matrix until we have a 2x2 matrix and its
+        # score. Then we want to remove index j from our vMap list and concatenate
+        # it with the vMap[i]. This begins building a way of keeping track of how
+        # we are splitting the vertex and its neighbors
+        while clique.size > 4:
+            i,j,clique = reduce_matrix(clique)
+            vMap[i] += vMap.pop(j)
+
+        if clique[0,1] >= maxSplitBetweenness:
+            maxSplitBetweenness = clique[0,1]
+            vToSplit = v
+            splitInstructions = vMap
+
+    if vToSplit is None:
+        return None
+
+    return maxSplitBetweenness, vToSplit, splitInstructions
 
 
 
 
-def recalculate_betweenness(G, eb, pb):
-    return edge_and_pair_betweenness(G, G.vs)
+
+
+
+
+def do_initial_betweenness(G, h):
+
+    # TOOD: get all shortest paths of length h + 1 or less.
+    all_pairs_shortest_paths = []
+    pathCounts = Counter()
+    for ver in G.vs:
+        print ver.index
+        neighborhood = get_neighborhood_vertex(G, ver, h)
+        for i, v in enumerate(neighborhood):
+            s_s_shortest_paths = G.get_all_shortest_paths(v, to=neighborhood)#[i+1:])
+
+            all_pairs_shortest_paths += s_s_shortest_paths 
+
+    all_pairs_shortest_paths = set(tuple(p) for p in all_pairs_shortest_paths)
+
+    for path in all_pairs_shortest_paths:
+        pathCounts[(path[0], path[-1])] += 1 # can improve
+
+    for path in all_pairs_shortest_paths:
+        if len(path) <= h + 1:
+            update_betweenness(G, path, pathCounts[(path[0], path[-1])], operator.pos)
+
+
+
+
+def do_local_betweenness(G, neighborhood, h, op):
+    all_pairs_shortest_paths = []
+    pathCounts = Counter()
+    for i, v in enumerate(neighborhood):
+
+        s_s_shortest_paths = G.get_all_shortest_paths(v, to=neighborhood)#[i+1:])
+
+        all_pairs_shortest_paths += s_s_shortest_paths 
+
+
+    neighSet = set(neighborhood)
+    neighSize = len(neighborhood)
+
+    apsp = []
+
+    for path in all_pairs_shortest_paths:
+
+        # path does not go out of region
+        if len(neighSet | set(path)) == neighSize:
+            pathCounts[(path[0], path[-1])] += 1 # can improve
+            apsp.append(path)
+
+    for path in apsp:
+        if len(path) <= h + 1:
+            update_betweenness(G, path, pathCounts[(path[0], path[-1])], op)
+
+
+
+
+
+
+def update_betweenness(G, path, count, op):
+    """
+    Given a shortest path in G, along with a count of paths
+    that length, to determine weight, updates the edge and
+    pair betweenness dicts with the path's new information.
+    """
+    weight = op(1./count)
+#    print weight
+    pos = 0
+    while pos < len(path) - 2:
+        #print path[pos + 1]
+        G.vs[path[pos + 1]]['pb'][order_tuple((path[pos], path[pos + 2]))] += weight
+
+
+        #pair[path[pos + 1]][order_tuple((path[pos], path[pos + 2]))] += weight
+        G.es[G.get_eid(path[pos], path[pos + 1])]['eb'] += weight
+        
+
+        pos += 1
+    if pos < len(path) - 1:
+        G.es[G.get_eid(path[pos], path[pos + 1])]['eb'] += weight
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# is_separator?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# def edge_and_pair_betweenness(G, region):
+#     """
+#     TODO
+#     """
+    
+#     edge_betweenness = initialize_edge_betweenness_dict(G)
+#     pair_betweenness = initialize_pair_betweenness_dict(G)
+
+#     for i in range(len(region)):
+#         #print i, "/", len(region)
+#         pathCounts = Counter()
+#         # Only find the shortest paths that we haven't already seen
+#         shortest_paths_from_v = G.get_all_shortest_paths(region[i], to=region[i+1:])
+#         for path in shortest_paths_from_v: # reads twice. Can I get it down to once?
+#             pathCounts[path[-1]] += 1
+#         for path in shortest_paths_from_v:
+#             update_betweenness(G, path, pair_betweenness, edge_betweenness, pathCounts[path[-1]])
+#     return edge_betweenness, pair_betweenness
+
+
+# def add_or_subtract_betweenness(G, region, ebOld, pbOld, op=operator.pos):
+#     ebNew, pbNew = edge_and_pair_betweenness(G, region)
+#     for edge in ebNew:
+#         ebNew[edge] = op(ebNew[edge])
+#         if edge in ebOld:
+#             ebNew[edge] += ebOld[edge]
+#     for v in pbNew: # PYTHONIFY!
+#         for uw in pbNew[v]:
+#             pbNew[v][uw] = op(pbNew[v][uw])
+#             if v in pbOld and uw in pbOld[v]:
+#                 pbNew[v][uw] += pbOld[v][uw]
+#     return ebNew, pbNew
+
+
+    
+
+
+
+# def initialize_edge_betweenness_dict(G):
+#     return {e.tuple : 0 for e in G.es}
+
+
+# def remove_edge_or_split_vertex(G, eb, pb, h):
+#     maxEdge = max(eb, key=eb.get)
+#     maxEb = eb[maxEdge]
+#     vertexBetweenness = vertex_betweeenness_from_eb(G, eb)
+#     vInteresting = [i for i, b in enumerate(vertexBetweenness) if b > maxEb]
+#     if vInteresting:
+#         maxSplitBetweenness, vToSplit, splitInstructions = \
+#           max_split_betweenness(G, pb, vInteresting)
+#         if maxSplitBetweenness > maxEb: 
+#             return split_vertex(G, vToSplit, splitInstructions, eb, pb, h)
+#     return delete_edge(G, maxEdge, eb, pb, h)
+
+
+
+
+# def recalculate_betweenness(G, eb, pb):
+#     return edge_and_pair_betweenness(G, G.vs)
 
 
 
@@ -115,34 +392,20 @@ def get_cover(G, OG, comm):
     return ig.clustering.VertexCover(OG, clusters=coverDict.values())
 
 
-def initialize_pair_betweenness_dict(G):
-    """
-    Initializes and zeroes out the pair betweenness dict.
+# def initialize_pair_betweenness_dict(G):
+#     """
+#     Initializes and zeroes out the pair betweenness dict.
 
-    The dict is of the form {v:frozenset((u, w)):score}, 
-    where v is the index of the middle vertex, u and w its neighbors
-    in the calculation, and score the group's pair betweenness.
-    """
-    return {vertex.index : {uw : 0 for uw in 
-                                itertools.combinations(G.neighbors(vertex), 2)}
-                                    for vertex in G.vs}
+#     The dict is of the form {v:frozenset((u, w)):score}, 
+#     where v is the index of the middle vertex, u and w its neighbors
+#     in the calculation, and score the group's pair betweenness.
+#     """
+#     return {vertex.index : {uw : 0 for uw in 
+#                                 itertools.combinations(G.neighbors(vertex), 2)}
+#                                     for vertex in G.vs}
 
 
-def update_betweenness(G, path, pair, edge, count):
-    """
-    Given a shortest path in G, along with a count of paths
-    that length, to determine weight, updates the edge and
-    pair betweenness dicts with the path's new information.
-    """
-    weight = 1./count
-    pos = 0
-    while pos < len(path) - 2:
-        pair[path[pos + 1]][order_tuple((path[pos], path[pos + 2]))] += weight
-        edge[order_tuple((path[pos], path[pos + 1]))] += weight
-        pos += 1
-    while pos < len(path) - 1:
-        edge[order_tuple((path[pos], path[pos + 1]))] += weight
-        pos += 1
+
 
 
 def vertex_betweeenness_from_eb(G, eb):
@@ -160,80 +423,50 @@ def vertex_betweeenness_from_eb(G, eb):
     for vertex in G.vs:
         numComponents = len(components[membership[vertex.index]])
         incidentEdges = G.incident(vertex)
-        vb = .5 * (sum(eb[G.es[e].tuple] for e in incidentEdges) - (numComponents - 1))
+        vb = .5 * (sum(G.es[e]['eb'] for e in incidentEdges) - (numComponents - 1))
         vbs.append(vb)
     return vbs
 
 
-def max_split_betweenness(G, pb, vInteresting):
-    maxSplitBetweenness = 0   
-
-    vToSplit = None
-    # for every vertex of interest, we want to figure out the maximum score achievable
-    # by splitting the vertices in various ways, and return that optimal split
-    for v in vInteresting:
-        clique = create_clique(G, v, pb[v])
-
-        if clique.size < 4:
-            continue
-        # initialize a list on how we will map the neighbors to the collapsing matrix
-        vMap = [[ve] for ve in G.neighbors(v)]
-        
-        # we want to keep collapsing the matrix until we have a 2x2 matrix and its
-        # score. Then we want to remove index j from our vMap list and concatenate
-        # it with the vMap[i]. This begins building a way of keeping track of how
-        # we are splitting the vertex and its neighbors
-        while clique.size > 4:
-            i,j,clique = reduce_matrix(clique)
-            vMap[i] += vMap.pop(j)
-
-        if clique[0,1] > maxSplitBetweenness:
-            maxSplitBetweenness = clique[0,1]
-            vToSplit = v
-            splitInstructions = vMap
-
-    if vToSplit is None:
-        return -1000, 0, None
-
-    return maxSplitBetweenness, vToSplit, splitInstructions
 
 
-def get_truncated_eb_and_pb(G, neighborhood):
-    edge_betweenness = defaultdict(float)
-    pair_betweenness = initialize_pair_betweenness_dict(G)
+# def get_truncated_eb_and_pb(G, neighborhood):
+#     edge_betweenness = defaultdict(float)
+#     pair_betweenness = initialize_pair_betweenness_dict(G)
 
-    for i in range(len(neighborhood)):
-        pathCounts = Counter()
-        # Only find the shortest paths that we haven't already seen
-        shortest_paths_from_v = G.get_all_shortest_paths(neighborhood[i], to=neighborhood[i+1:])
-        for path in shortest_paths_from_v: # reads twice. Can I get it down to once?
-            pathCounts[path[-1]] += 1
-        for path in shortest_paths_from_v:
-            update_betweenness(G, path, pair_betweenness, edge_betweenness, pathCounts[path[-1]])
-    return edge_betweenness, pair_betweenness
-
-def subtract_betweenness(G, eb, pb, neighborhood):
-    ebTrunc, pbTrunc = get_truncated_eb_and_pb(G, neighborhood)
-    for key in ebTrunc:
-        eb[key] -= ebTrunc[key]
-    for v in pbTrunc:
-        for uw in pbTrunc[v]:
-            pb[v][uw] -= pbTrunc[v][uw]
+#     for i in range(len(neighborhood)):
+#         pathCounts = Counter()
+#         # Only find the shortest paths that we haven't already seen
+#         shortest_paths_from_v = G.get_all_shortest_paths(neighborhood[i], to=neighborhood[i+1:])
+#         for path in shortest_paths_from_v: # reads twice. Can I get it down to once?
+#             pathCounts[path[-1]] += 1
+#         for path in shortest_paths_from_v:
+#             update_betweenness(G, path, pair_betweenness, edge_betweenness, pathCounts[path[-1]])
+#     return edge_betweenness, pair_betweenness
 
 
-def add_betweenness(G, eb, pb, neighborhood):
-    ebTrunc, pbTrunc = get_truncated_eb_and_pb(G, neighborhood)
-    for key in ebTrunc:
-        eb[key] += ebTrunc[key]
-    for v in pbTrunc:
-        if v not in pb:
-            pb[v] = pbTrunc[v]
-        else:
-            for uw in pbTrunc[v]:
-                if uw in pb[v]:
-                    pb[v][uw] += pbTrunc[v][uw]
-                else:
-                    pb[v][uw] = pbTrunc[v][uw]
+# def subtract_betweenness(G, eb, pb, neighborhood):
+#     ebTrunc, pbTrunc = get_truncated_eb_and_pb(G, neighborhood)
+#     for key in ebTrunc:
+#         eb[key] -= ebTrunc[key]
+#     for v in pbTrunc:
+#         for uw in pbTrunc[v]:
+#             pb[v][uw] -= pbTrunc[v][uw]
+
+
+# def add_betweenness(G, eb, pb, neighborhood):
+#     ebTrunc, pbTrunc = get_truncated_eb_and_pb(G, neighborhood)
+#     for key in ebTrunc:
+#         eb[key] += ebTrunc[key]
+#     for v in pbTrunc:
+#         if v not in pb:
+#             pb[v] = pbTrunc[v]
+#         else:
+#             for uw in pbTrunc[v]:
+#                 if uw in pb[v]:
+#                     pb[v][uw] += pbTrunc[v][uw]
+#                 else:
+#                     pb[v][uw] = pbTrunc[v][uw]
 
 
 def get_neighborhood_vertex(G, v, h):
@@ -241,67 +474,27 @@ def get_neighborhood_vertex(G, v, h):
 
 
 def get_neighborhood_edge(G, e, h):
+#    print e
     neigh = set(G.neighborhood(e[0], order=h-1))
     neigh.update(G.neighborhood(e[1], order=h-1))
     return list(neigh)
 
 
-def split_vertex(G, v, splitInstructions, eb, pb, h):
-    """
-    Splits the vertex v into two new vertices, each with
-    edges depending on s. Returns True if the split 
-    divided the graph, else False.
-    """
-    neighborhood = get_neighborhood_vertex(G, v, h)
-    eb, pb = add_or_subtract_betweenness(G, neighborhood, eb, pb, operator.neg)
-    new_index = G.vcount()
-    neighborhood.append(new_index)
-    G.add_vertex()
- #   G.vs[new_index]['label'] = G.vs[v]['label']
-    G.vs[new_index]['CONGA_orig'] = G.vs[v]['CONGA_orig']
-    
-    # adding all relevant edges to new vertex, deleting from old one.
-    for partner in splitInstructions[0]:
-        G.add_edge(partner, new_index)
-        G.delete_edges((v, partner)) 
-    #    clean_betweennesses(pb, eb, (v, partner))
-
-    print "split:", v, splitInstructions
-    eb, pb = add_or_subtract_betweenness(G, neighborhood, eb, pb, operator.pos)
-
-    # check if the two new vertices are disconnected.
-    return check_for_split(G, (v, new_index)), eb, pb
 
 
-def delete_edge(G, edge, eb, pb, h):
-    """ 
-    Given a graph G and one of its edges in tuple form, checks if the deletion 
-    splits the graph.
-    """
-    print "Deleted:", edge
-    neighborhood = get_neighborhood_edge(G, edge, h)
-    eb, pb = add_or_subtract_betweenness(G, neighborhood, eb, pb, operator.neg)
-    G.delete_edges(edge)
-    #clean_betweennesses(pb, eb, edge)
-    eb, pb = add_or_subtract_betweenness(G, neighborhood, eb, pb, operator.pos)
-    #add_betweenness(G, eb, pb, neighborhood)
-    return check_for_split(G, edge), eb, pb
 
-
-def clean_betweennesses(pb, eb, deleted_edge):
-    de = order_tuple(deleted_edge)
-    try:
-        del eb[de]
-    except Exception as e:
-        print e
-    for v in pb:
-        if v in de:
-            todelete = []
-            for uw in pb[v]:
-                if set(uw) & set(de):
-                    todelete.append(uw)
-            for d in todelete:
-                del pb[v][d]
+# def delete_edge(G, edge, eb, pb, h):
+#     """ 
+#     Given a graph G and one of its edges in tuple form, checks if the deletion 
+#     splits the graph.
+#     """
+#     #print "Deleted:", edge
+#     neighborhood = get_neighborhood_edge(G, edge, h)
+#     eb, pb = add_or_subtract_betweenness(G, neighborhood, eb, pb, operator.neg)
+#     G.delete_edges(edge)
+#     eb, pb = add_or_subtract_betweenness(G, neighborhood, eb, pb, operator.pos)
+#     #add_betweenness(G, eb, pb, neighborhood)
+#     return check_for_split(G, edge), eb, pb
 
 
 def order_tuple(toOrder):
@@ -439,7 +632,7 @@ if __name__ == "__main__":
     tg = ig.read("football.gml")
     tg = tg.as_undirected()
     print "starting"
-    result = CONGO(tg, 200)
+    result = CONGO(tg, 2000)
     print "done."
     result.pretty_print_cover(result.optimal_count, label='label')
 #    CONGO(ig.read("football.gml").as_undirected(), 2).pretty_print_cover(10, label='label')

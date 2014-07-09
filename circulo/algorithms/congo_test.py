@@ -27,11 +27,7 @@ class TestCongoFunctions(unittest.TestCase):
 
 
 
-	def order_tuple(toOrder):
-    	if toOrder[0] <= toOrder[1]:
-        	return toOrder
-    	return (toOrder[1], toOrder[0])
-
+	
 
 	def test_edge_betweenness(self):
 		"""
