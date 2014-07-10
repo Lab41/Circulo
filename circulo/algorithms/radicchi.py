@@ -7,6 +7,7 @@ def radicchi(G):
     Uses the Radicchi et al. algorithm to find the communities in a graph. Returns a list of the splits in the graph.
     """
     g = G.copy()
+
     g.vs['id'] = list(range(g.vcount()))
 
     # Caching some global graph information and updating it manually. Because igraph
@@ -36,33 +37,39 @@ def radicchi(G):
             if result['pruned']:
                 communities = result['communities']
                 remaining = result['remaining']
+                g = g.subgraph(remaining)
+                degree = g.degree()
+                neighbors = [set(g.neighbors(v)) for v in g.vs]
+                edges = {e.tuple for e in g.es}
 
     return communities
 
 def prune_components(orig, new, community_measure='strong'):
     components = new.components()
-
     ids = new.vs['id']
-    orig_components = [[ids[v] for v in component] for component in components]
-    new_and_orig_components = zip(components, orig_components)
+
+    new_components = [c for c in components]
+    orig_components = [[ids[v] for v in component] for component in new_components]
 
     is_community = is_strong_community if (community_measure=='strong') else is_weak_community
-    communities = [(c,d) for c,d in new_and_orig_components if is_community(orig, d)]
+    community_indices = [i for i, component in enumerate(orig_components) if is_community(orig, component)]
 
-    result_pruned = False; result_remaining_nodes = None; result_orig_communities = None
-    
-    if len(communities) > 1:
-        orig_community_nodes = [d for c,d in communities]
-        all_new_community_nodes = sum([c for c,d in communities], [])
+    orig_communities = [orig_components[i] for i in community_indices]
+    new_communities = [new_components[i] for i in community_indices]
+
+    result_pruned = False
+    result_remaining_nodes = None
+    result_orig_communities = None
+    if len(community_indices) > 1:
+        all_new_community_nodes = sum(new_communities, [])
         all_new_nodes = range(new.vcount())
-        
-        all_new_remaining_nodes = set(all_new_nodes) - set(all_new_community_nodes)
+        all_new_remaining_nodes = list(set(all_new_nodes) - set(all_new_community_nodes))
 
         result_pruned = True
         result_remaining_nodes = all_new_remaining_nodes
-        result_orig_communities = orig_community_nodes
+        result_orig_communities = orig_communities
 
-    return {"pruned": pruned, "communities": result_orig_communities, "remaining": result_remaining_nodes}
+    return {"pruned": result_pruned, "communities": result_orig_communities, "remaining": result_remaining_nodes}
 
 def is_strong_community(G, nodes):
     """
