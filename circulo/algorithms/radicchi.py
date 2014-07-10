@@ -2,16 +2,21 @@ import sys
 import igraph as ig
 import itertools
 
-def radicchi(G):
-    """
-    Uses the Radicchi et al. algorithm to find the communities in a graph. Returns a list of the splits in the graph.
-    """
+def radicchi_wrapper(G):
     g = G.copy()
     g.vs['id'] = list(range(g.vcount()))
 
+    return radicchi(G, g)
+
+def radicchi(orig, new):
+    """
+    Uses the Radicchi et al. algorithm to find the communities in a graph. Returns a list of the splits in the graph.
+    """
     # Caching some global graph information and updating it manually. Because igraph
     # tends to recalculate this stuff on the whole graph every time, 
     # storing it and manipulating only the parts that change will make things faster.
+    g = G.copy()
+
     degree = g.degree()
     neighbors = [set(g.neighbors(v)) for v in g.vs]
     edges = {e.tuple for e in g.es}
@@ -116,48 +121,6 @@ def edge_clustering_coefficient(u, v, degree, neighbors):
     else:
         cdeg = len(neighbors[u] & neighbors[v])
         return (cdeg + 1.0) / mdeg
-
-def createDendrogram(G, splits):
-   """
-   Given a historical list of split edges, creates a dendrogram 
-   by calculating the merges. 
- 
-   Unfortunately, runs in O(n^2). TODO: think about another algorithm
-   (perhaps a tree approach?) that does better. This is a useful function
-   for any divisive algorithm for which splits can be saved more easily
-   than merges.
-
-   Written by Robbie Ostrow (rostrow@iqt.org).
-   """
- 
-   # To create a dendrogram, new merges have id of max id + 1
-   n = len(splits) + 1
-   merges = []
-   while splits:
-     # most recent split popped off
-     edge = splits.pop()
- 
-     merges += [edge]
-     
-     # since we have merged 2 vertices, we have to replace
-     # all occurences of those vertices with the new 
-     # "merged" index n.
-     splits = replaceOccurences(splits, n, edge)
-     
-     n += 1
- 
-   return ig.VertexDendrogram(G, merges)
-
-def replaceOccurences(splits, n, edge):
-    """
-    Given a 2d list `splits`, replaces all occurences of elements in
-    `edge` with n.
-    """
-    for i in range(len(splits)):
-            for j in range(2):
-                    if splits[i][j] in edge:
-                            splits[i][j] = n
-    return splits
 
 def main(argv):
     g = ig.Graph.Read_GML('netscience.gml')
