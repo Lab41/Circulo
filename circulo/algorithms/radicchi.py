@@ -7,7 +7,6 @@ def radicchi(G):
     Uses the Radicchi et al. algorithm to find the communities in a graph. Returns a list of the splits in the graph.
     """
     g = G.copy()
-
     g.vs['id'] = list(range(g.vcount()))
 
     # Caching some global graph information and updating it manually. Because igraph
@@ -17,7 +16,8 @@ def radicchi(G):
     neighbors = [set(g.neighbors(v)) for v in g.vs]
     edges = {e.tuple for e in g.es}
 
-    communities = set()
+    all_communities = []
+
 
     while len(edges) > 0:
         min_edge = None; min_ecc = None
@@ -42,7 +42,11 @@ def radicchi(G):
                 neighbors = [set(g.neighbors(v)) for v in g.vs]
                 edges = {e.tuple for e in g.es}
 
-    return communities
+                all_communities.extend(communities)
+
+    all_communities.append([v['id'] for v in g.vs]) 
+
+    return all_communities
 
 def prune_components(orig, new, community_measure='strong'):
     components = new.components()
