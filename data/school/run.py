@@ -14,6 +14,8 @@ def __download__(data_dir):
     """
 
     try:
+        # Probably shouldn't be starting a subprocess, do this with a library
+        # like urllib2
         call(["curl", "--create-dirs","-o", os.path.join(data_dir, "out_#1.gexf.gz"),"http://www.sociopatterns.org/wp-content/uploads/2014/05/sp_data_school_day_[1-2]_g.gexf_.gz"])
     except Exception as e:
         print("cURL failed -- make sure you have cURL, and make sure the site still has the graph data.")
@@ -64,8 +66,8 @@ def get_graph():
 
 
 
-def main(args):
-    pass
+def main():
+    get_graph()
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
