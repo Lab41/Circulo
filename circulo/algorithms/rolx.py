@@ -9,14 +9,12 @@ from scipy.linalg import norm
 from scipy.optimize import minimize
 from sklearn.decomposition import NMF
 
-def main(argv):
-    G = igraph.Graph.Read_GML(argv[0])
+def extract_rolx_roles(G, roles=2):
+    print("Creating Vertex Features matrix")
+    V = vertex_features(G)
+    print("V is a %s by %s matrix." % V.shape)
 
-    if len(argv) > 1:
-        roles = int(argv[1])
-        basis, coef = extract_rolx_roles(G, roles=roles)
-    else:
-        basis, coef = extract_rolx_roles(G)
+    basis, coef = get_factorization(V, roles)
 
     H = basis
     print("Node-role matrix is of dimensions %s by %s" % H.shape)
@@ -27,60 +25,6 @@ def main(argv):
     print(K)
 
     return H, K
-
-def extract_rolx_roles(G, roles=2):
-    print("Creating Vertex Features matrix")
-    V = vertex_features(G)
-    print("V is a %s by %s matrix." % V.shape)
-
-    return get_factorization(V, roles)
-
-def make_sense(G, H):
-    features = [ 'betweenness', 'closeness', 'degree', 'diversity', 'eccentricity', 'pagerank', 'personalized_pagerank', 'strength' ]
-    feature_fns = [ getattr(G, f) for f in features ]
-    feature_matrix = [ func() for func in feature_fns ]
-    feature_matrix = np.matrix(feature_matrix).transpose()
-    print(feature_matrix)
-
-    M = feature_matrix
-    K = complete_factor(H, M, h_on_left=True)
-    print(K)
-
-    return K
-
-def threshold(level):
-    return 10.0**(-15+level)
-
-def recursive_feature_array(G, func, n):
-    attr_name = "_rolx_" + func.__name__ + "_" + str(n)
-
-    if attr_name in G.vs.attributes():
-        result = np.array(G.vs[attr_name])
-        return result
-
-    if n==0:
-        stats = func(G) #must return a 
-        result = np.array([[x] for x in stats]) # wrapping to create 2D-array
-        result = result * 1.0 # ensure that we're using floating-points
-        G.vs[attr_name] = result
-        return result
-
-    prev_stats = recursive_feature_array(G, func, n-1)
-    all_neighbor_stats = [0] * G.vcount()
-    for v in G.vs:
-        neighbors = G.neighbors(v)
-        degree = len(neighbors)
-        if degree == 0: 
-            neighbor_avgs = neighbor_sums = np.zeros(prev_stats[0].size)
-        else: 
-            prev_neighbor_stats = [prev_stats[x] for x in neighbors]
-            neighbor_sums_vec = sum(prev_neighbor_stats)
-            neighbor_avgs_vec = neighbor_sums_vec / degree
-
-        all_neighbor_stats[v.index] = np.concatenate((neighbor_sums_vec, neighbor_avgs_vec), axis=0)
-
-    G.vs[attr_name] = all_neighbor_stats
-    return all_neighbor_stats
 
 def recursive_feature(G, f, n):
     """
@@ -94,6 +38,37 @@ def recursive_feature(G, f, n):
     """
     return np.matrix(recursive_feature_array(G,f,n))
 
+def recursive_feature_array(G, func, n):
+    attr_name = "_rolx_" + func.__name__ + "_" + str(n)
+
+    if attr_name in G.vs.attributes():
+        result = np.array(G.vs[attr_name])
+        return result
+
+    if n==0:
+        stats = func(G)
+        result = np.array([[x] for x in stats])
+        result = result * 1.0 
+        G.vs[attr_name] = result
+        return result
+
+    prev_stats = recursive_feature_array(G, func, n-1)
+    all_neighbor_stats = []
+    for v in G.vs:
+        neighbors = G.neighbors(v)
+        degree = len(neighbors)
+        if degree == 0: 
+            neighbor_avgs = neighbor_sums = np.zeros(prev_stats[0].size)
+        else: 
+            prev_neighbor_stats = [prev_stats[x] for x in neighbors]
+            neighbor_sums_vec = sum(prev_neighbor_stats)
+            neighbor_avgs_vec = neighbor_sums_vec / degree
+
+        v_stats = np.concatenate((neighbor_sums_vec, neighbor_avgs_vec), axis=0)
+        all_neighbor_stats.append(v_stats)
+
+    G.vs[attr_name] = all_neighbor_stats
+    return all_neighbor_stats
 
 def approx_linear_solution(w, A, threshold=1e-15):
     '''
@@ -134,12 +109,10 @@ def vertex_egonet_out(G, v):
 def egonet_out(G):
     return [vertex_egonet_out(G, v) for v in G.vs]
 
-def threshold(level):
-    return 10.0**(-15+level)
-
 def vertex_features(g):
     """ 
-    Constructs a vertex feature matrix using recursive 
+    Constructs a vertex feature matrix using recursive feature generation, then uses least-squares solving
+    to eliminate those 
     """
     G = g.copy()
     num_rows = G.vcount()
@@ -165,9 +138,9 @@ def vertex_features(g):
             for i in range(cols):
                 b = feature_matrix[:,i]
                 b = b/norm(b)
-
                 mat = V[:,:next_feature_col]
-                (is_approx_soln, _, _) = approx_linear_solution(b, mat, threshold(level))
+                threshold = 10.0**(-15+level)
+                (is_approx_soln, _, _) = approx_linear_solution(b, mat, threshold)
                 if not is_approx_soln:
                     V = add_col(V, b, next_feature_col)
                     next_feature_col += 1
@@ -196,17 +169,6 @@ def kmeans_quantize(M, bits):
     return enc_M, (bits * enc_M.size)
 
 def kl_divergence(A,B):
-    rv = 0
-    for i in range(A.shape[0]):
-        for j in range(A.shape[1]):
-            if A[i,j] == 0:
-                rv += B[i,j]
-            else:
-                rv += A[i,j]*(math.log(A[i,j]/B[i,j])-1) + B[i,j]
-
-    return rv
-
-def kl_divergence_2(A,B):
     a = np.asarray(A, dtype=np.float)
     b = np.asarray(B, dtype=np.float)
 
@@ -312,6 +274,18 @@ def get_optimal_factorization(V, min_roles=2, max_roles=6, min_bits=1, max_bits=
 
     return mat_fctr_res[min_role_index][min_bit_index]
 
+def make_sense(G, H):
+    features = [ 'betweenness', 'closeness', 'degree', 'diversity', 'eccentricity', 'pagerank', 'personalized_pagerank', 'strength' ]
+    feature_fns = [ getattr(G, f) for f in features ]
+    feature_matrix = [ func() for func in feature_fns ]
+    feature_matrix = np.matrix(feature_matrix).transpose()
+    print(feature_matrix)
+
+    M = feature_matrix
+    K = complete_factor(H, M, h_on_left=True)
+    print(K)
+
+    return K
 
 def sense_residual_left_factor(W, H, M):
     W = np.matrix(W).reshape((M.shape[0], H.shape[0]))
@@ -345,6 +319,18 @@ def complete_factor(H, M, h_on_left=True):
     x = result["x"]
     G = np.matrix(x).reshape(shape)
     return G
+
+def main(argv):
+    G = igraph.Graph.Read_GML(argv[0])
+
+    if len(argv) > 1:
+        roles = int(argv[1])
+        return extract_rolx_roles(G, roles=roles)
+    else:
+        return extract_rolx_roles(G)
+
+    return H, K
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
