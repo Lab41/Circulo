@@ -9,7 +9,6 @@ __Requirements__
 
 - NetworkX from https://networkx.github.io
 - iGraph from http://igraph.org
-- Cairo from http://cairographics.org along with its Python bindings. (py2cairo).
 
 
 The data can be found at [http://www.sociopatterns.org/datasets/primary-school-cumulative-networks/](http://www.sociopatterns.org/datasets/primary-school-cumulative-networks/)
