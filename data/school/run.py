@@ -1,6 +1,7 @@
 import networkx as nx
 from subprocess import call
 import igraph
+from igraph import VertexClustering
 import os
 import sys
 import glob
@@ -65,9 +66,29 @@ def get_graph():
     return igraph.load(graph_path)
 
 
+def get_ground_truth(G=None):
+
+    if G is None:
+        G = get_graph()
+
+
+    class_list = G.vs['classname']
+    class_dict = dict.fromkeys(class_list)
+
+    #set the indices for lookup purposes. These will be the cluster ids
+    for idx, k in enumerate(class_dict):
+        class_dict[k] = idx
+
+
+    membership = [ class_dict[student]  for student in class_list]
+
+    return VertexClustering(G, membership)
+
+
 
 def main():
-    get_graph()
+    G = get_graph()
+    get_ground_truth(G)
 
 if __name__ == "__main__":
     main()

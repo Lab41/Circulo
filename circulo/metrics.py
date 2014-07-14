@@ -18,20 +18,22 @@ import numpy as np
 #4. Unit Tests
 #5. Integrate omega index scoring
 
-def f1(communities, ground_truth, out):
-
-    out.write("Evaluating F1 score\n")
-    out.write("{} Communities in ground truth\n".format(len(ground_truth)))
-    out.write("{} Communities in results\n".format(len(communities)))
-
+def f1(communities, ground_truth, out=None):
+    '''
+    Evaluates an input communities clustering to a ground truth clustering
+    '''
     f1_sum_0 = sum([get_highest_f1(x, communities) for x in ground_truth])
     f1_sum_1 = sum([get_highest_f1(x, ground_truth) for x in communities])
 
     final_score = .5 * (  1.0/float(len(ground_truth)) * f1_sum_0 + 1.0/float(len(communities)) * f1_sum_1)
 
-    out.write("F1 Score: {}\n".format(final_score))
+    if out is not None:
+        out.write("Evaluating F1 score\n")
+        out.write("{} Communities in ground truth\n".format(len(ground_truth)))
+        out.write("{} Communities in results\n".format(len(communities)))
+        out.write("F1 Score: {}\n".format(final_score))
 
-
+    return final_score
 
 
 def get_highest_f1(src_community, community_list):
