@@ -8,15 +8,13 @@ def radicchi_wrapper(G):
 
     return radicchi(G, g)
 
-def radicchi(orig, new):
+def radicchi(G, g):
     """
     Uses the Radicchi et al. algorithm to find the communities in a graph. Returns a list of the splits in the graph.
     """
     # Caching some global graph information and updating it manually. Because igraph
     # tends to recalculate this stuff on the whole graph every time, 
     # storing it and manipulating only the parts that change will make things faster.
-    g = G.copy()
-
     degree = g.degree()
     neighbors = [set(g.neighbors(v)) for v in g.vs]
     edges = {e.tuple for e in g.es}
@@ -24,6 +22,7 @@ def radicchi(orig, new):
     all_communities = []
 
 
+    level = 0
     while len(edges) > 0:
         min_edge = None; min_ecc = None
         for edge in edges:
@@ -38,6 +37,9 @@ def radicchi(orig, new):
         degree[u] -= 1; degree[v] -= 1
         
         if g.edge_connectivity(source=u, target=v) == 0:
+            print("------------------")
+            print("At level %s" % level)
+
             result = prune_components(G, g, community_measure='weak')
             if result['pruned']:
                 communities = result['communities']
@@ -47,7 +49,13 @@ def radicchi(orig, new):
                 neighbors = [set(g.neighbors(v)) for v in g.vs]
                 edges = {e.tuple for e in g.es}
 
+                for c in communities:
+                    print("Found a community: %s" % c)
                 all_communities.extend(communities)
+            
+            print("Done with level %s" % level)
+
+            level += 1
 
     all_communities.append([v['id'] for v in g.vs]) 
 
@@ -124,7 +132,7 @@ def edge_clustering_coefficient(u, v, degree, neighbors):
 
 def main(argv):
     g = ig.Graph.Read_GML('netscience.gml')
-    communities = radicchi(g)
+    communities = radicchi_wrapper(g)
     print(communities)
     return communities
 
