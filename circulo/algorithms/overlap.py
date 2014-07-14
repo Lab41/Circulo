@@ -148,7 +148,7 @@ class CrispOverlap(object):
         """
         Iterates over the covers in the list.
         """
-        return (v for v in self._covers.values())
+        return (v for v in list(self._covers.values()))
 
 
     def __len__(self):
@@ -157,7 +157,7 @@ class CrispOverlap(object):
         """
         return len(self._covers)
 
-    def __nonzero__(self):
+    def __bool__(self):
         """
         Returns True when there is at least one cover in the list.
         """
@@ -197,10 +197,10 @@ class CrispOverlap(object):
         Recalculates the modularities and optimal count using the modularity_measure.
         """
         modDict = {}
-        for cover in self._covers.itervalues():
+        for cover in self._covers.values():
             modDict[len(cover)] = self._measureDict[self._modularity_measure](self._graph, cover)
         self._modularities = modDict
-        self._optimal_count = max(self._modularities.iteritems(), key=operator.itemgetter(1))[0]
+        self._optimal_count = max(iter(self._modularities.items()), key=operator.itemgetter(1))[0]
         return self._modularities
 
 
@@ -235,7 +235,7 @@ class CrispOverlap(object):
             return self._optimal_count
         else:
             modularities = self.modularities
-            self._optimal_count = max(modularities.items(), key=operator.itemgetter(1))[0]
+            self._optimal_count = max(list(modularities.items()), key=operator.itemgetter(1))[0]
             return self._optimal_count
 
 
@@ -250,14 +250,14 @@ class CrispOverlap(object):
         #else: 
         #    pp = [G.vs[num][label] for num in [cluster for cluster in cover]]
         for count, comm in enumerate(pp):
-            print "Community {0}:".format(count)
+            print("Community {0}:".format(count))
             for v in comm:
-                print "\t",
+                print("\t", end=' ')
                 if label == 'CONGA_index':
-                    print v.index
+                    print(v.index)
                 else:
-                    print v[label]
-            print
+                    print(v[label])
+            print()
 
 
     def make_fuzzy(self):

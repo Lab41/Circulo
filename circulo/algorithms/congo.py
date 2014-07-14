@@ -14,7 +14,6 @@ import overlap
 #    * only call fix_betweennesses when needed
 
 
-
 def CONGO(OG, h):
     """
     Provides an Implementation of the CONGO algorithm defined by Steve Gregory 
@@ -82,9 +81,12 @@ def delete_edge(G, edge, h):
     Given a graph G and one of its edges in tuple form, checks if the deletion 
     splits the graph.
     """
-    logging.info("Deleted: %s", tup)
+
     
     tup = G.es[edge].tuple
+
+    logging.info("Deleted: %s", tup)
+    
     neighborhood = get_neighborhood_edge(G, tup, h)
     # subtracts local betweennesses in the region, as discussed
     # in the paper
@@ -148,8 +150,8 @@ def split_vertex(G, vToSplit, instr, h):
     G.vs[new_index]['pb'] = {uw : 0 for uw in itertools.combinations(G.neighbors(vToSplit), 2)}
 
     # adding all relevant edges to new vertex, deleting from old one.
-    toAdd = zip(itertools.repeat(new_index), instr[0])
-    toDelete = zip(itertools.repeat(vToSplit), instr[0])
+    toAdd = list(zip(itertools.repeat(new_index), instr[0]))
+    toDelete = list(zip(itertools.repeat(vToSplit), instr[0]))
     G.add_edges(toAdd)
     G.delete_edges(toDelete)
     neighborhood.append(new_index)
@@ -274,7 +276,7 @@ def get_cover(G, OG, comm):
     coverDict = defaultdict(list)
     for i, community in enumerate(comm):
         coverDict[community].append(int(G.vs[i]['CONGA_orig']))
-    return ig.clustering.VertexCover(OG, clusters=coverDict.values())
+    return ig.clustering.VertexCover(OG, clusters=list(coverDict.values()))
 
 
 def vertex_betweeenness_from_eb(G, eb):
@@ -338,7 +340,7 @@ def create_clique(G, v, pb):
     # Can use ints instead: (dtype=int). Only works if we use matrix_min
     # instead of mat_min.
     clique = np.matrix(np.zeros((n, n)))
-    for uw, score in pb.iteritems():
+    for uw, score in pb.items():
         clique[mapping[uw[0]], mapping[uw[1]]] = score
         clique[mapping[uw[1]], mapping[uw[0]]] = score
 
@@ -435,8 +437,5 @@ if __name__ == "__main__":
     #tg = ig.Graph.Growing_Random(100, 5, citation=True)
     tg = ig.read("pgp.gml")
     tg = tg.as_undirected()
-    #print "starting"
     result = CONGO(tg, 2)
-    #print "done."
     result.pretty_print_cover(result.optimal_count, label='label')
-#    CONGO(ig.read("football.gml").as_undirected(), 2).pretty_print_cover(10, label='label')
