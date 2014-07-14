@@ -42,6 +42,8 @@ def CONGO(OG, h):
     # The first cover is simply the entire connected graph.
     allCovers = {nClusters : ig.VertexCover(OG)}
     while G.es:
+
+        logging.info("%d edges remaining", len(G.es))
         # get the edge with the max edge betweenness, and its betweenness.
         maxEdge, maxEb = max(enumerate(G.es['eb']), key=operator.itemgetter(1))
         G.vs['vb'] = G.betweenness(cutoff=h)
@@ -64,7 +66,7 @@ def CONGO(OG, h):
         else:
             split = split_vertex(G, splitInstr[1], splitInstr[2], h)
 
-        logging.info("%d vertices remaining", len(G.es))
+
 
         if split:
             # there must be a new community
@@ -203,7 +205,7 @@ def max_split_betweenness(G, vInteresting):
 def do_initial_betweenness(G, h):
     """
     Given a graph G and a depth h, calculates all edge and pair betweennesses
-    and update's G's attributes to reflect the new scores.
+    and updates G's attributes to reflect the new scores.
     """
     # TOOD: get all shortest paths of length h + 1 or less.
     # This whole function should be redone.
@@ -213,15 +215,17 @@ def do_initial_betweenness(G, h):
     for ver in G.vs:
         logging.info("initializing betweennesses for %d", ver.index)
         neighborhood = get_neighborhood_vertex(G, ver, h)
-        for i, v in enumerate(neighborhood):
-            s_s_shortest_paths = G.get_all_shortest_paths(v, to=neighborhood)#[i+1:])
-            all_pairs_shortest_paths += s_s_shortest_paths 
+        neighborhood.remove(ver.index)
+        #for i, v in enumerate(neighborhood):
+        s_s_shortest_paths = G.get_all_shortest_paths(ver, to=neighborhood)#[i+1:])
+        all_pairs_shortest_paths += s_s_shortest_paths 
 
-    all_pairs_shortest_paths = set(tuple(p) for p in all_pairs_shortest_paths)
-
+    # to ignore duplicate edges, uncomment the next line.
+    # all_pairs_shortest_paths = set(tuple(p) for p in all_pairs_shortest_paths)
     for path in all_pairs_shortest_paths:
         pathCounts[(path[0], path[-1])] += 1
 
+    logging.info("updating all betweenness attributes...")
     for path in all_pairs_shortest_paths:
         if len(path) <= h + 1:
             update_betweenness(G, path, pathCounts[(path[0], path[-1])], operator.pos)
