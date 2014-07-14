@@ -65,6 +65,14 @@ class TestCongoFunctions(unittest.TestCase):
 			self.assertAlmostEqual(vbtheirs[v.index], vbmine[v.index])
 
 
+
+
+# def testBetweennesses(G, h):
+#     eb = G.edge_betweenness(cutoff=h)
+#     for i, v in enumerate(G.es):
+#         print v['eb'], 2 * eb[i], abs(v['eb'] - 2 * eb[i]) > .001
+
+
 def suite():
 	suite = unittest.TestSuite()
 	tests = ['test_test', 'test_vertex_betweeenness_from_eb', 'test_edge_betweenness', 'test_pair_betweenness']
