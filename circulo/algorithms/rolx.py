@@ -82,8 +82,8 @@ def approx_linear_solution(w, A, threshold=1e-15):
     threshold: int
     '''
     x0 = np.zeros(A.shape[1])
-    x_star, residual, rank, s = lstsq(A, w)
-    norm_residual = norm(residual)
+    x_star, residuals, rank, s = lstsq(A, w)
+    norm_residual = norm(residuals)
     result = True if norm_residual <= threshold else False
     return (result, norm_residual, x_star)
 
@@ -182,7 +182,7 @@ def description_length(V, fctr_res, bits=10):
     enc_H, enc_H_cost = kmeans_quantize(H, bits)
 
     enc_cost = enc_W_cost + enc_H_cost
-    err_cost = kl_divergence(V, dot(enc_W,enc_H))
+    err_cost = kl_divergence(V, enc_W*enc_H)
 
     return enc_W, enc_H, enc_cost, err_cost
 
@@ -209,7 +209,7 @@ def get_factorization(V, num_roles):
     node_roles = model.transform(V)
     role_features = model.components_
     
-    return node_roles, role_features
+    return np.matrix(node_roles), np.matrix(role_features)
 
 def get_optimal_factorization(V, min_roles=2, max_roles=6, min_bits=1, max_bits=10):
     max_roles = min(max_roles, V.shape[1]) # Can't have more possible roles than features
@@ -279,9 +279,13 @@ def make_sense(G, H):
     feature_fns = [ getattr(G, f) for f in features ]
     feature_matrix = [ func() for func in feature_fns ]
     feature_matrix = np.matrix(feature_matrix).transpose()
+
     print(feature_matrix)
 
     M = feature_matrix
+    for i in range(M.shape[1]):
+        M[:,i] = M[:,i] / norm(M[:,i])
+
     K = complete_factor(H, M, h_on_left=True)
     print(K)
 
