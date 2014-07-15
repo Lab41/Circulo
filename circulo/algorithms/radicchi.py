@@ -6,9 +6,9 @@ def radicchi_wrapper(G):
     g = G.copy()
     g.vs['id'] = list(range(g.vcount()))
 
-    return radicchi(G, g)
+    return radicchi(G, g, 0)
 
-def radicchi(G, g):
+def radicchi(G, g, level):
     """
     Uses the Radicchi et al. algorithm to find the communities in a graph. Returns a list of the splits in the graph.
     """
@@ -19,11 +19,14 @@ def radicchi(G, g):
     neighbors = [set(g.neighbors(v)) for v in g.vs]
     edges = {e.tuple for e in g.es}
 
-    all_communities = []
 
 
-    level = 0
-    while len(edges) > 0:
+    print("------------------")
+    print("At level %s" % level)
+    while True:
+        if len(edges) == 0:
+            break
+
         min_edge = None; min_ecc = None
         for edge in edges:
             ecc = edge_clustering_coefficient(edge[0], edge[1], degree, neighbors)
@@ -37,29 +40,27 @@ def radicchi(G, g):
         degree[u] -= 1; degree[v] -= 1
         
         if g.edge_connectivity(source=u, target=v) == 0:
-            print("------------------")
-            print("At level %s" % level)
 
             result = prune_components(G, g, community_measure='weak')
             if result['pruned']:
-                communities = result['communities']
+                orig_communities = result['orig_communities']
+                new_communities = result['new_communities']
                 remaining = result['remaining']
-                g = g.subgraph(remaining)
-                degree = g.degree()
-                neighbors = [set(g.neighbors(v)) for v in g.vs]
-                edges = {e.tuple for e in g.es}
 
-                for c in communities:
-                    print("Found a community: %s" % c)
-                all_communities.extend(communities)
-            
-            print("Done with level %s" % level)
+                for i,c in enumerate(new_communities):
+                    print("Found a community: %s" % orig_communities[i])
+                    print("Leaving level %s" % level)
+                    s = g.subgraph(c)
+                    radicchi(G, s, level+1)
+                    print("Back to level %s" % level)
 
-            level += 1
+                r = g.subgraph(remaining)
+                radicchi(G, r, level+1)
 
-    all_communities.append([v['id'] for v in g.vs]) 
+                break
 
-    return all_communities
+    print("Done with level %s" % level)
+    print("------------------")
 
 def prune_components(orig, new, community_measure='strong'):
     components = new.components()
@@ -77,6 +78,7 @@ def prune_components(orig, new, community_measure='strong'):
     result_pruned = False
     result_remaining_nodes = None
     result_orig_communities = None
+    result_new_communities = None
     if len(community_indices) > 1:
         all_new_community_nodes = sum(new_communities, [])
         all_new_nodes = range(new.vcount())
@@ -84,9 +86,11 @@ def prune_components(orig, new, community_measure='strong'):
 
         result_pruned = True
         result_remaining_nodes = all_new_remaining_nodes
+        result_new_communities = new_communities
         result_orig_communities = orig_communities
 
-    return {"pruned": result_pruned, "communities": result_orig_communities, "remaining": result_remaining_nodes}
+    return {"pruned": result_pruned, "orig_communities": result_orig_communities, 
+            "new_communities": result_new_communities, "remaining": result_remaining_nodes}
 
 def is_strong_community(G, nodes):
     """
