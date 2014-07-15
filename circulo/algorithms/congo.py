@@ -391,8 +391,6 @@ def check_for_split(G, edge):
         return False
 
 
-
-
 def mat_min(M):
     """
     Given a matrix, find an index of the minimum value (not including the
@@ -444,7 +442,7 @@ def run_demo():
     Lazar's measure of modularity. Finally, pretty-prints the optimal cover.
     """
     G = ig.Graph().Famous("Zachary").as_undirected()
-    result = CONGO(G, 3)
+    result = CONGO(G, 200)
     result.pretty_print_cover(result.optimal_count, label='CONGA_index')
 
 
