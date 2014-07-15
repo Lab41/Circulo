@@ -22,8 +22,8 @@ def f1(communities, ground_truth, out=None):
     '''
     Evaluates an input communities clustering to a ground truth clustering
     '''
-    f1_sum_0 = sum([get_highest_f1(x, communities) for x in ground_truth])
-    f1_sum_1 = sum([get_highest_f1(x, ground_truth) for x in communities])
+    f1_sum_0 = sum(get_highest_f1(x, communities) for x in ground_truth)
+    f1_sum_1 = sum(get_highest_f1(x, ground_truth) for x in communities)
 
     final_score = .5 * (  1.0/float(len(ground_truth)) * f1_sum_0 + 1.0/float(len(communities)) * f1_sum_1)
 
@@ -71,7 +71,7 @@ def f1_score(community_a, community_b):
     if overlap_len > 0:
         precision = float(overlap_len) / float(len(community_a))
         recall = float(overlap_len) / float(len(community_b))
-        return 2.0 * (precision * recall) /  (precision + recall)
+        return 2.0 * (precision * recall) / (precision + recall)
     else:
         return 0.0
 

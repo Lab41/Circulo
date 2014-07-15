@@ -77,12 +77,12 @@ def __prepare__(data_dir, graph_path):
                     sys.exit(1)
 
                 #check if the pair already exists
-                try:
-                    e = G.get_eid(team0.index, team1.index, directed=False)
-                    G.es[e]['weight']+=1
-                except Exception:
-                    G.add_edge(team0, team1, weight=1)
 
+                e = G.get_eid(team0.index, team1.index, directed=False, error=False)
+                if e >= 0:
+                    G.es[e]['weight'] += 1
+                else:
+                    G.add_edge(team0, team1, weight=1)
 
     G.write_graphml(graph_path)
 
