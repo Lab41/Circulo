@@ -5,7 +5,7 @@ import numpy as np
 import operator
 import logging
 
-import overlap
+from circulo.algorithms import overlap
 
 # TODO:
 #    * investigate is_separator
@@ -14,11 +14,11 @@ import overlap
 #    * only call fix_betweennesses when needed
 
 
-def CONGO(OG, h):
+def CONGO(OG, h=2):
     """
-    Provides an Implementation of the CONGO algorithm defined by Steve Gregory 
+    Provides an Implementation of the CONGO algorithm defined by Steve Gregory
     in his 2010 paper "A Fast Algorithm to Find Overlapping Communities in Networks."
-    The parameters are OG, the graph on which the analysis is to be performed, and h, 
+    The parameters are OG, the graph on which the analysis is to be performed, and h,
     the length of the longest shortest path that Congo is to consider.
     """
 
@@ -47,7 +47,7 @@ def CONGO(OG, h):
         # get the edge with the max edge betweenness, and its betweenness.
         maxEdge, maxEb = max(enumerate(G.es['eb']), key=operator.itemgetter(1))
         G.vs['vb'] = G.betweenness(cutoff=h)
-        
+
         # since split betweennes is upper bounded by vertex betweenness, we
         # only need to look at the vertices for which the vertex betweenness
         # is greater than the max edge betweenness. (We multiply by 2
@@ -56,7 +56,7 @@ def CONGO(OG, h):
 
         # TODO check if I need to multiply by 2
         vInteresting = [i for i, b in enumerate(G.vs['vb']) if 2 * b > maxEb]
-        
+
         logging.info("Vertices to examine: %s", vInteresting)
         splitInstr = max_split_betweenness(G, vInteresting)
 
@@ -79,16 +79,16 @@ def CONGO(OG, h):
 
 
 def delete_edge(G, edge, h):
-    """ 
-    Given a graph G and one of its edges in tuple form, checks if the deletion 
+    """
+    Given a graph G and one of its edges in tuple form, checks if the deletion
     splits the graph.
     """
 
-    
+
     tup = G.es[edge].tuple
 
     logging.info("Deleted: %s", tup)
-    
+
     neighborhood = get_neighborhood_edge(G, tup, h)
     # subtracts local betweennesses in the region, as discussed
     # in the paper
@@ -141,7 +141,7 @@ def fix_betweennesses(G):
 def split_vertex(G, vToSplit, instr, h):
     """
     Splits the vertex v into two new vertices, each with
-    edges depending on s. Returns True if the split 
+    edges depending on s. Returns True if the split
     divided the graph, else False.
     """
     neighborhood = get_neighborhood_vertex(G, vToSplit, h)
@@ -167,12 +167,12 @@ def split_vertex(G, vToSplit, instr, h):
 def max_split_betweenness(G, vInteresting):
     """
     Performs the greedy algorithm discussed in the 2007 CONGA paper
-    to approximate the maximum split betweenness. Returns a tuple 
+    to approximate the maximum split betweenness. Returns a tuple
     (a, b, c) where a is the maximum score, b the vertex to split
-    to acheive the score, and c a list of the instructions for which 
+    to acheive the score, and c a list of the instructions for which
     neighbors to connect to each side of the split.
     """
-    maxSplitBetweenness = 0   
+    maxSplitBetweenness = 0
     vToSplit = None
     # for every vertex of interest, we want to figure out the maximum score achievable
     # by splitting the vertices in various ways, and return that optimal split
@@ -183,7 +183,7 @@ def max_split_betweenness(G, vInteresting):
 
         # initialize a list on how we will map the neighbors to the collapsing matrix
         vMap = [[ve] for ve in G.neighbors(v)]
-        
+
         # we want to keep collapsing the matrix until we have a 2x2 matrix and its
         # score. Then we want to remove index j from our vMap list and concatenate
         # it with the vMap[i]. This begins building a way of keeping track of how
@@ -218,7 +218,7 @@ def do_initial_betweenness(G, h):
         neighborhood.remove(ver.index)
         #for i, v in enumerate(neighborhood):
         s_s_shortest_paths = G.get_all_shortest_paths(ver, to=neighborhood)#[i+1:])
-        all_pairs_shortest_paths += s_s_shortest_paths 
+        all_pairs_shortest_paths += s_s_shortest_paths
 
     # to ignore duplicate edges, uncomment the next line.
     # all_pairs_shortest_paths = set(tuple(p) for p in all_pairs_shortest_paths)
@@ -232,7 +232,7 @@ def do_initial_betweenness(G, h):
 
 
 def do_local_betweenness(G, neighborhood, h, op=operator.pos):
-    """ 
+    """
     Given a neighborhood and depth h, recalculates all betweennesses
     confined to the neighborhood. If op is operator.neg, it subtracts these
     betweennesses from the current ones. Otherwise, it adds them.
@@ -241,7 +241,7 @@ def do_local_betweenness(G, neighborhood, h, op=operator.pos):
     pathCounts = Counter()
     for i, v in enumerate(neighborhood):
         s_s_shortest_paths = G.get_all_shortest_paths(v, to=neighborhood)#[i+1:])
-        all_pairs_shortest_paths += s_s_shortest_paths 
+        all_pairs_shortest_paths += s_s_shortest_paths
     neighSet = set(neighborhood)
     neighSize = len(neighborhood)
     apsp = []
@@ -274,7 +274,7 @@ def update_betweenness(G, path, count, op):
 def get_cover(G, OG, comm):
     """
     Given the graph, the original graph, and a community
-    membership list, returns a vertex cover of the communities 
+    membership list, returns a vertex cover of the communities
     referring back to the original community.
     """
     coverDict = defaultdict(list)
@@ -305,7 +305,7 @@ def vertex_betweeenness_from_eb(G, eb):
 
 def get_neighborhood_vertex(G, v, h):
     """
-    Given a vertex and a height/depth to 
+    Given a vertex and a height/depth to
     traverse, find the neighborhood as defined in the CONGA
     paper.
     """
@@ -314,7 +314,7 @@ def get_neighborhood_vertex(G, v, h):
 
 def get_neighborhood_edge(G, e, h):
     """
-    Given an edge and a height/depth to 
+    Given an edge and a height/depth to
     traverse, find the neighborhood as defined in the CONGA
     paper.
     """
@@ -331,9 +331,9 @@ def order_tuple(toOrder):
 
 def create_clique(G, v, pb):
     """
-    Given a vertex and its pair betweennesses, returns a k-clique 
+    Given a vertex and its pair betweennesses, returns a k-clique
     representing all of its neighbors, with edge weights determined by the pair
-    betweenness scores. Algorithm discussed on page 5 of the CONGA paper. 
+    betweenness scores. Algorithm discussed on page 5 of the CONGA paper.
     """
     neighbors = G.neighbors(v)
 
@@ -359,16 +359,16 @@ def reduce_matrix(M):
     Given a matrix M, collapses the row and column of the minimum value. This is just
     an adjacency matrix way of implementing the greedy "collapse" discussed in CONGA.
 
-    Returns the new matrix and the collapsed indices. 
+    Returns the new matrix and the collapsed indices.
     """
     i,j = mat_min(M)
     #i, j = matrix_min(M)
     # add the ith row to the jth row and overwrite the ith row with those values
     M[i,:] = M[j,:] + M[i,:]
-    
+
     # delete the jth row
     M = np.delete(M, (j), axis=0)
-    
+
     # similarly with the columns
     M[:,i] = M[:,j] + M[:,i]
     M = np.delete(M, (j), axis=1)
@@ -400,7 +400,7 @@ def mat_min(M):
     # take a matrix we pass in, and fill the diagonal with the matrix max. This is
     # so that we don't grab any values from the diag.
     np.fill_diagonal(M, float('inf'))
-    
+
     # figure out the indices of the cell with the lowest value.
     i,j = np.unravel_index(M.argmin(), M.shape)
     np.fill_diagonal(M,0)
@@ -410,15 +410,15 @@ def mat_min(M):
 
 def matrix_min(mat):
     """
-    Given a symmetric matrix, find an index of the minimum value 
+    Given a symmetric matrix, find an index of the minimum value
     in the upper triangle (not including the diagonal.)
     """
-    # Currently, this function is unused, as its result is 
+    # Currently, this function is unused, as its result is
     # the same as that of mat_min, and it is not always
     # faster. Left in for reference in case mat_min becomes
-    # a bottleneck. 
+    # a bottleneck.
 
-    # find the minimum from the upper triangular matrix 
+    # find the minimum from the upper triangular matrix
     # (not including the diagonal)
     upperTri = np.triu_indices(mat.shape[0], 1)
     minDex = mat[upperTri].argmin()
@@ -427,8 +427,8 @@ def matrix_min(mat):
     # with some algebra.
     triN = mat.shape[0] - 1
     row = 0
-    
-    
+
+
     while minDex >= triN:
         minDex -= triN
         triN -= 1
