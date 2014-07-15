@@ -39,7 +39,6 @@ def CONGA(OG, calculate_modularities=None, optimal_count=None):
     else: modDict = None
     allCovers = {nClusters : ig.VertexCover(OG)}
     while G.es:
-        print len(G.es)
         split = remove_edge_or_split_vertex(G)
         if split:
             comm = G.components().membership
@@ -99,7 +98,7 @@ def get_cover(G, OG, comm):
     coverDict = co.defaultdict(list)
     for i, community in enumerate(comm):
         coverDict[community].append(int(G.vs[i]['CONGA_orig']))
-    return ig.clustering.VertexCover(OG, clusters=coverDict.values())
+    return ig.clustering.VertexCover(OG, clusters=list(coverDict.values()))
 
 
 def delete_edge(G, edge):
@@ -201,7 +200,7 @@ def create_clique(G, v, pb):
     # instead of mat_min.
     clique = np.matrix(np.zeros((n, n)))
 
-    for uw, score in pb.iteritems():
+    for uw, score in pb.items():
 
         
         clique[mapping[uw[0]], mapping[uw[1]]] = score
@@ -317,14 +316,14 @@ def pretty_print_cover(G, cover, label='CONGA_index'):
     """
     pp = [G.vs[num] for num in [cluster for cluster in cover]]
     for count, comm in enumerate(pp):
-        print "Community {0}:".format(count)
+        print("Community {0}:".format(count))
         for v in comm:
-            print "\t",
+            print("\t", end=' ')
             if label == 'CONGA_index':
-                print v.index
+                print(v.index)
             else:
-                print v[label]
-        print
+                print(v[label])
+        print()
 
 
 def run_demo():
@@ -334,7 +333,7 @@ def run_demo():
     """
     G = ig.Graph().Famous("Zachary").as_undirected()
     result = CONGA(G, calculate_modularities="lazar")
-    pretty_print_cover(G, result.as_cover(), label='CONGA_index')
+    result.pretty_print_cover(result.optimal_count, label='CONGA_index')
 
 
 def main():
@@ -354,14 +353,14 @@ def main():
         run_demo()
         return
     if not args.file:
-        print "CONGA.py: error: no file specified.\n"
-        print parser.parse_args('-h'.split())
+        print("CONGA.py: error: no file specified.\n")
+        print(parser.parse_args('-h'.split()))
         return
 
     # only works for undirected
     G = ig.read(args.file).as_undirected()
     result = CONGA(G, calculate_modularities=args.modularity_measure, optimal_count=args.num_clusters)
-    pretty_print_cover(G, result.as_cover(), label=args.label)
+    result.pretty_print_cover(result.optimal_count, label=args.label)
 
 
 if __name__ == "__main__":

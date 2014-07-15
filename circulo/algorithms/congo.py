@@ -4,6 +4,7 @@ import igraph as ig
 import numpy as np
 import operator
 import logging
+import argparse 
 
 from circulo.algorithms import overlap
 
@@ -437,9 +438,43 @@ def matrix_min(mat):
     return row, col
 
 
+def run_demo():
+    """
+    Finds the communities of the Zachary graph and gets the optimal one using
+    Lazar's measure of modularity. Finally, pretty-prints the optimal cover.
+    """
+    G = ig.Graph().Famous("Zachary").as_undirected()
+    result = CONGO(G, 3)
+    result.pretty_print_cover(result.optimal_count, label='CONGA_index')
+
+
+def main():
+    parser = argparse.ArgumentParser(description="""Run CONGO from the command line. Mostly meant as a demo -- only prints one cover.""")
+    parser.add_argument('-d', '--demo', action='store_true', help="""Run a demo with the famous Zachary's Karate Club data set. Overrides all other options.""")
+    parser.add_argument('-l', '--label', default='CONGA_index', nargs='?', const='label', help="""Choose which attribute of the graph to print.
+                            When this option is present with no parameters, defaults to 'label'. When the option is not
+                            present, defaults to the index.""")
+    parser.add_argument('-n', '--num_clusters', type=int, help="""Specify the number of clusters to use.""")
+    parser.add_argument('-w', '--height', default=2, type=int, help="""The lengh of the longest shortest paths that CONGO considers.""")
+    parser.add_argument('file', nargs='?', help="""The path to the file in igraph readable format.""")
+    args = parser.parse_args()
+    if args.demo:
+        run_demo()
+        return
+    if not args.file:
+        print("CONGO.py: error: no file specified.\n")
+        print(parser.parse_args('-h'.split()))
+        return
+
+    # only works for undirected
+    G = ig.read(args.file).as_undirected()
+    result = CONGO(G, args.height)
+    if args.num_clusters:
+        result.pretty_print_cover(args.num_clusters, label=args.label)
+    else:
+        result.pretty_print_cover(result.optimal_count, label=args.label)
+
+
 if __name__ == "__main__":
-    #tg = ig.Graph.Growing_Random(100, 5, citation=True)
-    tg = ig.read("pgp.gml")
-    tg = tg.as_undirected()
-    result = CONGO(tg, 2)
-    result.pretty_print_cover(result.optimal_count, label='label')
+    main()
+
