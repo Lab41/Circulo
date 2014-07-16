@@ -2,13 +2,13 @@ import sys
 import igraph as ig
 import itertools
 
-def radicchi_wrapper(G):
+def radicchi_wrapper(G, measure='strong'):
     g = G.copy()
     g.vs['id'] = list(range(g.vcount()))
 
-    return radicchi(G, g, 0)
+    return radicchi(G, g, 0, measure=measure)
 
-def radicchi(G, g, level):
+def radicchi(G, g, level, measure='strong'):
     """
     Uses the Radicchi et al. algorithm to find the communities in a graph. Returns a list of the splits in the graph.
     """
@@ -16,8 +16,10 @@ def radicchi(G, g, level):
     # tends to recalculate this stuff on the whole graph every time, 
     # storing it and manipulating only the parts that change will make things faster.
 
-    print("------------------")
-    print("At level %s" % level)
+    print(("  " * level) + "------------------")
+    print(("  " * level) + "At level %s" % level)
+
+    edge_clustering_coefficient = edge_clustering_coefficient_3 if (measure == 'strong') else edge_clustering_coefficient_4
     while True:
         if g.ecount() == 0:
             break
@@ -25,38 +27,42 @@ def radicchi(G, g, level):
         min_edge = None; min_ecc = None
         for e in g.es:
             edge = e.tuple
-            ecc = edge_clustering_coefficient_4(G, edge[0], edge[1])
+            ecc = edge_clustering_coefficient(g, edge[0], edge[1])
             if not min_edge or ecc < min_ecc:
                 min_edge = edge
                 min_ecc = ecc
 
         g.delete_edges([min_edge])
         u, v = min_edge
+
+        print(("  " * level) + "Removing (%s, %s)" % (g.vs['label'][u], g.vs['label'][v]))
         
         if g.edge_connectivity(source=u, target=v) == 0:
             # print("Graph has split")
             # print(g.components())
 
-            result = prune_components(G, g, community_measure='weak')
+            result = prune_components(G, g, community_measure=measure)
             if result['pruned']:
                 orig_communities = result['orig_communities']
                 new_communities = result['new_communities']
                 remaining = result['remaining']
 
                 for i,c in enumerate(new_communities):
-                    print("Found a community: %s" % orig_communities[i])
-                    print("Leaving level %s" % level)
+                    community_labels = [g.vs['label'][j] for j in c] 
+                    print(("  " * level) + "Found a community: %s" % orig_communities[i])
+                    print(("  " * level) + "Community names: %s" % community_labels)
+                    # print(("  " * level) + "Leaving level %s" % level)
                     s = g.subgraph(c)
-                    radicchi(G, s, level+1)
-                    print("Back to level %s" % level)
+                    radicchi(G, s, level+1, measure)
+                    # print(("  " * level) + "Back to level %s" % level)
 
                 r = g.subgraph(remaining)
-                radicchi(G, r, level+1)
+                radicchi(G, r, level+1, measure)
 
                 break
 
-    print("Done with level %s" % level)
-    print("------------------")
+    print(("  " * level) + "Done with level %s" % level)
+    print(("  " * level) + "------------------")
 
 def prune_components(orig, new, community_measure='strong'):
     components = new.components()
@@ -155,7 +161,7 @@ def edge_clustering_coefficient_4(G, u, v):
         return (num_squares + 1.0) / mdeg
 
 def main(argv):
-    g = ig.Graph.Read_GML('netscience.gml')
+    g = ig.Graph.Read_GML('lesmis.gml')
     communities = radicchi_wrapper(g)
     print(communities)
     return communities
