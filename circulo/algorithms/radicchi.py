@@ -15,31 +15,27 @@ def radicchi(G, g, level):
     # Caching some global graph information and updating it manually. Because igraph
     # tends to recalculate this stuff on the whole graph every time, 
     # storing it and manipulating only the parts that change will make things faster.
-    degree = g.degree()
-    neighbors = [set(g.neighbors(v)) for v in g.vs]
-    edges = {e.tuple for e in g.es}
-
-
 
     print("------------------")
     print("At level %s" % level)
     while True:
-        if len(edges) == 0:
+        if g.ecount() == 0:
             break
 
         min_edge = None; min_ecc = None
-        for edge in edges:
-            ecc = edge_clustering_coefficient(edge[0], edge[1], degree, neighbors)
+        for e in g.es:
+            edge = e.tuple
+            ecc = edge_clustering_coefficient_4(G, edge[0], edge[1])
             if not min_edge or ecc < min_ecc:
                 min_edge = edge
                 min_ecc = ecc
 
-        g.delete_edges(min_edge); edges.discard(min_edge)
+        g.delete_edges([min_edge])
         u, v = min_edge
-        neighbors[u].discard(v); neighbors[v].discard(u)
-        degree[u] -= 1; degree[v] -= 1
         
         if g.edge_connectivity(source=u, target=v) == 0:
+            # print("Graph has split")
+            # print(g.components())
 
             result = prune_components(G, g, community_measure='weak')
             if result['pruned']:
@@ -120,19 +116,43 @@ def is_weak_community(G, nodes):
 
     return insum > outsum
 
-def edge_clustering_coefficient(u, v, degree, neighbors):
+def edge_clustering_coefficient_3(G, u, v):
     """
     Computes the "edge clustering coefficient" of the given edge, defined as the number of triangles
     in which it participates compared to the maximum number of triangles of which it could be a part.
     """
-    udeg = degree[u]
-    vdeg = degree[v]
+    udeg = G.degree(u)
+    vdeg = G.degree(v)
     mdeg = min(udeg-1, vdeg-1)
     if mdeg == 0:
         return float('inf')
     else:
-        cdeg = len(neighbors[u] & neighbors[v])
+        cdeg = len(set(G.neighbors(u)) & set(G.neighbors(v)))
         return (cdeg + 1.0) / mdeg
+
+def edge_clustering_coefficient_4(G, u, v):
+    """
+    Computes a modified form of the edge clustering coefficient using squares instead of triangles.
+    """
+    udeg = G.degree(u)
+    vdeg = G.degree(v)
+    mdeg = min(udeg-1, vdeg-1)
+    if mdeg == 0:
+        return float('inf')
+    else:
+        uneighbors = G.neighbors(u)
+        vneighbors = set(G.neighbors(v))
+
+        num_squares = 0
+        for w in uneighbors:
+            if w == v:
+                continue
+            wneighbors = G.neighbors(w)
+            for x in wneighbors:
+                if x != u and x in vneighbors:
+                    num_squares += 1
+        
+        return (num_squares + 1.0) / mdeg
 
 def main(argv):
     g = ig.Graph.Read_GML('netscience.gml')
