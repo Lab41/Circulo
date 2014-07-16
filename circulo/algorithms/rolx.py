@@ -10,6 +10,9 @@ from scipy.optimize import minimize
 from sklearn.decomposition import NMF
 
 def extract_rolx_roles(G, roles=2):
+    """
+    Top-level function. Extracts node-role matrix and sensemaking role-feature matrix as necessary.
+    """
     print("Creating Vertex Features matrix")
     V = vertex_features(G)
     print("V is a %s by %s matrix." % V.shape)
@@ -39,6 +42,10 @@ def recursive_feature(G, f, n):
     return np.matrix(recursive_feature_array(G,f,n))
 
 def recursive_feature_array(G, func, n):
+    """
+    Computes recursive features of the graph G for the provided function of G, returning
+    the matrix representing the nth level of the recursion.
+    """
     attr_name = "_rolx_" + func.__name__ + "_" + str(n)
 
     if attr_name in G.vs.attributes():
@@ -88,17 +95,21 @@ def approx_linear_solution(w, A, threshold=1e-15):
     return (result, norm_residual, x_star)
 
 def degree(G):
+    """ Auxiliary function to calculate the degree of each element of G. """
     return G.degree()
 
 def vertex_egonet(G, v):
+    """ Computes the number of edges in the ego network of the vertex v. """
     ego_network = G.induced_subgraph(G.neighborhood(v))
     ego_edges = ego_network.ecount()
     return ego_edges
 
 def egonet(G):
+    """ Computes the ego network for all vertices v in G. """
     return [vertex_egonet(G, v) for v in G.vs]
 
 def vertex_egonet_out(G, v):
+    """ Computes the outgoing edges from the ego network of the vertex v in G. """
     neighbors = G.neighborhood(v)
     ego_network = G.induced_subgraph(neighbors)
     ego_edges = ego_network.ecount()
@@ -107,12 +118,13 @@ def vertex_egonet_out(G, v):
     return out_edges
 
 def egonet_out(G):
+    """ Computes the number of outgoing ego network edges for every vertex in G. """
     return [vertex_egonet_out(G, v) for v in G.vs]
 
 def vertex_features(g):
     """ 
     Constructs a vertex feature matrix using recursive feature generation, then uses least-squares solving
-    to eliminate those 
+    to eliminate those exhibiting approximate linear dependence.
     """
     G = g.copy()
     num_rows = G.vcount()
@@ -150,6 +162,7 @@ def vertex_features(g):
     return V[:, :next_feature_col]
 
 def add_col(V, b, insert_col):
+    """ Add the given column b to the matrix V, enlarging the matrix if necessary. """ 
     rows, cols = V.shape
     if insert_col == cols: # need to resize V
         zeros = np.matrix(np.zeros((rows, 1)))
@@ -158,6 +171,7 @@ def add_col(V, b, insert_col):
     return V
 
 def kmeans_quantize(M, bits):
+    """ Performs k-means quantization on the given matrix. Returns the encoded matrix and the number of bits needed for encoding it. """
     k = 2**bits
 
     obs = np.asarray(M).reshape(-1)
@@ -169,12 +183,14 @@ def kmeans_quantize(M, bits):
     return enc_M, (bits * enc_M.size)
 
 def kl_divergence(A,B):
+    """ Computes the Kullback-Leibler divergence of the two matrices A and B. """
     a = np.asarray(A, dtype=np.float)
     b = np.asarray(B, dtype=np.float)
 
     return np.sum(np.where(a != 0, a * np.log(a / b), 0))
 
 def description_length(V, fctr_res, bits=10):
+    """ Computes the length necessary to describe the given model with the given number of bits. """
     W = fctr_res[0]
     H = fctr_res[1]
 
@@ -187,6 +203,8 @@ def description_length(V, fctr_res, bits=10):
     return enc_W, enc_H, enc_cost, err_cost
 
 def standardize_rows(M):
+    """ Distribute the rows of the cost matrix normally to allow for accurate comparisons of error and description
+    cost. """
     rv = np.matrix(M)
     for i in range(rv.shape[0]):
         mean = np.mean(M[i, :])
@@ -203,6 +221,7 @@ def standardize_rows(M):
 #    return m_flat.reshape(M.shape)
 
 def get_factorization(V, num_roles):
+    """ Obtains a nonnegative matrix factorization of the matrix V with num_roles intermediate roles. """
     model = NMF(n_components=num_roles, init='random', random_state=0)
     model.fit(V)
     
@@ -212,6 +231,7 @@ def get_factorization(V, num_roles):
     return np.matrix(node_roles), np.matrix(role_features)
 
 def get_optimal_factorization(V, min_roles=2, max_roles=6, min_bits=1, max_bits=10):
+    """ Uses grid search to find the optimal parameter number and encoding of the given matrix factorization. """ 
     max_roles = min(max_roles, V.shape[1]) # Can't have more possible roles than features
 
     num_role_options = max_roles - min_roles
@@ -275,6 +295,7 @@ def get_optimal_factorization(V, min_roles=2, max_roles=6, min_bits=1, max_bits=
     return mat_fctr_res[min_role_index][min_bit_index]
 
 def make_sense(G, H):
+    """ Given graph G and node-role matrix H, returns a role-feature matrix K for sensemaking analyses of roles. """
     features = [ 'betweenness', 'closeness', 'degree', 'diversity', 'eccentricity', 'pagerank', 'personalized_pagerank', 'strength' ]
     feature_fns = [ getattr(G, f) for f in features ]
     feature_matrix = [ func() for func in feature_fns ]
