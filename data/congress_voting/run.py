@@ -21,151 +21,152 @@ import sys
 import glob
 import csv
 import itertools
-import networkx as nx
 import operator
 import os
 import shutil
+import igraph
+from igraph import VertexClustering
+from subprocess import call
 
-SENATE_THRES = .8
-HOUSE_THRES = .9
+def __download__(data_dir):
 
-def main(argv):
+    os.mkdir(data_dir)
 
-    do_filter = False
+    try:
 
-    if len(argv) > 0 and argv[0] == 'Filter':
-        do_filter = True
+        call(["bash", os.path.join(os.path.dirname(__file__), "download.sh"), data_dir])
 
-    # get list of json files
-    files_list = glob.glob("2014/*/*.json")
-    #files_list = ['2014/h12/data.json']
-
-    if os.path.exists("senate"):
-        shutil.rmtree("senate")
-    if os.path.exists("house"):
-        shutil.rmtree("house")
-
-    os.makedirs("senate")
-    os.makedirs("house")
-
-    #just creates the nodes
-    id_dict, G_senate, G_house = load_congress("legislators-current.csv")
-
-    #now create the edges
-    for fname in files_list:
-            with open(fname,'r') as inputfile:
-                    data = json.load(inputfile)
-                   
-                    if data["chamber"] == "s":
-                        G = G_senate
-                    else:
-                        G = G_house
-
-                    for vt in data['votes']:
-                            
-                        congress_ids = [n['id'] for n in data['votes'][vt]]
-                        
-                        pairs = itertools.permutations(congress_ids,2)
-                        
-                        #assumes lists are always alphabetical so that pairs will only occur in one direction
-                        for u, v in pairs:
-                           
-                            try:
-                                x = id_dict[u]
-                                y = id_dict[v]
-                            
-                            except KeyError as e:
-                                #TODO: there are many congress IDs not in the legistature file... not sure why
-                                continue
-                            
-                            #to avoid duplicate we only accept pairs with x less y
-                            if x > y:
-                                continue
-                            if G.has_edge(x, y):
-                                G[x][y]['weight']+=1
-                            else:
-                                G.add_edge(x, y, weight=1)
+    except Exception as e:
+        print("rsync failed to retrieve data")
+        raise(e)
 
 
-    max_paired_votes_senate = 0
-    max_paired_votes_house = 0
+def __prepare__(data_dir, graph_path, options):
+    '''
+    Prepare congress data. NOTE: the vertex lookups should be indexed, however this
+    funciton could prob be sped up by just created a dict with all possible congress pairs
+    and counting how often they vote together, then at the end creating the edges
+    '''
 
-    for u,v,d in G_senate.edges(data=True):
-        if d['weight'] > max_paired_votes_senate:
-            max_paired_votes_senate = d['weight']
+    if options['congress_type'] == 'senate':
+        src_files = os.path.join(data_dir, "2014", "s*","*.json")
+        c_type = "sen"
+    else:
+        src_files = os.path.join(data_dir, "2014", "h*","*.json")
+        c_type = "rep"
 
-    for u,v,d in G_house.edges(data=True):
-        if d['weight'] > max_paired_votes_house:
-            max_paired_votes_house = d['weight']
-
-
-    print "MAX PAIRED VOTES SENATE: {}".format(max_paired_votes_senate)
-    print "MAX PAIRED VOTES HOUSE:  {}".format(max_paired_votes_house)
-    
-    threshold_senate = SENATE_THRES * max_paired_votes_senate
-    threshold_house = HOUSE_THRES * max_paired_votes_house
-
-    print "Threshold Senate: {}".format(threshold_senate)
-    print "Threshold house: {}".format(threshold_house)
+    G = igraph.Graph()
 
 
-    if do_filter:
-        for u, v, d in G_senate.edges(data=True):
-            if d['weight'] < threshold_senate:
-                #we filter out edges based on our filter settings (in the case 160)
-                G_senate.remove_edge(u,v)
-        for u, v, d in G_house.edges(data=True):
-            if d['weight'] < threshold_house:
-                #we filter out edges based on our filter settings (in the case 160)
-                G_house.remove_edge(u,v)
+    #first load the vertices
+    with open(os.path.join(data_dir, "legislators-current.csv"), 'r') as f:
 
-
-    nx.write_graphml(G_senate, "senate/senate.graphml")
-    nx.write_graphml(G_house, "house/house.graphml") 
-    write_node_list(G_senate, "senate/senate_nodes.txt")
-    write_node_list(G_house, "house/house_nodes.txt")
-    
-
-def write_node_list(G, out):
-    with open(out, 'w') as f:
-        
-        csvwriter = csv.writer(f, delimiter="\t", quoting=csv.QUOTE_ALL)
-        for n,d in G.nodes(data=True):
-            if 'party' in d and 'name' in d:
-                csvwriter.writerow((n, d['name'].encode('utf-8'), d['party']))
-             
-
-def load_congress(congress_file):
- 
-    G_senate = nx.Graph()
-    G_house = nx.Graph()
-    id_dict = {}
-    next_id = 0
-    with open(congress_file, 'r') as f:
-    
         csvreader = csv.reader(f,delimiter=',',quotechar='"')
         #skip the headers
         next(csvreader, None)  # skip the headers
         for row in csvreader:
-                  
-            
-            if row[4] == "sen":
+
+            if c_type != row[4]:
+                continue
+            elif row[4] == "sen":
                 congress_id = row[20]
-                id_dict[congress_id] = next_id
-                G = G_senate
             elif row[4] == "rep":
                 congress_id = row[17]
-                id_dict[congress_id] = next_id
-                G = G_house
             else:
-                continue
-                   
-            G.add_node(next_id, native_id=congress_id, name="{} {}".format(row[1],row[0]).decode('utf-8'), party=row[6], state=row[5])
-            
-            next_id+=1
+                raise("Unidentified congress: {}".format(row[4]))
 
-    return id_dict, G_senate, G_house
+            G.add_vertex(
+                congress_id,
+                full_name="{} {}".format(row[1],row[0]),
+                party=row[6],
+                state=row[5]
+                )
 
+
+
+    missing_ids = set()
+
+    #now create the edges
+    for fname in glob.glob(src_files):
+        with open(fname,'r') as inputfile:
+            data = json.load(inputfile)
+            print("Processing: {}".format(fname))
+            for vt in data['votes']:
+                #print(vt)
+                congress_ids = [n['id'] for n in data['votes'][vt]]
+                #print(congress_ids)
+                pairs = itertools.combinations(congress_ids,2)
+
+                for congress_id0, congress_id1 in pairs:
+                    #print("{} {}".format(congress_id0, congress_id1))
+                    try:
+                        v0 = G.vs.find(congress_id0)
+                    except ValueError as e:
+                        missing_ids.add(congress_id0)
+                        continue
+
+                    try:
+                        v1 = G.vs.find(congress_id1)
+                    except ValueError as e:
+                        missing_ids.add(congress_id1)
+                        continue
+
+                    e = G.get_eid(v0.index, v1.index, directed=False, error=False)
+
+                    if e>=0:
+                        G.es[e]['weight'] += 1
+                    else:
+                        G.add_edge(v0, v1, weight=1)
+
+    print("Ids not found: {}".format(missing_ids))
+
+    G.write_graphml(graph_path)
+
+
+def get_graph(options={"congress_type":"senate"}):
+
+    data_dir = os.path.join(os.path.dirname(__file__), "data")
+
+    if options is None or options["congress_type"] == "senate":
+        options = {"congress_type":"senate"}
+        graph_path = os.path.join(os.path.dirname(__file__), "senate.graphml")
+    elif options["congress_type"] == "house":
+        graph_path = os.path.join(os.path.dirname(__file__),"house.graphml")
+    else:
+        raise("congress type must be either \"house\" or \"senate\"")
+
+
+    if not os.path.exists(data_dir):
+        __download__(data_dir, options)
+
+    if not os.path.exists(graph_path):
+        __prepare__(data_dir, graph_path, options)
+
+
+    return igraph.load(graph_path)
+
+def __party_to_cluster__(party):
+    if party == "Democrat":
+        return 0
+    elif party == "Republican":
+        return 1
+    elif party == "Independent":
+        return 2
+    else:
+        raise("Unknown party affiliation {}".format(party))
+
+def get_ground_truth(G, options=None):
+
+    membership = [__party_to_cluster__(party) for party in G.vs['party']]
+
+    return VertexClustering(G, membership)
+
+
+
+def main():
+
+    G = get_graph()
+    get_ground_truth(G)
 
 if __name__ == "__main__":
-        main(sys.argv[1:])
+    main()
