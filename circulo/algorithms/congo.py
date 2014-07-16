@@ -8,13 +8,14 @@ import argparse
 
 from circulo.algorithms import overlap
 
+
+from profilehooks import profile
+
+
 # TODO:
-#    * investigate is_separator
-#    * rewrite initialization
-#    * clean up logging
 #    * only call fix_betweennesses when needed
 
-
+#@profile
 def CONGO(OG, h=2):
     """
     Provides an Implementation of the CONGO algorithm defined by Steve Gregory
@@ -138,7 +139,7 @@ def fix_betweennesses(G):
     fix_pair_betweennesses(G)
     fix_edge_betweennesses(G)
 
-
+#@profile
 def split_vertex(G, vToSplit, instr, h):
     """
     Splits the vertex v into two new vertices, each with
@@ -164,7 +165,7 @@ def split_vertex(G, vToSplit, instr, h):
     # check if the two new vertices are disconnected.
     return check_for_split(G, (vToSplit, new_index))
 
-
+#@profile
 def max_split_betweenness(G, vInteresting):
     """
     Performs the greedy algorithm discussed in the 2007 CONGA paper
@@ -208,8 +209,7 @@ def do_initial_betweenness(G, h):
     Given a graph G and a depth h, calculates all edge and pair betweennesses
     and updates G's attributes to reflect the new scores.
     """
-    # TOOD: get all shortest paths of length h + 1 or less.
-    # This whole function should be redone.
+    # Not guaranteed to work on multigraphs.
     all_pairs_shortest_paths = []
     # Counter for normalizing scores
     pathCounts = Counter()
@@ -222,7 +222,7 @@ def do_initial_betweenness(G, h):
         all_pairs_shortest_paths += s_s_shortest_paths
 
     # to ignore duplicate edges, uncomment the next line.
-    # all_pairs_shortest_paths = set(tuple(p) for p in all_pairs_shortest_paths)
+    #all_pairs_shortest_paths = set(tuple(p) for p in all_pairs_shortest_paths)
     for path in all_pairs_shortest_paths:
         pathCounts[(path[0], path[-1])] += 1
 

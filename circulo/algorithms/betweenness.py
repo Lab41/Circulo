@@ -60,3 +60,8 @@ def get_flows(G, index, eb, pb):
 				gFlowProportion = bfsDict[g]["numPaths"] / totalPaths / float(gCount[g])
 				gFlow = gFlowProportion * bfsDict[v]["flow"]
 				pairFlows[p][order_tuple((v, g))] = gFlow
+
+	##
+	# pairFlows are incorrect!!!
+	##
+	return flows, pairFlows
