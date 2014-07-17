@@ -7,176 +7,29 @@ import matplotlib.pyplot as plt
 import os
 import igraph
 from circulo.algorithms import spectral
+from circulo.algorithms import overlap
 from collections import namedtuple
 import numpy as np
+import sklearn.metrics
+import json
 
+'''
+TODO:
 
-#TODO Items:
-#1. Implement Cohesiveness
-#2. Implement TPR
-#3. Enable overlapping community metrics
-#4. Unit Tests
-#5. Integrate omega index scoring
+    - Integrate omega index scoring
+    - Verify/modify for overlapping communities
+    - Enable weights
+    - Unit tests
+    - Enable direction
+'''
+
 
 def f1(communities, ground_truth, out=None):
     '''
     Evaluates an input communities clustering to a ground truth clustering
     '''
-    f1_sum_0 = sum(get_highest_f1(x, communities) for x in ground_truth)
-    f1_sum_1 = sum(get_highest_f1(x, ground_truth) for x in communities)
 
-    final_score = .5 * (  1.0/float(len(ground_truth)) * f1_sum_0 + 1.0/float(len(communities)) * f1_sum_1)
-
-    if out is not None:
-        out.write("Evaluating F1 score\n")
-        out.write("{} Communities in ground truth\n".format(len(ground_truth)))
-        out.write("{} Communities in results\n".format(len(communities)))
-        out.write("F1 Score: {}\n".format(final_score))
-
-    return final_score
-
-
-def get_highest_f1(src_community, community_list):
-    """
-    Find the best matching community in the list using f1, then return highest score
-
-    :param src_community:   community to base search on
-    :param community_list:  list of communities to search in
-    """
-
-    max_f1 = 0.0
-
-    for matchee in community_list:
-        score = f1_score(src_community, matchee)
-        if score > max_f1:
-            max_f1 = score
-
-    return max_f1
-
-
-
-def f1_score(community_a, community_b):
-    """
-    according to http://en.wikipedia.org/wiki/F1_score
-
-    F_1 = 2 * (precision * recall) / (precision + recall)
-
-    where precision = #matched / len (set_a)
-          recall = #matched / len(set_b)
-    """
-
-    intersect_set = set(community_a).intersection(community_b)
-    overlap_len = len(intersect_set)
-
-    if overlap_len > 0:
-        precision = float(overlap_len) / float(len(community_a))
-        recall = float(overlap_len) / float(len(community_b))
-        return 2.0 * (precision * recall) / (precision + recall)
-    else:
-        return 0.0
-
-
-
-
-
-def graph_goodness_v2(comm_metrics):
-    '''
-    Graphs the change in the specified metric across communities relative to conductance
-    '''
-
-    metrics = [(c.conductance, c.density, c.degree_avg, c.fomd, c.degree_boundary_avg, c.cut_ratio, c.normalized_cut) for c in comm_metrics]
-
-    metrics_sorted = metrics.sort(key=lambda x: x[0], reverse=True)
-
-    c, d, a, f, e, cr, n  = zip(*metrics)
-
-    plt.subplot(331)
-    plt.plot(c)
-    plt.title("Conductance")
-    plt.subplot(332)
-    plt.plot(d)
-    plt.title("Density")
-    plt.subplot(333)
-    plt.plot(a)
-    plt.title("Average Degree")
-    plt.subplot(334)
-    plt.plot(f)
-    plt.title("FOMD")
-    plt.subplot(336)
-    plt.plot(e)
-    plt.title("Expansion")
-    plt.subplot(337)
-    plt.plot(cr)
-    plt.title("Cut Ratio")
-    plt.subplot(338)
-    plt.plot(n)
-    plt.title("Normalized Cut")
-
-
-    plt.show()
-
-
-
-
-
-def graph_goodness(comm_metrics):
-    '''
-    Graphs the change in the specified metric across communities
-    '''
-
-    plt.subplot(331)
-    plt.plot(sorted([c.density for c in comm_metrics ], reverse=True))
-    plt.ylabel("Density")
-
-    plt.subplot(332)
-    plt.plot(sorted([c.degree_avg for c in comm_metrics ], reverse=True))
-    plt.ylabel("Average Degree")
-
-    plt.title("Each graph is sorted highest to lowest y-value")
-    plt.subplot(333)
-    plt.plot(sorted([c.fomd for c in comm_metrics ], reverse=True))
-    plt.ylabel("FOMD")
-
-    plt.subplot(334)
-    plt.plot(sorted([c.tpr[1] for c in comm_metrics ], reverse=True))
-    plt.ylabel("TPR")
-
-    plt.subplot(335)
-    plt.plot(sorted([c.degree_boundary_avg for c in comm_metrics ], reverse=True))
-    plt.ylabel("Expansion")
-
-    plt.subplot(336)
-    plt.plot(sorted([c.cut_ratio for c in comm_metrics ], reverse=True))
-    plt.ylabel("Cut-Ratio")
-
-    plt.subplot(337)
-    plt.plot(sorted([c.conductance for c in comm_metrics ], reverse=True))
-    plt.ylabel("Conductance")
-
-    plt.subplot(338)
-    plt.plot(sorted([c.normalized_cut for c in comm_metrics ], reverse=True))
-    plt.ylabel("Normalized Cut")
-
-    plt.subplot(339)
-    plt.plot(sorted([c.separability for c in comm_metrics ], reverse=True))
-    plt.ylabel("Separability")
-
-    plt.show()
-
-
-
-def do_modularity(comm_metrics, G):
-    '''
-    Wrote another implementation of modularity for fun
-    '''
-
-    res = 0
-
-    for metric in comm_metrics:
-        res += (metric.edge_in_count / G.ecount()) - (metric.degree_sum / (G.ecount() * 2.))**2
-
-    return res
-
+    return sklearn.metrics.f1_score(ground_truth.membership, communities.membership)
 
 
 
@@ -186,67 +39,107 @@ class ClusterMetric:
     Internal Connectivity Metrics
     '''
 
-    def __init__(self, cluster_id, clustering, median_degree_G=None):
+    def __init__(self):
+        self.cover = None
+        self.cover_id = None
+        self.community = None
+        self.G = None
+        self.edge_in_count = None
+        self.edge_boundary_count = None
 
-        self.clustering = clustering
-        self.cluster_id = cluster_id
-        self.cluster = clustering.__getitem__(cluster_id)
-        self.G = clustering.graph
-        self.median_degree_G = median_degree_G
+        #degree caches
+        self.median_degree_G = None
+        self.degree_sum = None
+        self.median_degree_G = None
+        self.degree_in_dict = None
+        self.degree_boundary_dict = None
+        self.degree_avg = None
+        self.degree_boundary_avg = None
 
-        self.edge_in_count = 0.0
-        self.edge_boundary_count = 0.0
+        #metrics
+        self.density = None
+        self.fomd = None
+        self.cut_ratio = None
+        self.conductance = None
+        self.normalized_cut = None
+        self.odf_dict = None
+        self.separability = None
+        self.cohesiveness = None
+        self.clustering_coefficient = None
+        self.tpr = None
 
-        self.degree_in_dict = {}
-        self.degree_boundary_dict = {}
+    def generateMetric(cover_id, cover, median_degree_G=None):
 
+        m = ClusterMetric()
+        m.cover = cover
+        m.cover_id = cover_id
+        m.community = cover[cover_id]
+        m.G = cover.graph
+        m.median_degree_G = median_degree_G
+        m.edge_in_count = 0.0
+        m.edge_boundary_count = 0.0
+        m.degree_in_dict = {}
+        m.degree_boundary_dict = {}
 
         #for efficiency pruposes we allow the caller to send in the median
-        if self.median_degree_G is None:
-            self.median_degree_G = sum(self.G.degree())/self.G.vcount()
+        #however, if not provided we must calculate it
+        if m.median_degree_G is None:
+            m.median_degree_G = sum(m.G.degree())/m.G.vcount()
 
+        #set all values to 0 by default
+        for v in m.community:
+            m.degree_in_dict[v] = 0
+            m.degree_boundary_dict[v] = 0
 
-        for v in self.cluster:
-            self.degree_in_dict[v] = 0
-            self.degree_boundary_dict[v] = 0
-
-
-        for v in self.cluster:
-            for neighbor in self.G.neighbors(v):
+        for v in m.community:
+            for neighbor in m.G.neighbors(v):
                 #if the neighbor is in the cluster
-                if clustering.membership[neighbor] == cluster_id:
-                    self.degree_in_dict[v]+=1
+                if cover_id in m.cover.membership[neighbor]:
+                    m.degree_in_dict[v]+=1
                     if neighbor != v:
-                        self.edge_in_count+=.5
-                    else:  #self edge only is counted once
-                        self.edge_in_count+= 1.0
+                        m.edge_in_count+=.5
+                    else:  #m edge only is counted once
+                        m.edge_in_count+= 1.0
                 else:
-                    self.edge_boundary_count+=1.0
-                    self.degree_boundary_dict[v]+=1
+                    m.edge_boundary_count+=1.0
+                    m.degree_boundary_dict[v]+=1
 
-        self.degree_in_sum = sum(self.degree_in_dict.values())
-        self.degree_boundary_sum = sum(self.degree_boundary_dict.values())
-        self.degree_sum = sum(self.G.degree(self.cluster))
-        self.density = self.do_density()
-        self.degree_in_avg = self.do_degree_in_avg()
-        self.degree_avg = self.do_degree_avg()
-        self.fomd = self.do_fomd()
+        m.degree_in_sum = sum(m.degree_in_dict.values())
+        m.degree_boundary_sum = sum(m.degree_boundary_dict.values())
+        m.degree_sum = sum(m.G.degree(m.community))
+        m.density = m.do_density()
+        m.degree_in_avg = m.do_degree_in_avg()
+        m.degree_avg = m.do_degree_avg()
+        m.fomd = m.do_fomd()
 
-        self.degree_boundary_avg = self.do_degree_boundary_avg()
-        self.cut_ratio = self.do_cut_ratio()
-        self.conductance = self.do_conductance()
-        self.normalized_cut = self.do_normalized_cut(self.conductance)
-        self.odf_dict = self.do_odf()
-        self.separability = self.do_separability()
-        self.cohesiveness = self.do_cohesiveness()
-        self.clustering_coefficient = self.do_clustering_coefficient()
-        self.tpr = self.do_tpr()
+        m.degree_boundary_avg = m.do_degree_boundary_avg()
+        m.cut_ratio = m.do_cut_ratio()
+        m.conductance = m.do_conductance()
+        m.normalized_cut = m.do_normalized_cut(m.conductance)
+        m.odf_dict = m.do_odf()
+        m.separability = m.do_separability()
+        m.cohesiveness = m.do_cohesiveness()
+        m.clustering_coefficient = m.do_clustering_coefficient()
+        m.tpr = m.do_tpr()
+
+        return m
+
+    def to_dict(self):
+
+        return {
+                    'density': self.density,
+                    'degree_avg': self.degree_avg,
+                    'fomd':self.fomd,
+                    'expansion': self.degree_boundary_avg
+                }
+
+
 
     def __str__(self):
 
         #print self(G.summary(verbosity=verbosity))
         report =  """
-             Cluster ID: {cluster_id}
+             Cluster ID: {cover_id}
 
              Density:             {density}
              Average Degree:      {avg_degree}
@@ -260,7 +153,7 @@ class ClusterMetric:
              Separability:        {separability}
              Cohesiveness:        {cohesiveness}
              Clustering Coeff.:   {clustering_coefficient}
-        """.format(cluster_id = self.cluster_id,
+        """.format(cover_id = self.cover_id,
                     density=self.density,
                      avg_degree=self.degree_avg,
                      fomd=self.fomd,
@@ -281,10 +174,10 @@ class ClusterMetric:
 
         '''
 
-        if len(self.cluster) <= 1:
+        if len(self.community) <= 1:
             return 1.0
 
-        return  self.edge_in_count/(len(self.cluster) * (len(self.cluster) -1 ) / 2.0)
+        return  self.edge_in_count/(len(self.community) * (len(self.community) -1 ) / 2.0)
 
 
     def do_degree_in_avg(self):
@@ -294,7 +187,7 @@ class ClusterMetric:
         Equation: sum(degrees indegree of each node) / n
         '''
 
-        return self.degree_in_sum/float(len(self.cluster))
+        return self.degree_in_sum/float(len(self.community))
 
 
     def do_degree_boundary_avg(self):
@@ -303,7 +196,7 @@ class ClusterMetric:
         boundary edges divided by the number of nodes. This is also known as expansion
         '''
 
-        return self.degree_boundary_sum/float(len(self.cluster))
+        return self.degree_boundary_sum/float(len(self.community))
 
 
     def do_fomd(self):
@@ -327,10 +220,10 @@ class ClusterMetric:
 
         node_dict = dict()
 
-        for v in self.cluster:
+        for v in self.community:
             node_dict[v] = 0
 
-        for i in self.cluster:
+        for i in self.community:
             for j in self.G.neighbors(i):
                 if j != i and j in node_dict:
                     for k in self.G.neighbors(j):
@@ -347,21 +240,21 @@ class ClusterMetric:
             if v > 0:
                 node_count+=1
 
-        return node_dict, node_count/float(len(self.cluster))
+        return node_dict, node_count/float(len(self.community))
 
 
 
     def do_cut_ratio(self):
         '''
-        Fraction of existing edges (out of all possible edges) leaving the cluster
+        Fraction of existing edges (out of all possible edges) leaving the community
 
         '''
-        return self.degree_boundary_sum / float(  len(self.cluster) * (self.G.vcount() - len(self.cluster)))
+        return self.degree_boundary_sum / float(  len(self.community) * (self.G.vcount() - len(self.community)))
 
 
     def do_conductance(self):
         '''
-        Measures the fraction of total edge volume that points outside the cluster
+        Measures the fraction of total edge volume that points outside the community
 
         Equation: boundary_edges / num_directed_edges_originating_from_community
         '''
@@ -376,8 +269,8 @@ class ClusterMetric:
         Equation: conductance + ( num_boundary_edges / ( 2 * (|parent_E| - m) + num_boundary_edges)
         '''
 
-        #for now we consider a lone vertex cluster to have a normalized cut of 1
-        if len(self.cluster) == 1:
+        #for now we consider a lone vertex community to have a normalized cut of 1
+        if len(self.community) == 1:
             return 1.0
 
         return conductance + self.degree_boundary_sum / (2 * (self.G.ecount() - self.edge_in_count) + self.degree_boundary_sum)
@@ -388,7 +281,7 @@ class ClusterMetric:
         Calculates the average degree
         '''
 
-        return sum(self.G.degree(self.cluster))/float(len(self.cluster))
+        return sum(self.G.degree(self.community))/float(len(self.community))
 
 
     def do_odf(self):
@@ -405,7 +298,7 @@ class ClusterMetric:
         sum_odf = 0.0
         few_count = 0.0
 
-        for node_idx, degree in zip(self.cluster, self.G.degree(self.cluster)):
+        for node_idx, degree in zip(self.community, self.G.degree(self.community)):
             if degree <=0:
                 continue
             num_boundary_edges = self.degree_boundary_dict[node_idx]
@@ -417,8 +310,8 @@ class ClusterMetric:
             if num_boundary_edges > degree - num_boundary_edges:
                  few_count += 1
 
-        flake_odf = few_count / float(len(self.cluster))
-        avg_odf = sum_odf / float(len(self.cluster))
+        flake_odf = few_count / float(len(self.community))
+        avg_odf = sum_odf / float(len(self.community))
 
         return {"average":avg_odf, "flake":flake_odf, "max":max_odf}
 
@@ -438,20 +331,20 @@ class ClusterMetric:
         '''
         Equation: g(S) = minS′⊂S φ(S′) where φ(S′) is the conductance of S′ measured in the induced subgraph by S.
         To iterate over all possible subgraphs of a community would be too inefficient 2^n, therefore we approximate
-        the best subgraph (which would have the lowest conductance) by using Local Spectral Clustering to find the best
+        the best subgraph (which would have the lowest conductance) by using Local Spectral communitying to find the best
         cut
         (cite: http://cs.stanford.edu/people/jure/pubs/comscore-icdm12.pdf)
         '''
 
-        #first we must induce a graph from the cluster. A manageable size is 100 nodes, so if the cluster has fewer than
+        #first we must induce a graph from the community. A manageable size is 100 nodes, so if the community has fewer than
         #100 nodes, then just induce the graph using all nodes, otherwise induce the graph from a random 100 nodes
-        #if len(self.cluster) < 100:
-        #    G_i = self.G.induced_subgraph(self.cluster)
+        #if len(self.community) < 100:
+        #    G_i = self.G.induced_subgraph(self.community)
         #else:
-            #pick a random 100 from the cluster, for now just the top 100
-        #     G_i = self.G.induced_subgraph(self.cluster[:100])
-        G_i = self.G.induced_subgraph(self.cluster)
-        # We decided that a single or two-node cluster can't be divided further
+            #pick a random 100 from the community, for now just the top 100
+        #     G_i = self.G.induced_subgraph(self.community[:100])
+        G_i = self.G.induced_subgraph(self.community)
+        # We decided that a single or two-node community can't be divided further
         if G_i.vcount() <= 2:
             val = 1
         else:
@@ -468,7 +361,7 @@ class ClusterMetric:
         '''
 
         running_sum = 0.0
-        for v in self.cluster:
+        for v in self.community:
             edge_count = 0
             neighbors = self.G.neighbors(v)
             neighbors_dict = dict()
@@ -479,7 +372,7 @@ class ClusterMetric:
                 continue
 
             for n in neighbors:
-                if self.clustering.membership[n] == self.cluster_id:
+                if self.cover.membership[n] == self.cover_id:
                     neighbors_dict[n] = n
 
             for n in neighbors:
@@ -492,135 +385,141 @@ class ClusterMetric:
 
             running_sum += (edge_count / float( len(neighbors) * ( len(neighbors) - 1) ))
 
-        return running_sum / float(len(self.cluster))
+        return running_sum / float(len(self.community))
 
 
 
-def show_report(comm_metrics, f, clustering):
+class VertexCoverMetric:
 
-    f.write("===== Metrics Description =====\n\n")
-    f.write("Density\n")
-    f.write(ClusterMetric.do_density.__doc__)
-    f.write("\n")
-    f.write("Average Degree\n")
-    f.write(ClusterMetric.do_degree_avg.__doc__)
-    f.write("\n")
-    f.write("Fraction Over Median Degree (FOMD)")
-    f.write(ClusterMetric.do_fomd.__doc__)
-    f.write("\n")
-    f.write("Triangle Participation Ratio (TPR)")
-    f.write(ClusterMetric.do_tpr.__doc__)
-    f.write("\n")
-    f.write("Average Boundary Edge Count (aka Expansion)")
-    f.write(ClusterMetric.do_degree_boundary_avg.__doc__)
-    f.write("\n")
-    f.write("Cut-Ratio")
-    f.write(ClusterMetric.do_cut_ratio.__doc__)
-    f.write("\n")
-    f.write("Conductance")
-    f.write(ClusterMetric.do_conductance.__doc__)
-    f.write("\n")
-    f.write("Normalized Cut")
-    f.write(ClusterMetric.do_normalized_cut.__doc__)
-    f.write("\n")
-    f.write("Out Degree Fraction (odf)")
-    f.write(ClusterMetric.do_odf.__doc__)
-    f.write("\n")
-    f.write("Separability")
-    f.write(ClusterMetric.do_separability.__doc__)
-    f.write("\n")
-    f.write("Cohesiveness")
-    f.write(ClusterMetric.do_cohesiveness.__doc__)
-    f.write("\n")
-    f.write("Clustering Coefficient")
-    f.write(ClusterMetric.do_clustering_coefficient.__doc__)
-    f.write("\n")
-    f.write("\n\n")
+    def __init__(self):
+        self.cover = None
+        self.comm_metrics = list()
+        self.modularity = None
 
-    f.write("####################Metrics Report #########################\n\n")
+    def run_analysis(cover, weights="weight"):
+        '''
+        :cover: the vertex cover representing the communities
+        '''
 
-    #prints adjacency list
-    #f.write(clustering.graph.summary(verbosity=1))
+        #create the instance
+        coverMetric = VertexCoverMetric()
+
+        num_comms = len(cover)
+
+        #calculate metrics
+        coverMetric.comm_metrics = [ClusterMetric.generateMetric(cover_id, cover) for cover_id in range(num_comms)]
+        coverMetric.cover = cover
+
+        get_sigmas( (c.density for c in coverMetric.comm_metrics), num_comms )
+        get_sigmas( (c.separability for c in coverMetric.comm_metrics), num_comms )
+        get_sigmas( (c.cohesiveness for c in coverMetric.comm_metrics), num_comms )
+        get_sigmas( (c.clustering_coefficient for c in coverMetric.comm_metrics), num_comms )
 
 
-    #TODO: make compatible with weights
-    weights = None
+        coverMetric.modularity = overlap.lazar_modularity(cover.graph, cover)
 
-    f.write("========= Network Centric ==============\n")
-    #could also use the igrpah modularity function too
-    f.write("Modularity...........{}".format(do_modularity(comm_metrics, clustering.graph)))
-    #TODO: Ratio Cut for the network
-    f.write("\n\n")
-    f.write("========= Community Centric Averages ===\n")
-    f.write("Density..................{}\n".format(sum(c.density for c in comm_metrics)/len(comm_metrics)))
-    f.write("Avg_degree.............. {}\n".format(sum(c.degree_avg for c in comm_metrics)/len(comm_metrics)))
-    f.write("FOMD.................... {}\n".format(sum(c.fomd for c in comm_metrics)/len(comm_metrics)))
-    f.write("TPR......................{}\n".format(sum(c.tpr[1] for c in comm_metrics)/len(comm_metrics)))
-    f.write("Avg Boundary Edge Count..{}\n".format(sum(c.degree_boundary_avg for c in comm_metrics)/len(comm_metrics)))
-    f.write("Cut-Ratio................{}\n".format(sum(c.cut_ratio for c in comm_metrics)/len(comm_metrics)))
-    f.write("Conductance..............{}\n".format(sum(c.conductance for c in comm_metrics)/len(comm_metrics)))
-    f.write("Normalized Cut...........{}\n".format(sum(c.normalized_cut for c in comm_metrics)/len(comm_metrics)))
-    #f.write("ODF......................{}".format(sum(c.odf for c in comm_metrics)/len(comm_metrics)))
-    f.write("Separability.............{}\n".format(sum(c.separability for c in comm_metrics)/len(comm_metrics)))
-    f.write("Cohesiveness.............{}\n".format(sum(c.cohesiveness for c in comm_metrics)/len(comm_metrics)))
-    f.write("Clustering Coefficent....{}\n".format(sum(c.clustering_coefficient for c in comm_metrics)/len(comm_metrics)))
-    f.write("\n\n")
+        return coverMetric
+
+    def report(self, f=sys.stdout):
+
+        G = self.cover.graph
+
+        f.write("===== Metrics Description =====\n\n")
+        f.write("Density\n")
+        f.write(ClusterMetric.do_density.__doc__)
+        f.write("\n")
+        f.write("Average Degree\n")
+        f.write(ClusterMetric.do_degree_avg.__doc__)
+        f.write("\n")
+        f.write("Fraction Over Median Degree (FOMD)")
+        f.write(ClusterMetric.do_fomd.__doc__)
+        f.write("\n")
+        f.write("Triangle Participation Ratio (TPR)")
+        f.write(ClusterMetric.do_tpr.__doc__)
+        f.write("\n")
+        f.write("Average Boundary Edge Count (aka Expansion)")
+        f.write(ClusterMetric.do_degree_boundary_avg.__doc__)
+        f.write("\n")
+        f.write("Cut-Ratio")
+        f.write(ClusterMetric.do_cut_ratio.__doc__)
+        f.write("\n")
+        f.write("Conductance")
+        f.write(ClusterMetric.do_conductance.__doc__)
+        f.write("\n")
+        f.write("Normalized Cut")
+        f.write(ClusterMetric.do_normalized_cut.__doc__)
+        f.write("\n")
+        f.write("Out Degree Fraction (odf)")
+        f.write(ClusterMetric.do_odf.__doc__)
+        f.write("\n")
+        f.write("Separability")
+        f.write(ClusterMetric.do_separability.__doc__)
+        f.write("\n")
+        f.write("Cohesiveness")
+        f.write(ClusterMetric.do_cohesiveness.__doc__)
+        f.write("\n")
+        f.write("Clustering Coefficient")
+        f.write(ClusterMetric.do_clustering_coefficient.__doc__)
+        f.write("\n")
+        f.write("\n\n")
+
+        f.write("####################Metrics Report #########################\n\n")
+
+        #prints adjacency list
+        #f.write(clustering.graph.summary(verbosity=1))
 
 
-    for m in comm_metrics:
-        f.write("{}".format(m))
+        #TODO: make compatible with weights
+        weights = None
 
-    f.write("\n\n")
+        f.write("========= Network Centric ==============\n")
+        #could also use the igrpah modularity function too
+        f.write("Modularity.............{}".format(self.modularity))
 
+        num_comms = len(self.comm_metrics)
+
+        #TODO: Ratio Cut for the network
+        f.write("\n\n")
+        f.write("========= Community Centric Averages ===\n")
+        f.write("Density..................{}\n".format(sum(c.density for c in self.comm_metrics)/num_comms))
+        f.write("Avg_degree.............. {}\n".format(sum(c.degree_avg for c in self.comm_metrics)/num_comms))
+        f.write("FOMD.................... {}\n".format(sum(c.fomd for c in self.comm_metrics)/num_comms))
+        f.write("TPR......................{}\n".format(sum(c.tpr[1] for c in self.comm_metrics)/num_comms))
+        f.write("Avg Boundary Edge Count..{}\n".format(sum(c.degree_boundary_avg for c in self.comm_metrics)/num_comms))
+        f.write("Cut-Ratio................{}\n".format(sum(c.cut_ratio for c in self.comm_metrics)/num_comms))
+        f.write("Conductance..............{}\n".format(sum(c.conductance for c in self.comm_metrics)/num_comms))
+        f.write("Normalized Cut...........{}\n".format(sum(c.normalized_cut for c in self.comm_metrics)/num_comms))
+        #f.write("ODF......................{}".format(sum(c.odf for c in comm_metrics)/len(comm_metrics)))
+        f.write("Separability.............{}\n".format(sum(c.separability for c in self.comm_metrics)/num_comms))
+        f.write("Cohesiveness.............{}\n".format(sum(c.cohesiveness for c in self.comm_metrics)/num_comms))
+        f.write("Clustering Coefficent....{}\n".format(sum(c.clustering_coefficient for c in self.comm_metrics)/num_comms))
+        f.write("\n\n")
+
+
+        for m in self.comm_metrics:
+            f.write("{}".format(m))
+
+        f.write("\n\n")
+
+
+    def to_json(self, out="metrics.json"):
+
+        ret = json.dumps(
+                    {'metrcs':
+                        {'moduarity':self.modularity,
+                         'communities': [ m.to_dict() for m in self.comm_metrics]
+                         }
+                    }
+                    )
+
+        with open(out, "w") as f:
+            f.write(ret)
 
 
 
 def ground_truth_metrics(comms, ground_truth, G, out):
    f1(comms, ground_truth, out)
 
-
-
-def run_analysis(communities, ground_truth=None, report_file=None):
-    '''
-    Performs analysis on communities and optionally ground truth
-
-    '''
-
-    print("Running metrics analysis")
-
-    if report_file:
-        out = open(report_file, 'w')
-    else:
-        out = sys.stdout
-
-
-    if isinstance(communities, igraph.VertexDendrogram):
-        clustering = communities.as_clustering()
-    else:
-        clustering = communities
-
-    G = clustering.graph
-
-    comm_metrics = list()
-
-    #calculate the metric then set specified values in efficient numpy arrays for further computation
-    for cluster_id in range(len(clustering)):
-        comm_metrics.append(ClusterMetric(cluster_id, clustering))
-
-
-    get_sigmas( (c.density for c in comm_metrics), len(comm_metrics) )
-    get_sigmas( (c.separability for c in comm_metrics), len(comm_metrics) )
-    get_sigmas( (c.cohesiveness for c in comm_metrics), len(comm_metrics) )
-    get_sigmas( (c.clustering_coefficient for c in comm_metrics), len(comm_metrics) )
-
-    show_report(comm_metrics, out, clustering)
-
-    #if ground_truth:
-    #    f1(communities, ground_truth, out)
-
-
-
-    #graph_goodness(comm_metrics)
 
 
 def get_sigmas(generator, num_comms):
