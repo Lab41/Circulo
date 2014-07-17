@@ -337,7 +337,7 @@ def complete_factor(H, M, h_on_left=True):
         residual = sense_residual_left_factor
 
     size = shape[0] * shape[1]
-    guess = np.zeros(size)
+    guess = np.random.rand(size)
     bounds = [(0, None)] * size # (all elements of matrix must be nonnegative)
     result = minimize(residual, guess, args=(H, M), method='L-BFGS-B', bounds=bounds)
 
