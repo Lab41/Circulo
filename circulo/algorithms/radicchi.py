@@ -2,7 +2,7 @@ import sys
 import igraph as ig
 import itertools
 
-def radicchi_wrapper(G, measure='strong'):
+def radicchi_wrapper(G, measure='weak'):
     g = G.copy()
     g.vs['id'] = list(range(g.vcount()))
 
@@ -65,6 +65,8 @@ def radicchi(G, g, level, measure='strong'):
     print(("  " * level) + "------------------")
 
 def prune_components(orig, new, community_measure='strong'):
+    """ Uses the given community measure to prune connected components in the graph new that
+        represent communities in the graph orig, using the given community measure.  """
     components = new.components()
     ids = new.vs['id']
 
@@ -161,7 +163,7 @@ def edge_clustering_coefficient_4(G, u, v):
         return (num_squares + 1.0) / mdeg
 
 def main(argv):
-    g = ig.Graph.Read_GML('lesmis.gml')
+    g = ig.Graph.Read_GML('netscience.gml')
     communities = radicchi_wrapper(g)
     print(communities)
     return communities
