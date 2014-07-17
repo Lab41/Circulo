@@ -137,7 +137,7 @@ def get_graph(options={"congress_type":"senate"}):
 
 
     if not os.path.exists(data_dir):
-        __download__(data_dir, options)
+        __download__(data_dir)
 
     if not os.path.exists(graph_path):
         __prepare__(data_dir, graph_path, options)
