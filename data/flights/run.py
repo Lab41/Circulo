@@ -10,113 +10,236 @@ import urllib.request
 
 # from http://openflights.org/data.html
 
-SOURCE_URL = 'https://sourceforge.net/p/openflights/code/HEAD/tree/openflights/data/routes.dat?format=raw'
-FILENAME = 'routes'
-SCHEMA = {"airline": 0, "airline_id": 1, "source_airport": 2, "source_id": 3, 
-          "dest_airport": 4, "dest_id": 5, "codeshare": 6, "stops": 7, 
-          "equipment": 8}
+AIRPORTS_URL = 'https://sourceforge.net/p/openflights/code/HEAD/tree/openflights/data/airports.dat?format=raw'
+AIRPORTS_FILENAME = 'airports'
+
+# "name" is really airport id, but is called name because igraph automatically
+# indexes on name.
+AIRPORTS_SCHEMA = {"name": 0, "airport_name": 1, "city": 2, "country": 3, 
+                   "IATA/FAA": 4, "ICAO": 5, "latitude": 6, "longitude": 7, 
+                   "altitude": 8, "timezone": 9, "DST": 10}
+
+ROUTES_URL = 'https://sourceforge.net/p/openflights/code/HEAD/tree/openflights/data/routes.dat?format=raw'
+ROUTES_FILENAME = 'routes'
+ROUTES_SCHEMA = {"airline": 0, "airline_id": 1, "source_airport": 2, 
+                 "source_id": 3, "dest_airport": 4, "dest_id": 5, 
+                 "codeshare": 6, "stops": 7, "equipment": 8}
+
 
 def __download__(data_dir):
     """
-    TODO
+    Downloads the data from AIRPORTS_URL and ROUTES_URL, and saves
+    the results in data_dir.
     """
-    #mkdir data
-    try:
-        result = urllib.request.urlretrieve(SOURCE_URL, os.path.join(data_dir, FILENAME + ".dat"))
-    except Exception as e:
-        print("Download failed -- make sure the url is still valid, and that urllib is properly installed.")
-        raise(e)
-    return result[0] # filename
+    if not os.path.exists(data_dir):
+        os.mkdir(data_dir)
+    download_with_notes(AIRPORTS_URL, AIRPORTS_FILENAME, data_dir)
+    download_with_notes(ROUTES_URL, ROUTES_FILENAME, data_dir)
 
+
+def download_with_notes(URL, FILENAME, data_dir):
+    """
+    Uses urllib to download data from URL. Saves the results in 
+    data_dir/FILENAME. Provides basic logging to stdout.
+    """
+    print("Downloading data from " + URL + ".....")
+    try:
+        urllib.request.urlretrieve(URL, os.path.join(data_dir, FILENAME + ".dat"))
+    except Exception as e:
+        print("Data download failed -- make sure the url is still valid, and that urllib is properly installed.\n\n")
+        raise(e)
+    print("Download complete.")
 
 
 def __prepare__(data_dir):
     """
-    TODO
+    Takes files downloaded by __download__ and converts them into .graphml 
+    format. 
+
+    The graph prepared is **directed**, where the vertices are the airports,
+    and there is an edge wherever there is a flight from one airport to 
+    another. Note that an edge a->b does not imply b->a.
     """
+    newFileName = os.path.join(data_dir, ROUTES_FILENAME + ".graphml")
+    print("Parsing airport data...")
+    # Create G with airports as vertices
+    G = initialize_vertices(os.path.join(data_dir, AIRPORTS_FILENAME + ".dat"))
+    print("Parsing route data...")
+    # Add all edges to G
+    initialize_edges(G, os.path.join(data_dir, ROUTES_FILENAME + ".dat"))
+    print("Graph successfully created.")
+    print("Deleting airports with no flights...")
+    # Delete all vertices with degree 0
+    delete_empty_airports(G)
+    print("Writing to " + newFileName + "...")
+    G.write_graphml(newFileName)
+    print("Data is now available in " + newFileName)
 
-    # in case there are multiple .dat files to be examined.
-    for f in glob.glob(os.path.join(data_dir, "*.dat")):
-        print(f)
-        newFileName = f[:f.rfind('.')] + ".graphml"
-        if os.path.exists(newFileName):
-            continue
-        G = dat_to_graph(f)
-        G.write_graphml(newFileName)
 
+def initialize_vertices(fileName):
+    """
+    Reads a file fileName, that is assumed to conform to AIRPORTS_SCHEMA. 
+    Returns a directed igraph.Graph where there is a vertex for each
+    airport, with vertex attributes described in AIRPORTS_SCHEMA.  
+    """
+    vertices = {}
+    for a in AIRPORTS_SCHEMA:
+        vertices[a] = []
 
-def dat_to_graph(fileName):
-    G = igraph.Graph(directed=True)
     with open(fileName, 'r') as f:
         for line in f:
-            print(line)
             line = line.strip().split(',')
-            vSource, vDest = add_vertices_if_needed(G, line)
-            airline = line[SCHEMA["airline"]]
-            airline_id = line[SCHEMA["airline_id"]]
-            codeshare = line[SCHEMA["codeshare"]]
-            stops = line[SCHEMA["stops"]]
-            equipment = line[SCHEMA["equipment"]]
-            G.add_edge(vSource, vDest, **{"airline": airline,
-                "airline_id": airline_id, "codeshare": codeshare,
-                "stops": stops, "equipment": equipment})
-    return G
+            for a in AIRPORTS_SCHEMA:
+                attr = line[AIRPORTS_SCHEMA[a]]
+                if attr == "\\N":
+                    attr = None
+                vertices[a].append(attr)
+    numVertices = len(vertices[a])
+    print("Adding vertices to graph...")
+    return igraph.Graph(n=numVertices, directed=True, vertex_attrs=vertices)
 
 
-def add_vertices_if_needed(G, line):
-    sourceID = line[SCHEMA["source_id"]]
-    sourceAirport = line[SCHEMA["source_airport"]]
-    destID = line[SCHEMA["dest_id"]]
-    destAirport = line[SCHEMA["dest_airport"]]
-    try:
-        # indexed by name, so constant time
-        vSource = G.vs.find(sourceID)
-    except ValueError:
-        G.add_vertex(name=sourceID, **{"airport_name": sourceAirport})
-        vSource = G.vs[G.vcount() - 1]
-    try:
-        vDest = G.vs.find(destID)
-    except ValueError:
-        G.add_vertex(name=destID, **{"airport_name": destAirport})
-        vDest = G.vs[G.vcount() - 1]
-    return vSource, vDest
+def initialize_edges(G, fileName):
+    """
+    Reads a file fileName, that is assumed to conform to ROUTES_SCHEMA. 
+    Adds edges to G such that an edge exists from a to b if there is a
+    flight from a to b. 
 
+    Notes: 
+        * This creates a multigraph. Routes from different airlines are not
+    coalesced.
+
+        * Not all of the routes in routes.dat have records of both airports. 
+    These records are skipped.
+
+        * Remember, the graph is directed! Call .as_undirected() to pretend as
+    though it's not.
+    """
+    edges = []
+    attrs = {}
+    for a in ROUTES_SCHEMA:
+        attrs[a] = []
+
+    with open(fileName, 'r') as f:
+        for line in f:
+            line = line.strip().split(',')
+            source_id = line[ROUTES_SCHEMA["source_id"]]
+            dest_id = line[ROUTES_SCHEMA["dest_id"]]
+            try:
+                source = G.vs.find(source_id).index
+                dest = G.vs.find(dest_id).index
+            except ValueError:
+                badRoute = source_id + " ==> " + dest_id
+                print("Skipping " + badRoute + " (Insufficient information to create edge.)")
+            edges.append((source, dest))
+            for a in ROUTES_SCHEMA:
+                attr = line[ROUTES_SCHEMA[a]]
+                if attr == "\\N":
+                    attr = None
+                attrs[a].append(attr)
+    print("Adding edges to graph...")
+    G.add_edges(edges)
+    for a in ROUTES_SCHEMA:
+        G.es[a] = attrs[a]
+
+
+def delete_empty_airports(G):
+    """
+    Given G, deletes all nodes with degree 0.
+    """
+    toDelete = []
+    for v in G.vs:
+        if not v.degree():
+            toDelete.append(v)
+    G.delete_vertices(toDelete)
 
 
 def get_graph():
     """
-    TOOD
+    Returns a directed graph of flights, where the vertices are airports
+    and the edges are flights. The returned graph is a multigraph, because
+    routes from different airlines are not coalesced.
+
+    Note that the "name" attribute is probably not what one would expect. 
+    It is implemented this way because igraph indexes on "name," but no other
+    attributes, and we often need to find the OpenFlights identifier.
+
+    Each vertex has the following attributes:
+        name: Unique OpenFlights identifier for this airport.
+        airport_name: Name of airport. May or may not contain the City name.
+        city: Main city served by airport.
+        country: Country or territory where airport is located.
+        IATA/FAA: 3-letter FAA code, for airports located in Country "United 
+            States of America".
+            3-letter IATA code, for all other airports.
+            Blank if not assigned.
+        ICAO: 4-letter ICAO code.
+            Blank if not assigned.
+        latitude: Decimal degrees, usually to six significant digits. Negative
+            is South, positive is North.
+        longitude: Decimal degrees, usually to six significant digits.
+            Negative is West, positive is East.
+        altitude: In feet.
+        timezone: Hours offset from UTC. Fractional hours are expressed as
+            decimals, eg. India is 5.5.
+        DST: Daylight savings time. One of E (Europe), A (US/Canada), 
+            S (South America), O (Australia), Z (New Zealand), N (None) or 
+            U (Unknown).
+
+    Each edge has the following attributes:
+        airline: 2-letter (IATA) or 3-letter (ICAO) code of the airline.
+        airline_id: Unique OpenFlights identifier for airline.
+        source_airport: 3-letter (IATA) or 4-letter (ICAO) code of the source
+            airport.
+        source_id: Unique OpenFlights identifier for source airport.
+            Airport)
+        dest_airport: 3-letter (IATA) or 4-letter (ICAO) code of the
+            destination airport.
+        dest_id: Unique OpenFlights identifier for destination airport.
+        codeshare: "Y" if this flight is a codeshare (that is, not operated by
+            Airline, but another carrier), empty otherwise.
+        stops: Number of stops on this flight ("0" for direct)
+        equipment: 3-letter codes for plane type(s) generally used on this
+            flight, separated by spaces
     """
     data_dir = os.path.join(os.path.dirname(__file__), "data")
-    graph_path = os.path.join(data_dir, FILENAME + ".graphml")
+    graph_path = os.path.join(data_dir, ROUTES_FILENAME + ".graphml")
 
     if not os.path.exists(graph_path):
         __download__(data_dir)
         __prepare__(data_dir)
+    else:
+        print(graph_path, "already exists. Using old file.")
 
     return igraph.load(graph_path)
 
 
-def get_ground_truth(G=None):
+def get_ground_truth(G=None, attr='country'):
     """
-    TODO
+    Ground Truth is hard to define for the flight info. This Ground
+    Truth simply clusters the nodes by country. Another possibility 
+    would be DST, which is essentially continents, or timezone. Returns a 
+    VertexClustering object.
     """
+    if G is None:
+        G = get_graph()
 
-    # if G is None:
-    #     G = get_graph()
+    # initialize a dict of the form {a: none}
+    # where a is an option that appears in g.vs[attr]
+    categories = dict.fromkeys(G.vs[attr])
 
+    # Let each key of the dict refer to its own community.
+    counter = 0
+    for i in categories:
+        categories[i] = counter
+        counter += 1
 
-    # class_list = G.vs['classname']
-    # class_dict = dict.fromkeys(class_list)
+    # creates a membership list of vertices of the form 
+    # [x_0, x_1, x_2...] where x_i is the number of the 
+    # category that vertex i belongs to.
+    membership = [categories[v[attr]] for v in G.vs]
 
-    # #set the indices for lookup purposes. These will be the cluster ids
-    # for idx, k in enumerate(class_dict):
-    #     class_dict[k] = idx
-
-
-    # membership = [ class_dict[student]  for student in class_list]
-
-    # return VertexClustering(G, membership)
+    return VertexClustering(G, membership)
 
 
 
