@@ -5,7 +5,7 @@ from igraph import VertexClustering
 import os
 import sys
 import glob
-import urllib
+import urllib.request
 
 
 # from http://openflights.org/data.html
@@ -46,11 +46,41 @@ def __prepare__(data_dir):
 
 
 def dat_to_graph(fileName):
-    G = igraph.Graph()
+    G = igraph.Graph(directed=True)
     with open(fileName, 'r') as f:
         for line in f:
-            line = line.strip().split(',')
             print(line)
+            line = line.strip().split(',')
+            vSource, vDest = add_vertices_if_needed(G, line)
+            airline = line[SCHEMA["airline"]]
+            airline_id = line[SCHEMA["airline_id"]]
+            codeshare = line[SCHEMA["codeshare"]]
+            stops = line[SCHEMA["stops"]]
+            equipment = line[SCHEMA["equipment"]]
+            G.add_edge(vSource, vDest, **{"airline": airline,
+                "airline_id": airline_id, "codeshare": codeshare,
+                "stops": stops, "equipment": equipment})
+    return G
+
+
+def add_vertices_if_needed(G, line):
+    sourceID = line[SCHEMA["source_id"]]
+    sourceAirport = line[SCHEMA["source_airport"]]
+    destID = line[SCHEMA["dest_id"]]
+    destAirport = line[SCHEMA["dest_airport"]]
+    try:
+        # indexed by name, so constant time
+        vSource = G.vs.find(sourceID)
+    except ValueError:
+        G.add_vertex(name=sourceID, **{"airport_name": sourceAirport})
+        vSource = G.vs[G.vcount() - 1]
+    try:
+        vDest = G.vs.find(destID)
+    except ValueError:
+        G.add_vertex(name=destID, **{"airport_name": destAirport})
+        vDest = G.vs[G.vcount() - 1]
+    return vSource, vDest
+
 
 
 def get_graph():
