@@ -1,14 +1,11 @@
-import networkx as nx
-from subprocess import call
 import igraph
 from igraph import VertexClustering
 import os
 import sys
-import glob
 import urllib.request
 
 
-# from http://openflights.org/data.html
+# Data from from http://openflights.org/data.html
 
 AIRPORTS_URL = 'https://sourceforge.net/p/openflights/code/HEAD/tree/openflights/data/airports.dat?format=raw'
 AIRPORTS_FILENAME = 'airports'
