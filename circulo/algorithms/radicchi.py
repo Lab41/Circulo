@@ -3,6 +3,9 @@ import igraph as ig
 import itertools
 
 def radicchi_wrapper(G, measure='weak'):
+    """ Wrapper for execution of the Radicchi community-detection algorithm. Returns 
+    covers of the graph, with metadata representing provenance - in essence, a "dendrogram"
+    that represents splits into communities. """
     g = G.copy()
     g.vs['id'] = list(range(g.vcount()))
 
@@ -20,6 +23,8 @@ def radicchi(G, g, level, measure='strong'):
     print(("  " * level) + "At level %s" % level)
 
     edge_clustering_coefficient = edge_clustering_coefficient_3 if (measure == 'strong') else edge_clustering_coefficient_4
+
+    communities = []
     while True:
         if g.ecount() == 0:
             break
@@ -53,16 +58,32 @@ def radicchi(G, g, level, measure='strong'):
                     print(("  " * level) + "Community names: %s" % community_labels)
                     # print(("  " * level) + "Leaving level %s" % level)
                     s = g.subgraph(c)
-                    radicchi(G, s, level+1, measure)
+                    subcommunities = radicchi(G, s, level+1, measure)
+                    if(len(subcommunities) == 0):
+                        communities.append(orig_communities[i])
+                    else:
+                        communities.extend(subcommunities)
+
                     # print(("  " * level) + "Back to level %s" % level)
 
+                orig_remaining = [g.vs['id'][i] for i in remaining]
+                remaining_labels = [g.vs['label'][i] for i in remaining] 
+                print(("  " * level) + "Working with remainder: %s" % orig_remaining)
+                print(("  " * level) + "Remainder names: %s" % remaining_labels)
                 r = g.subgraph(remaining)
-                radicchi(G, r, level+1, measure)
+                subcommunities = radicchi(G, r, level+1, measure)
+                clustered = sum(subcommunities, [])
+
+                isolated_remaining = [i for i in orig_remaining if i not in clustered]
+                print(("  " * level) + "Found isolates: %s" % isolated_remaining)
+                communities.extend([[i] for i in isolated_remaining])
 
                 break
 
     print(("  " * level) + "Done with level %s" % level)
     print(("  " * level) + "------------------")
+
+    return communities
 
 def prune_components(orig, new, community_measure='strong'):
     """ Uses the given community measure to prune connected components in the graph new that
