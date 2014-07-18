@@ -9,7 +9,14 @@ def radicchi_wrapper(G, measure='weak'):
     g = G.copy()
     g.vs['id'] = list(range(g.vcount()))
 
-    return radicchi(G, g, 0, measure=measure)
+    result = radicchi(G, g, 0, measure=measure)
+
+    clustering = [0] * G.vcount()
+    for i,l in enumerate(result):
+        for v in l:
+            clustering[v] = i
+
+    return ig.VertexClustering(G, clustering)
 
 def radicchi(G, g, level, measure='strong'):
     """
