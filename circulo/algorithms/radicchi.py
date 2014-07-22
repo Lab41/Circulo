@@ -29,29 +29,34 @@ def radicchi(G, g, level, measure='strong'):
     print(("  " * level) + "------------------")
     print(("  " * level) + "At level %s" % level)
 
+    degree = g.degree()
+    neighbors = [set(g.neighbors(v)) for v in g.vs]
+    edges = {e.tuple for e in g.es}
+
     edge_clustering_coefficient = edge_clustering_coefficient_3 if (measure == 'strong') else edge_clustering_coefficient_4
 
     communities = []
     while True:
-        if g.ecount() == 0:
+        if len(edges) == 0:
             break
 
         min_edge = None; min_ecc = None
-        for e in g.es:
-            edge = e.tuple
-            ecc = edge_clustering_coefficient(g, edge[0], edge[1])
+        for e in edges:
+            ecc = edge_clustering_coefficient(e[0], e[1], degree, neighbors)
             if not min_edge or ecc < min_ecc:
-                min_edge = edge
+                min_edge = e
                 min_ecc = ecc
 
-        g.delete_edges([min_edge])
+        g.delete_edges([min_edge]); edges.discard(min_edge)
         u, v = min_edge
+        neighbors[u].discard(v); neighbors[v].discard(u)
+        degree[u] -= 1; degree[v] -= 1
 
         print(("  " * level) + "Removing (%s, %s)" % (g.vs['label'][u], g.vs['label'][v]))
         
         if g.edge_connectivity(source=u, target=v) == 0:
-            # print("Graph has split")
-            # print(g.components())
+            print("Graph has split")
+            print(g.components())
 
             result = prune_components(G, g, community_measure=measure)
             if result['pruned']:
@@ -63,7 +68,7 @@ def radicchi(G, g, level, measure='strong'):
                     community_labels = [g.vs['label'][j] for j in c] 
                     print(("  " * level) + "Found a community: %s" % orig_communities[i])
                     print(("  " * level) + "Community names: %s" % community_labels)
-                    # print(("  " * level) + "Leaving level %s" % level)
+                    print(("  " * level) + "Leaving level %s" % level)
                     s = g.subgraph(c)
                     subcommunities = radicchi(G, s, level+1, measure)
                     if(len(subcommunities) == 0):
@@ -71,7 +76,7 @@ def radicchi(G, g, level, measure='strong'):
                     else:
                         communities.extend(subcommunities)
 
-                    # print(("  " * level) + "Back to level %s" % level)
+                    print(("  " * level) + "Back to level %s" % level)
 
                 orig_remaining = [g.vs['id'][i] for i in remaining]
                 remaining_labels = [g.vs['label'][i] for i in remaining] 
@@ -152,38 +157,38 @@ def is_weak_community(G, nodes):
 
     return insum > outsum
 
-def edge_clustering_coefficient_3(G, u, v):
+def edge_clustering_coefficient_3(u, v, degree, neighbors):
     """
     Computes the "edge clustering coefficient" of the given edge, defined as the number of triangles
     in which it participates compared to the maximum number of triangles of which it could be a part.
     """
-    udeg = G.degree(u)
-    vdeg = G.degree(v)
+    udeg = degree[u]
+    vdeg = degree[v]
     mdeg = min(udeg-1, vdeg-1)
     if mdeg == 0:
         return float('inf')
     else:
-        cdeg = len(set(G.neighbors(u)) & set(G.neighbors(v)))
+        cdeg = len(neighbors[u] & neighbors[v])
         return (cdeg + 1.0) / mdeg
 
-def edge_clustering_coefficient_4(G, u, v):
+def edge_clustering_coefficient_4(u, v, degree, neighbors):
     """
     Computes a modified form of the edge clustering coefficient using squares instead of triangles.
     """
-    udeg = G.degree(u)
-    vdeg = G.degree(v)
+    udeg = degree[u]
+    vdeg = degree[v]
     mdeg = min(udeg-1, vdeg-1)
     if mdeg == 0:
         return float('inf')
     else:
-        uneighbors = G.neighbors(u)
-        vneighbors = set(G.neighbors(v))
+        uneighbors = neighbors[u]
+        vneighbors = neighbors[v]
 
         num_squares = 0
         for w in uneighbors:
             if w == v:
                 continue
-            wneighbors = G.neighbors(w)
+            wneighbors = neighbors[w]
             for x in wneighbors:
                 if x != u and x in vneighbors:
                     num_squares += 1
