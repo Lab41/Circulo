@@ -55,8 +55,8 @@ def radicchi(G, g, level, measure='strong'):
         print(("  " * level) + "Removing (%s, %s)" % (g.vs['label'][u], g.vs['label'][v]))
         
         if g.edge_connectivity(source=u, target=v) == 0:
-            print("Graph has split")
-            print(g.components())
+            # print(("  " * level) + "Graph has split")
+            # print(g.components())
 
             result = prune_components(G, g, community_measure=measure)
             if result['pruned']:
@@ -189,9 +189,7 @@ def edge_clustering_coefficient_4(u, v, degree, neighbors):
             if w == v:
                 continue
             wneighbors = neighbors[w]
-            for x in wneighbors:
-                if x != u and x in vneighbors:
-                    num_squares += 1
+            num_squares += len(wneighbors & vneighbors) - 1
         
         return (num_squares + 1.0) / mdeg
 
