@@ -1,7 +1,6 @@
 import importlib
 import igraph 
-from circulo import metrics
-import omega
+from circulo import metrics, omega
 import pickle
 import argparse
 
