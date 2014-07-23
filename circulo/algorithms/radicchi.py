@@ -1,15 +1,21 @@
 import sys
 import igraph as ig
 import itertools
+import argparse
 
-def radicchi_wrapper(G, measure='weak'):
+def radicchi(G, measure='weak'):
     """ Wrapper for execution of the Radicchi community-detection algorithm. Returns 
     covers of the graph, with metadata representing provenance - in essence, a "dendrogram"
     that represents splits into communities. """
     g = G.copy()
     g.vs['id'] = list(range(g.vcount()))
 
-    result = radicchi(G, g, 0, measure=measure)
+    if measure=='weak':
+        result = radicchi_internal(G, g, 0, measure=measure, clustering=4)
+    elif measure=='strong':
+        result = radicchi_internal(G, g, 0, measure=measure, clustering=3)
+    else:
+        raise Exception('Other measures of community not yet supported')
 
     clustering = [0] * G.vcount()
     for i,l in enumerate(result):
@@ -18,7 +24,7 @@ def radicchi_wrapper(G, measure='weak'):
 
     return ig.VertexClustering(G, clustering)
 
-def radicchi(G, g, level, measure='strong'):
+def radicchi_internal(G, g, level, measure='strong', clustering=3):
     """
     Uses the Radicchi et al. algorithm to find the communities in a graph. Returns a list of the splits in the graph.
     """
@@ -31,7 +37,10 @@ def radicchi(G, g, level, measure='strong'):
     edges = {e.tuple for e in g.es}
     n_components = len(g.components())
 
-    edge_clustering_coefficient = edge_clustering_coefficient_3 if (measure == 'strong') else edge_clustering_coefficient_4
+    if clustering == 3:
+        edge_clustering_coefficient = edge_clustering_coefficient_3 
+    else:
+        edge_clustering_coefficient = edge_clustering_coefficient_4
 
     communities = []
     while True:
@@ -67,7 +76,7 @@ def radicchi(G, g, level, measure='strong'):
 
                 for i,c in enumerate(new_communities):
                     s = g.subgraph(c)
-                    subcommunities = radicchi(G, s, level+1, measure)
+                    subcommunities = radicchi_internal(G, s, level+1, measure)
                     if len(subcommunities) == 0:
                         communities.append(orig_communities[i])
                     else:
@@ -75,7 +84,7 @@ def radicchi(G, g, level, measure='strong'):
 
                 orig_remaining = [g.vs['id'][i] for i in remaining]
                 r = g.subgraph(remaining)
-                subcommunities = radicchi(G, r, level+1, measure)
+                subcommunities = radicchi_internal(G, r, level+1, measure)
                 clustered = sum(subcommunities, [])
                 isolated_remaining = [i for i in orig_remaining if i not in clustered]
                 communities.extend([[i] for i in isolated_remaining])
@@ -178,11 +187,22 @@ def edge_clustering_coefficient_4(u, v, degree, neighbors):
         
         return (num_squares + 1.0) / mdeg
 
-def main(argv):
-    g = ig.Graph.Read_GML('netscience.gml')
-    communities = radicchi_wrapper(g)
+def main():
+    parser = argparse.ArgumentParser(description="""Run the Radicchi algorithm from the command line.""")
+    parser.add_argument('-s', '--strength', choices=['strong', 'weak'], 
+                        help="""Use strong or weak definition of community structure in the graph.""")
+    parser.add_argument('file', nargs='?', help="""The path to the file in the GML file format.""")
+    args = parser.parse_args()
+
+    if not args.file:
+        print("radicchi.py: error: no file specified.")
+        print(parser.parse_args(['-h']))
+        return
+
+    g = ig.Graph.Read_GML(args.file).as_undirected()
+    communities = radicchi(g, measure=args.strength)
+
     print(communities)
-    return communities
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
