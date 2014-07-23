@@ -67,37 +67,29 @@
             </tr>
             <tr>
                 <td>Modularity [11]</td>
-                <td/>
+                <td>Comparative Scoring Function</td>
                 <td>No</td>
                 <td>Tests a given division of a network against the random division <br>
 		    Scale below which modularity cannot identify communities bc random graphs have high-modularity subsets <br>
 		    Does not work well under nodeswap perturbation</td>
             </tr>
             <tr>
-                <td>Average F1 Score</td>
-                <td/>
+                <td>F1 Score</td>
+                <td>Comparative Scoring Function</td>
                 <td>Yes</td>
-                <td></td>
+                <td>Determination of precision and recall.  Compares membership output of an algorithm to ground truth and returns the ratio of true and false assignments </td>
             </tr>
             <tr>
                 <td>Omega Index</td>
-                <td/>
+                <td>Comparative Scoring Function</td>
                 <td>Yes</td>
-                <td/>
+                <td>Compares non-disjoing clustering results.  The omega index considers the number of clusters in which a pair of objects appears together.</td>
             </tr>
             <tr>
                 <td>Normalized Mutual Information [10]</td>
-                <td/>
+                <td>Comparative Scoring Function</td>
                 <td>Yes</td>
-                <td>Used to quantify matching of "true" graphs particularly in synthetic graphs </td>
-            </tr>
-            
-            <tr>
-                <td>Accuracy in the number of communities</td>
-                <td/>
-                </td>
-                <td>Yes</td>
-                <td/>
+                <td>Used to quantify matching of "true" graphs particularly in synthetic graphs, it quantifies teh degree of overlap between graphs. </td>>
             </tr>
             
             <tr>
@@ -110,9 +102,9 @@
             
             <tr>
                 <td>FOMD</td>
-                <td/>
+                <td>Internal</td>
                 <td>No</td>
-                <td/>
+                <td>Fraction over Median Degree determines the number of nodes that have an internal degree greater than the median degree of all nodes in a group.</td>
             </tr>
 
             <tr>
@@ -260,9 +252,9 @@
                     <td>Divisive</td>
                     <td>O(nm^2)</td>
                     <td>D,H,G</td>
-                    <td>Mathmatica</td>
-                    <td>w-d</td>
-                    <td>Uses a tree structure to achieve edge betweeness of a graph in O(mn)</td>
+                    <td>Mathematica</td>
+                    <td>w,-d</td>
+                    <td>A global approach that iteratively removes links with teh highest betweenness score, a centrality metric that measures the number of times a link lies ont eh path between two other links.  This iteration uses a tree structure to achieve edge betweeness of a graph in O(mn)</td>
                 </tr>
                 <tr>
                     <td>Girvan-Newman (<b>random-walk betweenness</b>), 2004 [11][16]</td>
@@ -273,7 +265,7 @@
                 
                 
                 <tr>
-                    <td>Girvan-Newman (<b>current-flow betweenness</b>) , 2004 [11][16]</td>
+                    <td>Girvan-Newman (<b>current-flow betweenness</b>), 2004 [11][16]</td>
                     <td>Divisive</td>
                     <td>O((n+m)mn^2)</td>
                     <td/><td/><td/>
@@ -285,11 +277,10 @@
                 <tr>
                     <td>Infomaps[13]</td>
                     <td>Model Based/Information Theory/ Random Walk</td>
-                    <td>O((n^2)Log(n))</td>
-                    <td></td>
+                    <td>O((n^2)Log(n))</td><td/>
                     <td>snap, igraph</td>
-                    <td>wd</td>
-                    <td>Attempts to find partition that yields the minimum description length of an infinite random walk on the network</td>
+                    <td>w,d</td>
+                    <td>Attempts to find partition that yields the minimum description length of an infinite random walk on the network. It determines community and network structure by analyzing the flow of information, proxied throughr andom walk calculations, among various groups of nodes.</td>
                 </tr>
                 
                 
@@ -299,16 +290,18 @@
                         <td>Quality Optimization</td>
                         <td>O((m + n)n)</td>
                         <td>A,H</td>
-                        <td>Snap</td><td>w,-d</td>
+                        <td>Snap</td>
+                        <td>w,-d</td>
                         <td>Optimize Q over all divisions using agglomerative hierarchical clustering</td>
                 </tr>
                 <tr>
                     <td>Clauset-Newman-Moore [9]</td>
-                    <td>Quality Optimization</td>
+                    <td>Model Based, Quality Optimization</td>
                     <td>O(md log n) where d is depth of dendrogram</td>
-                    </td/><td/><td>Snap, igraph</td>
+                    <td/>
+                    <td>Snap, igraph</td>
                     <td></td>
-                    <td>Improves upon Fast Newman</td>
+                    <td>Improves upon Fast Newman, remains based oon the greedy optimization of modularity.  A modularity of >0.3 is a good indicator of a significant community structure.</td>
                 </tr>
                 <tr>
                     <td>BIGCLAM (Cluster Affilitation Model for Big Networks)[14]</td>
@@ -317,60 +310,56 @@
                     <td>O,H,G,Q,R+</td>
                     <td>Snap</td>
                     <td>-w,-d</td>
-                    <td>Partitioning that most likely produces the edges of a given graph, given the notion that nodes in the same community are more likely to share an edge<a href="http://www.youtube.com/watch?v=htWQWN1xAZQ">Video Lecture</a></td>
+                    <td>Partitioning that most likely produces the edges of a given graph, given the notion that nodes in the same community are more likely to share an edge. It captures the probability that a pair of nodes are connected as a funciton of that shared membership. <a href="http://www.youtube.com/watch?v=htWQWN1xAZQ">Video Lecture</a></td>
                 </tr>
                 
                 <tr>
                     <td>Label Propogation, 2007 [17]</td>
+                    <td>Vertex Clustering</td>
+                    <td/>
+                    <td>A</td>
                     <td/>
                     <td/>
-                    <td/>
-                    <td/>
-                    <td/>
-                    <td/>
+                    <td>Label Propagation uses the structure of the graph to cluster vertices.  Nodes are iteratively labeled with the label that most of its neighbors holds.  Densely connected groups form a consensus with a unique label. </td>
                 </tr>
                 
                 <tr>
                     <td>Fast Unfolding, 2008 [19]</td>
                     <td>Quality Optimization</td>
                     <td/>
-                        <td>H</td>
+                    <td>H</td>
                     <td>igraph</td>
-                    <td/>
-                        <td></td>
+                    <td>w,-d</td>
+                    <td>An iterative algorithm that calculates modularity based on nearest neighbros, joining nodes if the values are positive, and then builds a new network whose nodes are now communities based on step one. This it repeated until maximum modularity is achieved.</td>
                 </tr>
                 
                 <tr>
                     <td>WalkTrap, 2005 [18]</td>
-                    <td>Vertex Clustering</td>
-                        <td>O(n^4)</td>
-                    <td/>
+                    <td>Vertex Clustering, Quality Optimization</td>
+                    <td>O(n^4)</td>
+                    <td>A</td>
                     <td>igraph</td>
                     <td>w,-d</td>
                     <td>Defines a similarity metric between nodes based on distance to all other nodes from a random walk. Merges nodes in an agglomarative fashion that minimizes distance from other nodes in the community. Then picks partition that has highest modularity.</td>
                 </tr>
                 
                 <tr>
-                    <td>
-                        CESNA (Communities from Edge Structure and Node Attributes)<td/><td/><td/><td/><td/><td/>
+                    <td> CESNA (Communities from Edge Structure and Node Attributes) [26]</td>
+                   <td> Subgraph Discovery </td>
+                   <td> 1 million nodes in 10 hours</td>
+                   <td> Q,R+</td>
+                   <td> Snap</td>
+                   <td> -w,-d</td>
+                   <td> Detects overlapping communities in networks with node attributes.  Assumes that nodes that belong ot the same communities are likely to be connected to each other, communities can overlap, the more common communities a set of nodes share the more likely they are to be connected, and nodes in the same community are likely to share common attributes.</td>
                 </tr>
                 <tr>
                     <td>Radicchi et al [15]</td>
+                    <td>Model Based, Divisive</td>
+                    <td>O(m^2) on large systems</td>
                     <td/>
-                    <td/>
-                    <td/>
-                    <td/>
-                    <td/>
-                    <td/>
-                </tr>
-                <tr>
-                    <td>Louvain Method</td>
-                    <td/>
-                    <td/>
-                    <td/>
-                    <td>NetworkX</td>
-                    <td/>
-                    <td/>
+                    <td/>    
+                    <td>-d</td>
+                    <td>A local algorithm that returns similar results to Girvan Newman betweenness but reduces computational cost by using a local quantitiy--the number of loops of a given length that contains an edge--to choose which edge to remove. </td>
                 </tr>
                 
                 <tr>
@@ -400,16 +389,53 @@
                     <td>O,H,G,Q,R+</td>
                     <td>snap</td>
                     <td>-w,d</td>
-                    <td>Extension of BIGCLAM that incorporated directedness to discover community type</td>
+                    <td>Extension of BIGCLAM that incorporated directedness to discover community type. It detects overlapping communities as wel as cohesively and 2-mode communities, whether connected or hierarically nested.</td>
                 </tr>
 		<tr>
-                    <td>Clique Clique Percolation</td>
+                    <td>Clique Clique Percolation [27]</td>
                     <td>Cohesive Subgraph Discovery</td>
-			<td/>
-                            <td>CFinder</td>
-                            <td>G,D,S</td>
-                            <td>w,d</td>
-                            <td>Begins by identifying all cliques of size k in a network.  All cliques are collapsed into single vertex.  Vertices are connected if cliques that they are representing share k-1 members—connected components identify which cliques compose a community.</td>
+                    <td/>
+                    <td>G,D,S</td>
+                    <td>CFinder</td>
+                    <td>-w,-d</td>
+                    <td>Begins by identifying all cliques of size k in a network.  All cliques are collapsed into single vertex.  Vertices are connected if cliques that they are representing share k-1 members—connected components identify which cliques compose a community. Input value of k must be chosen and typically is between 3 and 6.</td>
+                <tr>
+                    <td>CONGA (Cluster-Overla Newman Girvan Algorithm) [28]</td>
+                    <td>Divisive</td>
+                    <td>O(m^3)</td>
+                    <td>D,G,O</td>
+                    <td/>
+                    <td>-w,-d</td>
+                    <td>CONGA, like Girvan Newman, relies on calculation of betweenness to determine splits, but splits on vertices, rather than edges. The algorithm specifies when and how to split vertices allowing for overlapping membership.</td>
+                </tr>
+                <tr>
+                    <td>Fuzzy Overlapping Group (FOG) [29]</td>
+                    <td>Divisive</td>
+                    <td>O(L^3)
+                    <td>O</td>
+                    <td>ORA</td>
+                    <td/>
+                    <td>A combination of a stochastic model and maximum likelihood method group detection algorithm for inferring fuzzy overlapping groups. Groups are built from links which allows for multiple memberships varying levels of association from entities to groups.</td>
+                </tr>
+                <tr>
+                    <td>Bipartite Stochastic Block Model (biSBM), 2014 [30]</td>
+                    <td>Model Based</td>
+                    <td/>
+                    <td/>
+                    <td>Matlab</td>
+                    <td>w</td>
+                    <td>The degree corrected Bipartite Stochastic Block Model uses probability to search for maximum likelihood partition of a network into communities.  It models a network's observed degree sequence before finding community structure.  It divdes verticies into groups of like types.  These calculations are done iteratively to continually propose movements of vertices that increases the likelihood function</td>
+                </tr>
+                <tr>
+                    <td>Spectral Clustering [31]</td>
+                    <td>Model Based</td>
+                    <td>Determined by Eigenvalue Computation</td>
+                    <td>L,Q,R</td>
+                    <td/>
+                    <td>w,d</td>
+                    <td>Spectral clustering algorithms rely on the calculation of eigenvalues of a similarity matrix to find optimal partitions, give a predetermined number of partitions.  It relaxes the complex problem of minimizing cut ratio over every possible k-partition to find the k-smallest eigenvalues and related eigenvectors of the Laplacian of the graph.</td>
+                </tr>
+
                 
                 
                 
@@ -512,5 +538,11 @@
             [23] Detecting Cohesive and 2-mode Communities in Directed and Undirected Networks     by J. Yang, J. McAuley, J. Leskovec.     ACM International Conference on Web Search and Data Mining (WSDM), 2014. <br> 
             [24] John Cardente, <a href="http://dsgeek.com/docs/jcardente_cs224w_projreport.pdf">Using Centrality Measures to Identify Key Members of an Innovation Collaboration Network</a><br> 
             [25] Jierui Xie, Stephen Kelley, Boleslaw K. Szymanski, <a href="http://arxiv.org/abs/1110.5813">Overlapping community detection in networks: the state-of-the-art and comparative study</a><br>
+            [26] Jaewon Yang, Julian McAuley, Jure Leskovec, Community Detection in Networks with Node Attributes</a><br>
+            [27] Gergely Palla, Imre Derenyi, Illes Farkas, and Tamas Vicsek, Uncovering the overlapping community structure of complex networks in nature and society.</a><br>
+            [28] Steve Gregory, An algorithm to Find Overlapping Community Structure in Networks.</a><br>
+            [29] George David and Kathleen Carley, Clearing the FOG: Fuzzy, Overlapping Groups in Social Networks. </a><br>
+            [30] Daniel Larremore, Aaron Clauset, and Abigail Jacobs, Efficiently inferring community structure in bipartite networks.</a><<br>
+            [31] Ulrike von Luxburg, A Tutorial On Spectral Clustering.</a><br>
         </body>
     </html> 
