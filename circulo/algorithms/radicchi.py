@@ -32,6 +32,7 @@ def radicchi(G, g, level, measure='strong'):
     degree = g.degree()
     neighbors = [set(g.neighbors(v)) for v in g.vs]
     edges = {e.tuple for e in g.es}
+    n_components = len(g.components())
 
     edge_clustering_coefficient = edge_clustering_coefficient_3 if (measure == 'strong') else edge_clustering_coefficient_4
 
@@ -40,23 +41,31 @@ def radicchi(G, g, level, measure='strong'):
         if len(edges) == 0:
             break
 
-        min_edge = None; min_ecc = None
+        min_edges = []; min_ecc = None
         for e in edges:
             # change this to remove all edges tied for first.
             ecc = edge_clustering_coefficient(e[0], e[1], degree, neighbors)
-            if not min_edge or ecc < min_ecc:
-                min_edge = e
+            if not min_ecc or ecc < min_ecc:
+                min_edges = [e]
                 min_ecc = ecc
+            elif ecc == min_ecc:
+                min_edges.append(e)
 
-        g.delete_edges([min_edge]); edges.discard(min_edge)
-        u, v = min_edge
-        neighbors[u].discard(v); neighbors[v].discard(u)
-        degree[u] -= 1; degree[v] -= 1
+        g.delete_edges(min_edges); 
+        print(("  " * level) + "Removing batch of edges.")
+        for min_edge in min_edges:
+            edges.discard(min_edge)
+            u, v = min_edge
+            neighbors[u].discard(v); neighbors[v].discard(u)
+            degree[u] -= 1; degree[v] -= 1
+            print(("  " * level) + "Removing (%s, %s)." % (g.vs['label'][u], g.vs['label'][v]))
+        print(("  " * level) + "Done.")
 
-        print(("  " * level) + "Removing (%s, %s)" % (g.vs['label'][u], g.vs['label'][v]))
-        
-        if g.edge_connectivity(source=u, target=v) == 0:
+        n_components_new = len(g.components())
+
+        if n_components_new > n_components:
             result = prune_components(G, g, community_measure=measure)
+            n_components = n_components_new
             if result['pruned']:
                 orig_communities = result['orig_communities']
                 new_communities = result['new_communities']
