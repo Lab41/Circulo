@@ -26,9 +26,6 @@ def radicchi(G, g, level, measure='strong'):
     # tends to recalculate this stuff on the whole graph every time, 
     # storing it and manipulating only the parts that change will make things faster.
 
-    print(("  " * level) + "------------------")
-    print(("  " * level) + "At level %s" % level)
-
     degree = g.degree()
     neighbors = [set(g.neighbors(v)) for v in g.vs]
     edges = {e.tuple for e in g.es}
@@ -52,14 +49,11 @@ def radicchi(G, g, level, measure='strong'):
                 min_edges.append(e)
 
         g.delete_edges(min_edges); 
-        print(("  " * level) + "Removing batch of edges.")
         for min_edge in min_edges:
             edges.discard(min_edge)
             u, v = min_edge
             neighbors[u].discard(v); neighbors[v].discard(u)
             degree[u] -= 1; degree[v] -= 1
-            print(("  " * level) + "Removing (%s, %s)." % (g.vs['label'][u], g.vs['label'][v]))
-        print(("  " * level) + "Done.")
 
         n_components_new = len(g.components())
 
@@ -72,39 +66,21 @@ def radicchi(G, g, level, measure='strong'):
                 remaining = result['remaining']
 
                 for i,c in enumerate(new_communities):
-                    community_labels = [g.vs['label'][j] for j in c] 
-                    print(("  " * level) + "Found a community: %s" % orig_communities[i])
-                    print(("  " * level) + "Community names: %s" % community_labels)
-                    print(("  " * level) + "Leaving level %s" % level)
-
                     s = g.subgraph(c)
                     subcommunities = radicchi(G, s, level+1, measure)
-                    if(len(subcommunities) == 0):
+                    if len(subcommunities) == 0:
                         communities.append(orig_communities[i])
                     else:
                         communities.extend(subcommunities)
 
-                    print(("  " * level) + "Back to level %s" % level)
-
                 orig_remaining = [g.vs['id'][i] for i in remaining]
-                remaining_labels = [g.vs['label'][i] for i in remaining] 
-
-                print(("  " * level) + "Working with remainder: %s" % orig_remaining)
-                print(("  " * level) + "Remainder names: %s" % remaining_labels)
-
                 r = g.subgraph(remaining)
                 subcommunities = radicchi(G, r, level+1, measure)
                 clustered = sum(subcommunities, [])
-
                 isolated_remaining = [i for i in orig_remaining if i not in clustered]
-                print(("  " * level) + "Found isolates: %s" % isolated_remaining)
-
                 communities.extend([[i] for i in isolated_remaining])
 
                 break
-
-    print(("  " * level) + "Done with level %s" % level)
-    print(("  " * level) + "------------------")
 
     return communities
 
