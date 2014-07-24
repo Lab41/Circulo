@@ -81,7 +81,7 @@ def radicchi_internal(G, g, level, measure='strong', clustering=3):
                     else:
                         communities.extend(subcommunities)
 
-                orig_remaining = [g.vs['id'][i] for i in remaining]
+                orig_remaining = [g.vs[i]['id'] for i in remaining]
                 r = g.subgraph(remaining)
                 subcommunities = radicchi_internal(G, r, level+1, measure)
                 clustered = sum(subcommunities, [])
