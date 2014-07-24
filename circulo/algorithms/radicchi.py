@@ -49,7 +49,6 @@ def radicchi_internal(G, g, level, measure='strong', clustering=3):
 
         min_edges = []; min_ecc = None
         for e in edges:
-            # change this to remove all edges tied for first.
             ecc = edge_clustering_coefficient(e[0], e[1], degree, neighbors)
             if not min_ecc or ecc < min_ecc:
                 min_edges = [e]
