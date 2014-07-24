@@ -57,6 +57,9 @@ class ClusterMetric:
         self.degree_boundary_avg = None
 
         #metrics
+        self.num_nodes = None
+        self.num_internal_edges = None
+        self.num_external_edges = None
         self.density = None
         self.fomd = None
         self.cut_ratio = None
@@ -141,6 +144,9 @@ class ClusterMetric:
         report =  """
              Cluster ID: {cover_id}
 
+             Nodes:               {nodes}
+             Internal Edges:      {internal_edges}
+             External Edges:      {external_edges}
              Density:             {density}
              Average Degree:      {avg_degree}
              Frac Over Med Deg:   {fomd}
@@ -155,6 +161,9 @@ class ClusterMetric:
              Clustering Coeff.:   {clustering_coefficient}
         """.format(cover_id = self.cover_id,
                     density=self.density,
+                    nodes=self.num_nodes,
+                    internal_edges=self.num_internal_edges,
+                    external_edges=self.num_external_edges,
                      avg_degree=self.degree_avg,
                      fomd=self.fomd,
                      expansion=self.degree_boundary_avg,
@@ -336,6 +345,7 @@ class ClusterMetric:
         (cite: http://cs.stanford.edu/people/jure/pubs/comscore-icdm12.pdf)
         '''
 
+        print('Do cohesiveness')
         #first we must induce a graph from the community. A manageable size is 100 nodes, so if the community has fewer than
         #100 nodes, then just induce the graph using all nodes, otherwise induce the graph from a random 100 nodes
         #if len(self.community) < 100:
@@ -351,6 +361,7 @@ class ClusterMetric:
             #TODO: Consider using G_i.mincut() instead.
             val, vc = spectral.min_conductance(G_i)
 
+        print('Done cohesiveness')
         return val
 
 
