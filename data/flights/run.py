@@ -208,7 +208,11 @@ def get_graph():
     else:
         print(graph_path, "already exists. Using old file.")
 
-    return igraph.load(graph_path)
+    from circulo.download_utils import multigraph_to_weights
+    G = igraph.load(graph_path)
+    multigraph_to_weights(G)
+
+    return G
 
 
 def get_ground_truth(G=None, attr='country'):

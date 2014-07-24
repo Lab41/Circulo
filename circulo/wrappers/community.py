@@ -37,6 +37,9 @@ def comm_leading_eigenvector(data_mod):
 
 def comm_multilevel(data_mod):
     G = data_mod.get_graph()
+    if G.is_directed():
+        print('Graph is directed, converting to undirected')
+        G.to_undirected()
     weight_attribute = 'weight' if G.is_weighted() else None
     rv = partial(igraph.Graph.community_multilevel, G, weights=weight_attribute)
     stochastic = True
