@@ -12,6 +12,7 @@ from collections import namedtuple
 import numpy as np
 import sklearn.metrics
 import json
+import statistics
 
 '''
 TODO:
@@ -87,7 +88,7 @@ class ClusterMetric:
         #for efficiency pruposes we allow the caller to send in the median
         #however, if not provided we must calculate it
         if m.median_degree_G is None:
-            m.median_degree_G = sum(m.G.degree())/m.G.vcount()
+            m.median_degree_G = statistics.median(m.G.degree())
 
         #set all values to 0 by default
         for v in m.community:
@@ -212,8 +213,8 @@ class ClusterMetric:
         '''
         Fraction of nodes of subgraph that have internal degree higher than the median degree value of entire set of graph nodes
         '''
-
-        return sum(1 for v in self.degree_in_dict.values() if v > self.median_degree_G)/float(self.G.vcount())
+        
+        return sum(1 for v in self.degree_in_dict.values() if v > self.median_degree_G)/float(len(self.community))
 
 
     def do_tpr(self):
@@ -236,16 +237,13 @@ class ClusterMetric:
             for j in self.G.neighbors(i):
                 if j != i and j in node_dict:
                     for k in self.G.neighbors(j):
-                        if k != j and k in node_dict:
+                        if k != j and k != i and  k in self.G.neighbors(i) and k in node_dict:
                             node_dict[i]+=1
-                            node_dict[j]+=1
-                            node_dict[k]+-1
 
 
         node_count = 0
 
         for k, v in node_dict.items():
-            node_dict[k] = v/3
             if v > 0:
                 node_count+=1
 
@@ -268,7 +266,7 @@ class ClusterMetric:
         Equation: boundary_edges / num_directed_edges_originating_from_community
         '''
 
-        return self.degree_boundary_sum / float((2 * self.G.ecount()) + self.degree_boundary_sum)
+        return self.degree_boundary_sum / float((2 * self.edge_in_count) + self.degree_boundary_sum)
 
 
     def do_normalized_cut(self, conductance):
@@ -290,7 +288,7 @@ class ClusterMetric:
         Calculates the average degree
         '''
 
-        return sum(self.G.degree(self.community))/float(len(self.community))
+        return (2*self.edge_in_count)/float(len(self.community))
 
 
     def do_odf(self):
@@ -332,13 +330,13 @@ class ClusterMetric:
 
         if self.degree_boundary_sum == 0:
             return 0
-        return self.degree_in_sum/float(self.degree_boundary_sum)
+        return self.edge_in_count/float(self.degree_boundary_sum)
 
 
 
     def do_cohesiveness(self):
         '''
-        Equation: g(S) = minS′⊂S φ(S′) where φ(S′) is the conductance of S′ measured in the induced subgraph by S.
+        Equation: g(S) = maxS′⊂S φ(S′) where φ(S′) is the conductance of S′ measured in the induced subgraph by S.
         To iterate over all possible subgraphs of a community would be too inefficient 2^n, therefore we approximate
         the best subgraph (which would have the lowest conductance) by using Local Spectral communitying to find the best
         cut
@@ -381,18 +379,22 @@ class ClusterMetric:
                 continue
 
             for n in neighbors:
-                if self.cover.membership[n] == self.cover_id:
+                if self.cover_id in self.cover.membership[n]:
                     neighbors_dict[n] = n
-
+            if len(neighbors_dict) <= 1 :
+                 continue
+                
             for n in neighbors:
                 if n in neighbors_dict:
                     for n2 in self.G.neighbors(n):
                         if n2 in neighbors_dict:
                             edge_count+=1
 
-            edge_count = edge_count / 2.0
+            edge_count = edge_count
+            denom =   float( len(neighbors_dict) * ( len(neighbors_dict) - 1) )
+           # print("v {} e_count: {}  denom: {}".format(v, edge_count, denom))
 
-            running_sum += (edge_count / float( len(neighbors) * ( len(neighbors) - 1) ))
+            running_sum += (edge_count/denom)
 
         return running_sum / float(len(self.community))
 
@@ -432,6 +434,8 @@ class VertexCoverMetric:
     def report(self, f=sys.stdout):
 
         G = self.cover.graph
+        print("Degrees") 
+        print(G.degree())
 
         f.write("===== Metrics Description =====\n\n")
         f.write("Density\n")
