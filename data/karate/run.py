@@ -6,13 +6,13 @@ import urllib.request
 from circulo.download_utils import download_with_notes
 
 
-GRAPH_NAME = 'PGPgiantcompo'
-DOWNLOAD_URL = 'http://deim.urv.cat/~aarenas/data/xarxes/PGP.zip'
+GRAPH_NAME = 'karate'
+DOWNLOAD_URL = 'http://www-personal.umich.edu/~mejn/netdata/karate.zip'
 
 
 def __download__(data_dir):
     """
-    Downloads the graph from DOWNLOAD_URL into data_dir/GRAPH_NAME
+    downloads the graph from DOWNLOAD_URL into data_dir/GRAPH_NAME
     """
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
@@ -22,15 +22,14 @@ def __download__(data_dir):
 def __prepare__(data_dir):
     """
     """
-    pass
 
 
 def get_graph():
     """
-    TEMPLATE COMMENT: Downloads and prepares a graph
+    Downloads and prepares a graph
     """
     data_dir = os.path.join(os.path.dirname(__file__), "data")
-    graph_path = os.path.join(data_dir, GRAPH_NAME + ".net")
+    graph_path = os.path.join(data_dir, GRAPH_NAME + ".gml")
 
     if not os.path.exists(graph_path):
         __download__(data_dir)
@@ -47,7 +46,6 @@ def get_ground_truth(G=None):
     ground truth of the graph G.
     """
     raise(NotImplementedError)
-
 
 def main():
     G = get_graph()
