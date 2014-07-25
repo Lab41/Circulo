@@ -44,6 +44,16 @@ def conductance(cover):
         rv += [ext_edges_cnt/(2*int_edges_cnt+ext_edges_cnt)]
     return rv
 
+def separability(cover):
+    rv = []
+    external_edges = cover.external_edges()
+    for i in range(len(cover)):
+        int_edges_cnt = cover.subgraph(i).ecount()
+        ext_edges_cnt = len(external_edges[i])
+        rv += [1.*int_edges_cnt/ext_edges_cnt]
+    return rv
+
+
 def normalized_cut(cover):
     rv = cover.conductance()
     external_edges = cover.external_edges()
@@ -121,7 +131,7 @@ def external_edges(cover) :
 
     return array_of_sets
 
-
+### TODO: Delete this function
 def get_cluster_metrics(cover, cluster_id):
     cover.graph.compute_metrics(refresh=False)
     external_edges = cover.external_edges()[cluster_id]
@@ -155,7 +165,7 @@ def compute_metrics(cover):
             'Maximum Out Degree Fraction'   : maximum_out_degree_fraction(cover), 
             'Average Out Degree Fraction'   : average_out_degree_fraction(cover),
             'Flake Out Degree Fraction'     : flake_out_degree_fraction(cover),
-            'Separability'                  : [],
+            'Separability'                  : separability(cover),
             'Subgraphs'                     : []
             }
 
