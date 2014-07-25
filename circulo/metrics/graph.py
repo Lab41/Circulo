@@ -5,13 +5,16 @@ from igraph import Graph
 
 def __describe(array, axis=0):
   from scipy.stats import describe
-  from scipy import median 
+  from scipy import median
   stats = describe(array, axis)
   stats = stats + (median(array, axis),)
 
   return dict(zip(['Size', '(min,max)', 'Arithmetic Mean', 'Unbiased Variance', 'Biased Skewness', 'Biased Kurtosis', 'Median'], stats))
 
 def triangle_participation(G):
+    '''
+    This returns an array indicating whether the ith node in the graph belongs to a triad.
+    '''
     rv = [False]*G.vcount()
 
     for u in G.vs():
@@ -26,10 +29,20 @@ def triangle_participation(G):
     return rv
 
 def triangle_participation_ratio(G):
+    '''
+    The fraction of nodes in a graph that belong to a triad.
+    '''
     rv = G.triangle_participation()
     return sum(rv)/G.vcount()
 
 def cohesiveness(G):
+    '''
+    Equation: g(S) = minS′⊂S φ(S′) where φ(S′) is the conductance of S′ measured in the induced subgraph by S.
+    To iterate over all possible subgraphs of a community would be too inefficient 2^n, therefore we approximate
+    the best subgraph (which would have the lowest conductance) by using Local Spectral communitying to find the best
+    cut
+    (cite: http://cs.stanford.edu/people/jure/pubs/comscore-icdm12.pdf)
+    '''
     from circulo.algorithms import spectral
     if G.vcount() <= 2:
         val = 1
@@ -38,11 +51,9 @@ def cohesiveness(G):
         val, vc = spectral.min_conductance(G)
     return val
 
-
-
 def compute_metrics(G, refresh = True):
     if refresh or G.metrics == None:
-        G.metrics = { 
+        G.metrics = {
                 'Internal Number Nodes'         : G.vcount(),
                 'Internal Number Edges'         : G.ecount(),
                 'Density'                       : G.density(),
@@ -50,9 +61,9 @@ def compute_metrics(G, refresh = True):
                 'Diameter'                      : G.diameter(),
                 'Cohesiveness'                  : G.cohesiveness(), 
                 'Triangle Participation Ratio'  : G.triangle_participation_ratio(),
-                'Transitivity Undirected (Global Clustering Coefficient)'              
-                                                : G.transitivity_undirected(), 
-                'Transitivity Local Undirected (Local Clustering Coefficient)'              
+                'Transitivity Undirected (Global Clustering Coefficient)'
+                                                : G.transitivity_undirected(),
+                'Transitivity Local Undirected (Local Clustering Coefficient)'
                                                 : __describe(G.transitivity_local_undirected(mode='zero'))
         }
 

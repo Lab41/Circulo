@@ -336,7 +336,7 @@ class ClusterMetric:
 
     def do_cohesiveness(self):
         '''
-        Equation: g(S) = maxS′⊂S φ(S′) where φ(S′) is the conductance of S′ measured in the induced subgraph by S.
+        Equation: g(S) = minS′⊂S φ(S′) where φ(S′) is the conductance of S′ measured in the induced subgraph by S.
         To iterate over all possible subgraphs of a community would be too inefficient 2^n, therefore we approximate
         the best subgraph (which would have the lowest conductance) by using Local Spectral communitying to find the best
         cut
@@ -382,7 +382,7 @@ class ClusterMetric:
                     neighbors_dict[n] = n
             if len(neighbors_dict) <= 1 :
                  continue
-                
+
             for n in neighbors:
                 if n in neighbors_dict:
                     for n2 in self.G.neighbors(n):

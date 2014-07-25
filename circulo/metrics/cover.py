@@ -4,11 +4,12 @@ from scipy import nansum
 
 def fomd(cover, degree_stats_dict=None):
     '''
-    Fraction of nodes of subgraph that have internal degree higher than the median degree value of entire set of graph nodes
+    Fraction over median degree is the number of nodes that have an internal degree greater than the median degree of 
+    all nodes in the graph.
     '''
     cover.graph.compute_metrics(refresh=False)
     g_metrics = cover.graph.metrics
-    
+
     median = g_metrics['Degree Statistics']['Median']
     rv = []
     for i in range(len(cover)):
@@ -16,8 +17,10 @@ def fomd(cover, degree_stats_dict=None):
         rv += [sum(1.0 for v in subgraph.degree() if v > median)/subgraph.vcount()]
     return rv 
 
-
 def expansion(cover):
+    '''
+    Expansion is the ratio between the number of external (boundary) edges in a cluster and the number of nodes in the cluster.
+    '''
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
@@ -26,6 +29,9 @@ def expansion(cover):
     return rv
 
 def cut_ratio(cover):
+    '''
+    Cut ratio is the ratio between the number of external (boundary) edges in a cluster and the cluster's maximum possible number of external edges
+    '''
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
@@ -35,6 +41,9 @@ def cut_ratio(cover):
     return rv
 
 def conductance(cover):
+    '''
+    Conductance is the ratio between the number of external (boundary) edges in a cluster and the cluster's total number of edges
+    '''
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
@@ -44,6 +53,9 @@ def conductance(cover):
     return rv
 
 def separability(cover):
+    '''
+    Separability is the ratio between the number of internal edges in a cluster and its number of external (boundary) edges.
+    '''
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
@@ -54,6 +66,9 @@ def separability(cover):
 
 
 def normalized_cut(cover):
+    '''
+    Normalized cut is the sum of conductance with the fraction of external edges over all non-cluster edges
+    '''
     rv = cover.conductance()
     external_edges = cover.external_edges()
     for i in range(len(cover)):
@@ -65,6 +80,10 @@ def normalized_cut(cover):
     return rv
 
 def maximum_out_degree_fraction(cover):
+    '''
+    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
+    and its internal edges. Maximum ODF returns the maximum fraction for the cluster.
+    '''
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
@@ -80,6 +99,10 @@ def maximum_out_degree_fraction(cover):
     return rv
 
 def average_out_degree_fraction(cover):
+    '''
+    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
+    and its internal edges. Average ODF returns the average fraction for the cluster.
+    '''
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
@@ -95,6 +118,10 @@ def average_out_degree_fraction(cover):
     return rv
 
 def flake_out_degree_fraction(cover):
+    '''
+    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
+    and its internal edges. Flake ODF returns the number of nodes for which this ratio is less than 1, i.e. a node has fewer internal edges than external ones.
+     '''
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
@@ -107,10 +134,13 @@ def flake_out_degree_fraction(cover):
         for pair in zip(ext_edge_per_node, degree_per_node):
             flake += [ pair[0] > pair[1]/2.0 ]
         rv += [sum(flake)/cover.subgraph(i).vcount()]
- 
     return rv
 
 def external_edges(cover) :
+    '''
+    @param cover a VertexCover object.
+    @returns an array of external edges per cluster in the cover.
+    '''
     array_of_sets = [ [] for v in cover ] 
     #Iterate over crossing edges
     for edge in [ a[1] for a in zip(cover.crossing(), cover.graph.es()) if a[0]]:
