@@ -53,7 +53,7 @@ def compute_metrics(G, refresh = True):
                 'Transitivity Undirected (Global Clustering Coefficient)'              
                                                 : G.transitivity_undirected(), 
                 'Transitivity Local Undirected (Local Clustering Coefficient)'              
-                                                : __describe(G.transitivity_local_undirected())
+                                                : __describe(G.transitivity_local_undirected(mode='zero'))
         }
 
 Graph.metrics = None
