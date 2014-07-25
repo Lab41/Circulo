@@ -345,7 +345,6 @@ class ClusterMetric:
         (cite: http://cs.stanford.edu/people/jure/pubs/comscore-icdm12.pdf)
         '''
 
-        print('Do cohesiveness')
         #first we must induce a graph from the community. A manageable size is 100 nodes, so if the community has fewer than
         #100 nodes, then just induce the graph using all nodes, otherwise induce the graph from a random 100 nodes
         #if len(self.community) < 100:
@@ -361,7 +360,6 @@ class ClusterMetric:
             #TODO: Consider using G_i.mincut() instead.
             val, vc = spectral.min_conductance(G_i)
 
-        print('Done cohesiveness')
         return val
 
 
