@@ -11,7 +11,7 @@ DOWNLOAD_URL = "http://www-personal.umich.edu/~mejn/netdata/football.zip"
 
 def __download__(data_dir):
     """
-    TEMPLATE COMMENT: downloads the graph from DOWNLOAD_URL into data_dir/GRAPH_NAME
+    downloads the graph from DOWNLOAD_URL into data_dir/GRAPH_NAME
     """
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
@@ -20,14 +20,13 @@ def __download__(data_dir):
 
 def __prepare__(data_dir):
     """
-    TEMPLATE COMMENT: prepare the data into graphml format.
     """
     pass
 
 
 def get_graph():
     """
-    TEMPLATE COMMENT: Downloads and prepares a graph
+    Downloads and prepares the graph from DOWNLOAD_URL
     """
     data_dir = os.path.join(os.path.dirname(__file__), "data")
     graph_path = os.path.join(data_dir, GRAPH_NAME + ".gml")
@@ -43,20 +42,20 @@ def get_graph():
 
 def get_ground_truth(G=None):
     """
-    TEMPLATE COMMENT: returns a VertexClustering object of the 
-    ground truth of the graph G.
+    Returns a VertexClustering object of the 
+    ground truth of the graph G. The ground truth for this
+    football data is the conference to which each team belongs.
     """
-    raise(NotImplementedError)
+    if G is None:
+        G = get_graph()
 
-    # if G is None:
-    #     G = get_graph()
-
-    # return # VertexClustering(G, membership)
+    membership = G.vs['value']
+    return VertexClustering(G, membership)
 
 
 def main():
     G = get_graph()
-#    get_ground_truth(G)
+    get_ground_truth(G)
 
 if __name__ == "__main__":
     main()
