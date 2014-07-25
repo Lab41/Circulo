@@ -54,7 +54,7 @@ class TestMetrics(unittest.TestCase):
     def test_TPR(self):
         self.assertEqual(round(0.9091, 2), round(self.comm_metrics[0].tpr[1], 2))
         self.assertEqual(round(0.6, 2), round(self.comm_metrics[1].tpr[1], 2))
-        self.assertEqual(round(0.7778, 2), round(self.comm_metrics[2].tpr[1], 2))
+        self.assertEqual(round(0.9444, 2), round(self.comm_metrics[2].tpr[1], 2))
 
     def test_MaxODF(self):
         self.assertEqual(round(0.5,2), round(self.comm_metrics[0].odf_dict["max"], 2))
@@ -77,9 +77,9 @@ class TestMetrics(unittest.TestCase):
         self.assertEqual(round(3.5, 2), round(self.comm_metrics[2].separability, 2))
 
     def test_clusteringcoefficient(self):
-        self.assertEqual(round(0.77049062, 2), round(self.comm_metrics[0].clustering_coefficient, 2))
-        self.assertEqual(round(0.74358974, 2), round(self.comm_metrics[1].clustering_coefficient, 2))
-        self.assertEqual(round(0.71404151, 2), round(self.comm_metrics[1].clustering_coefficient, 2))
+        self.assertEqual(round(0.72503608, 2), round(self.comm_metrics[0].clustering_coefficient, 2))
+        self.assertEqual(round(0.66666667, 2), round(self.comm_metrics[1].clustering_coefficient, 2))
+        self.assertEqual(round(0.72045177, 2), round(self.comm_metrics[2].clustering_coefficient, 2))
 
 
 

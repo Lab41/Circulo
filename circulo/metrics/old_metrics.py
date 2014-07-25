@@ -373,9 +373,8 @@ class ClusterMetric:
             neighbors = self.G.neighbors(v)
             neighbors_dict = dict()
 
-            #not quite sure how to deal with this case yet, but for now we will assume that 1 neighbor is a complete graph
+            #Assumes that 2 neighbors are required to calculate this metric, otherwise, returns zero
             if len(neighbors) <= 1:
-                running_sum+=1
                 continue
 
             for n in neighbors:
@@ -390,11 +389,9 @@ class ClusterMetric:
                         if n2 in neighbors_dict:
                             edge_count+=1
 
-            edge_count = edge_count
             denom =   float( len(neighbors_dict) * ( len(neighbors_dict) - 1) )
-           # print("v {} e_count: {}  denom: {}".format(v, edge_count, denom))
-
-            running_sum += (edge_count/denom)
+            local_coeff =  float(edge_count/denom)
+            running_sum += local_coeff
 
         return running_sum / float(len(self.community))
 
