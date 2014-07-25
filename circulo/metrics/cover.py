@@ -2,21 +2,20 @@
 from igraph import Cover 
 from scipy import nansum
 
-def fomd(subgraph, degree_stats_dict):
+def fomd(cover, degree_stats_dict=None):
     '''
     Fraction of nodes of subgraph that have internal degree higher than the median degree value of entire set of graph nodes
     '''
-    median = degree_stats_dict['Median']
-
-    return sum(1.0 for v in subgraph.degree() if v > median)/subgraph.vcount()
-
-
-def generic(cover, operator):
+    cover.graph.compute_metrics(refresh=False)
+    g_metrics = cover.graph.metrics
+    
+    median = g_metrics['Degree Statistics']['Median']
     rv = []
-    external_edges = cover.external_edges()
     for i in range(len(cover)):
-        rv += [operator(i, external_edges[i], cover)]
-    return rv
+        subgraph = cover.subgraph(i) 
+        rv += [sum(1.0 for v in subgraph.degree() if v > median)/subgraph.vcount()]
+    return rv 
+
 
 def expansion(cover):
     rv = []
@@ -68,31 +67,27 @@ def normalized_cut(cover):
 def maximum_out_degree_fraction(cover):
     rv = []
     external_edges = cover.external_edges()
-    val = 1.0 if cover.graph.is_directed() else .5;
     for i in range(len(cover)):
         ext_edge_per_node = [0]*cover.graph.vcount()
         degree_per_node = cover.graph.degree()
         for edge in external_edges[i]:
-            ext_edge_per_node[edge.source] += val
-            if not cover.graph.is_directed():
-                ext_edge_per_node[edge.target] += val
+            node_index = edge.source if i in cover.membership[edge.source] else edge.target
+            ext_edge_per_node[node_index] += 1.0
         ratios = []
         for pair in zip(ext_edge_per_node, degree_per_node):
-            ratios += [ pair[0]/pair[1] if pair[1] != 0 else float('nan') ]
+             ratios += [ pair[0]/pair[1] if pair[1] != 0 else float('nan') ]
         rv += [max(ratios)]
     return rv
 
 def average_out_degree_fraction(cover):
     rv = []
     external_edges = cover.external_edges()
-    val = 1.0 if cover.graph.is_directed() else .5;
     for i in range(len(cover)):
         ext_edge_per_node = [0]*cover.graph.vcount()
         degree_per_node = cover.graph.degree()
         for edge in external_edges[i]:
-            ext_edge_per_node[edge.source] += val
-            if not cover.graph.is_directed():
-                ext_edge_per_node[edge.target] += val
+            node_index = edge.source if i in cover.membership[edge.source] else edge.target
+            ext_edge_per_node[node_index] += 1.0
         ratios = []
         for pair in zip(ext_edge_per_node, degree_per_node):
             ratios += [ pair[0]/pair[1] if pair[1] != 0 else float('nan') ]
@@ -102,14 +97,12 @@ def average_out_degree_fraction(cover):
 def flake_out_degree_fraction(cover):
     rv = []
     external_edges = cover.external_edges()
-    val = 1.0 if cover.graph.is_directed() else .5;
     for i in range(len(cover)):
         ext_edge_per_node = [0]*cover.graph.vcount()
         degree_per_node = cover.graph.degree()
         for edge in external_edges[i]:
-            ext_edge_per_node[edge.source] += val
-            if not cover.graph.is_directed():
-                ext_edge_per_node[edge.target] += val
+            node_index = edge.source if i in cover.membership[edge.source] else edge.target
+            ext_edge_per_node[node_index] += 1.0
         flake = []
         for pair in zip(ext_edge_per_node, degree_per_node):
             flake += [ pair[0] > pair[1]/2.0 ]
@@ -131,33 +124,11 @@ def external_edges(cover) :
 
     return array_of_sets
 
-### TODO: Delete this function
-def get_cluster_metrics(cover, cluster_id):
-    cover.graph.compute_metrics(refresh=False)
-    external_edges = cover.external_edges()[cluster_id]
-    g_metrics = cover.graph.metrics
-
-    subgraph = cover.subgraph(cluster_id)
-    subgraph.compute_metrics()
-
-    metrics = { 
-            'Fraction over a Median Degree' : fomd(subgraph, g_metrics['Degree Statistics']),
-            'Triangle Participation Ratio'  : None,                
-            'Expansion'                     : None,
-            'Cut Ratio'                     : None,    
-            'Conductance'                   : None,    
-            'Normalized Cut'                : None,     
-            'Out Degree Frac'               : None, 
-            'Separability'                  : None 
-    }
-
-    return metrics
-
 def compute_metrics(cover):
     cover.graph.compute_metrics(refresh=False)
     g_metrics = cover.graph.metrics
     cover.metrics = { 
-            'Fraction over a Median Degree' : [fomd(cover.subgraph(i), g_metrics['Degree Statistics']) for i in range(len(cover))],
+            'Fraction over a Median Degree' : fomd(cover, g_metrics['Degree Statistics']),
             'Expansion'                     : expansion(cover),
             'Cut Ratio'                     : cut_ratio(cover),    
             'Conductance'                   : conductance(cover),    
@@ -182,6 +153,8 @@ Cover.expansion = expansion
 Cover.cut_ratio = cut_ratio
 Cover.conductance = conductance
 Cover.normalized_cut = normalized_cut
+Cover.fraction_over_median_degree = fomd
 Cover.maximum_out_degree_fraction = maximum_out_degree_fraction
 Cover.average_out_degree_fraction = average_out_degree_fraction
 Cover.flake_out_degree_fraction = flake_out_degree_fraction
+Cover.separability = separability
