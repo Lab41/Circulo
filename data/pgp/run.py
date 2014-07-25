@@ -8,7 +8,7 @@ from circulo.download_utils import download_with_notes
 
 GRAPH_NAME = 'PGPgiantcompo'
 DOWNLOAD_URL = 'http://deim.urv.cat/~aarenas/data/xarxes/PGP.zip'
-
+GRAPH_TYPE = '.net'
 
 def __download__(data_dir):
     """
@@ -30,7 +30,7 @@ def get_graph():
     TEMPLATE COMMENT: Downloads and prepares a graph
     """
     data_dir = os.path.join(os.path.dirname(__file__), "data")
-    graph_path = os.path.join(data_dir, GRAPH_NAME + ".net")
+    graph_path = os.path.join(data_dir, GRAPH_NAME + GRAPH_TYPE)
 
     if not os.path.exists(graph_path):
         __download__(data_dir)

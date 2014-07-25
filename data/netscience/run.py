@@ -8,7 +8,7 @@ from circulo.download_utils import download_with_notes
 
 GRAPH_NAME = 'netscience'
 DOWNLOAD_URL = 'http://www-personal.umich.edu/~mejn/netdata/netscience.zip'
-
+GRAPH_TYPE = '.gml'
 
 def __download__(data_dir):
     """
@@ -30,7 +30,7 @@ def get_graph():
     Downloads and prepares the network science collaboration graph
     """
     data_dir = os.path.join(os.path.dirname(__file__), "data")
-    graph_path = os.path.join(data_dir, GRAPH_NAME + ".gml")
+    graph_path = os.path.join(data_dir, GRAPH_NAME + GRAPH_TYPE)
 
     if not os.path.exists(graph_path):
         __download__(data_dir)

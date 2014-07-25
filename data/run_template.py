@@ -1,7 +1,7 @@
 # This template should be copied and modified as necessary to become the 
 # `run.py` in each directory. 
 # 
-# Do not modify this file unless the template needs changind -- modify
+# Do not modify this file unless the template needs changing -- modify
 # its copies in each data directory. 
 
 
