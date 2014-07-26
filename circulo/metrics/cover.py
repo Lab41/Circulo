@@ -2,18 +2,16 @@
 from igraph import Cover 
 from scipy import nansum
 
-def fomd(cover, degree_stats_dict=None):
+def fomd(cover):
     '''
     Fraction over median degree is the number of nodes that have an internal degree greater than the median degree of 
     all nodes in the graph.
     '''
-    cover.graph.compute_metrics(refresh=False)
-    g_metrics = cover.graph.metrics
-
-    median = g_metrics['Degree Statistics']['Median']
+    import scipy
+    median = scipy.median(cover.graph.degree())
     rv = []
     for i in range(len(cover)):
-        subgraph = cover.subgraph(i) 
+        subgraph = cover.subgraph(i)
         rv += [sum(1.0 for v in subgraph.degree() if v > median)/subgraph.vcount()]
     return rv 
 
@@ -155,10 +153,8 @@ def external_edges(cover) :
     return array_of_sets
 
 def compute_metrics(cover):
-    cover.graph.compute_metrics(refresh=False)
-    g_metrics = cover.graph.metrics
-    cover.metrics = { 
-            'Fraction over a Median Degree' : fomd(cover, g_metrics['Degree Statistics']),
+   cover.metrics = {
+            'Fraction over a Median Degree' : fomd(cover),
             'Expansion'                     : expansion(cover),
             'Cut Ratio'                     : cut_ratio(cover),    
             'Conductance'                   : conductance(cover),    
@@ -170,7 +166,7 @@ def compute_metrics(cover):
             'Subgraphs'                     : []
             }
 
-    for i in range(len(cover)):
+   for i in range(len(cover)):
         sg = cover.subgraph(i)
         sg.compute_metrics(refresh=False)
         cover.metrics['Subgraphs'] += [sg.metrics]
