@@ -1,7 +1,7 @@
+# coding: utf-8
 # Goal is to annotate a vertex cover with dictionary representing various cluster metrics
 
 from igraph import Graph
-
 
 def __describe(array, axis=0):
   from scipy.stats import describe
@@ -33,7 +33,7 @@ def triangle_participation_ratio(G):
     The fraction of nodes in a graph that belong to a triad.
     '''
     rv = G.triangle_participation()
-    return sum(rv)/G.vcount()
+    return 1.0*sum(rv)/G.vcount()
 
 def cohesiveness(G):
     '''

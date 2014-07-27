@@ -1,5 +1,5 @@
 # Goal is to annotate a vertex cover with dictionary representing various cluster metrics 
-from igraph import Cover 
+from igraph import Cover
 from scipy import nansum
 
 def fomd(cover):
@@ -47,7 +47,7 @@ def conductance(cover):
     for i in range(len(cover)):
         int_edges_cnt = cover.subgraph(i).ecount()
         ext_edges_cnt = len(external_edges[i])
-        rv += [ext_edges_cnt/(2*int_edges_cnt+ext_edges_cnt)]
+        rv += [ext_edges_cnt/(2.0*int_edges_cnt+ext_edges_cnt)]
     return rv
 
 def separability(cover):
@@ -59,7 +59,7 @@ def separability(cover):
     for i in range(len(cover)):
         int_edges_cnt = cover.subgraph(i).ecount()
         ext_edges_cnt = len(external_edges[i])
-        rv += [1.*int_edges_cnt/ext_edges_cnt]
+        rv += [1.0*int_edges_cnt/ext_edges_cnt]
     return rv
 
 
@@ -73,7 +73,7 @@ def normalized_cut(cover):
         int_edges_cnt = cover.subgraph(i).ecount()
         ext_edges_cnt = len(external_edges[i])
         tot_edge_cnt = cover.graph.ecount()
-        rv[i] += ext_edges_cnt/(2*(tot_edge_cnt - int_edges_cnt)+ext_edges_cnt)
+        rv[i] += ext_edges_cnt/(2.0*(tot_edge_cnt - int_edges_cnt)+ext_edges_cnt)
 
     return rv
 
