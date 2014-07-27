@@ -33,7 +33,7 @@ parser.add_argument('algo', nargs=1,
         choices=comm_choices,
         help='Which community detection to run.')
 parser.add_argument('--output', nargs=1, default='./', help='Base output directory')
-parser.add_argument('--samples', type=int, nargs=1, default=10, help='Number of samples for stochastic algos')
+parser.add_argument('--samples', type=int, nargs=1, default=[10], help='Number of samples for stochastic algos')
 
 args = parser.parse_args()
 
@@ -49,7 +49,7 @@ cc, stochastic = getattr(community, 'comm_'+algo_name)(data_mod)
 vc_name = data_set_name + '-' + algo_name
 vc = []
 elapsed = []
-Ns = args.samples # number of times to run stochastic algorithm
+Ns = args.samples[0] # number of times to run stochastic algorithm
 for i in range(Ns*stochastic + 1):
     t0 = time.time()
     vc += [to_cover(cc())]
