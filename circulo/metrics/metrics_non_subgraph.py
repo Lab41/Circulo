@@ -357,7 +357,7 @@ class ClusterMetric:
             val = 1
         else:
             #TODO: Consider using G_i.mincut() instead.
-            val, vc = spectral.min_conductance(G_i)
+            val, vc = G_i.min_conductance()
 
         return val
 

@@ -48,7 +48,7 @@ def cohesiveness(G):
         val = 1
     else:
         #TODO: Consider using G_i.mincut() instead.
-        val, vc = spectral.min_conductance(G)
+        val, vc = G.min_conductance()
     return val
 
 def compute_metrics(G, refresh = True):

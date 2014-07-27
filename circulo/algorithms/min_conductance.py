@@ -12,7 +12,7 @@ def min_conductance(G, tries=3):
         try:
             #Obtain a cut of G, it should already be a minimum
             curr_vc = G.community_spectral(k=2, which='NCut')
-            curr_val = curr_vc.as_cover().conductance()
+            curr_val = max(curr_vc.as_cover().conductance())
             if curr_val < rv_val :
                 (rv_val, rv_vc) = (curr_val, curr_vc)
         except:
