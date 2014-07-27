@@ -1,6 +1,6 @@
 # Goal is to annotate a vertex cover with dictionary representing various cluster metrics 
 from igraph import Cover
-from scipy import nansum
+from scipy import nansum, nanmax
 
 def fomd(cover):
     '''
@@ -82,6 +82,38 @@ def maximum_out_degree_fraction(cover):
     Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
     and its internal edges. Maximum ODF returns the maximum fraction for the cluster.
     '''
+    odf = out_degree_fraction(cover)
+    return [ nanmax(ratios) for ratios in odf ]
+
+def average_out_degree_fraction(cover):
+    '''
+    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
+    and its internal edges. Average ODF returns the average fraction for the cluster.
+    '''
+    rv = []
+    odf = out_degree_fraction(cover)
+    for i in range(len(cover)):
+      ratios = odf[i]
+      rv += [ nansum(ratios)/cover.subgraph(i).vcount() ]
+    return rv
+
+def flake_out_degree_fraction(cover):
+    '''
+    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
+    and its internal edges. Flake ODF returns the number of nodes for which this ratio is less than 1, i.e. a node has fewer internal edges than external ones.
+     '''
+    rv = []
+    odf = out_degree_fraction(cover)
+    for i in range(len(cover)):
+        flake = [ ratio > 1/2.0 for ratio in odf[i] ]
+        rv += [sum(flake)/cover.subgraph(i).vcount()]
+    return rv
+
+def out_degree_fraction(cover):
+    '''
+    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
+    and its internal edges.
+    '''
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
@@ -93,45 +125,7 @@ def maximum_out_degree_fraction(cover):
         ratios = []
         for pair in zip(ext_edge_per_node, degree_per_node):
              ratios += [ pair[0]/pair[1] if pair[1] != 0 else float('nan') ]
-        rv += [max(ratios)]
-    return rv
-
-def average_out_degree_fraction(cover):
-    '''
-    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
-    and its internal edges. Average ODF returns the average fraction for the cluster.
-    '''
-    rv = []
-    external_edges = cover.external_edges()
-    for i in range(len(cover)):
-        ext_edge_per_node = [0]*cover.graph.vcount()
-        degree_per_node = cover.graph.degree()
-        for edge in external_edges[i]:
-            node_index = edge.source if i in cover.membership[edge.source] else edge.target
-            ext_edge_per_node[node_index] += 1.0
-        ratios = []
-        for pair in zip(ext_edge_per_node, degree_per_node):
-            ratios += [ pair[0]/pair[1] if pair[1] != 0 else float('nan') ]
-        rv += [nansum(ratios)/cover.subgraph(i).vcount()]
-    return rv
-
-def flake_out_degree_fraction(cover):
-    '''
-    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
-    and its internal edges. Flake ODF returns the number of nodes for which this ratio is less than 1, i.e. a node has fewer internal edges than external ones.
-     '''
-    rv = []
-    external_edges = cover.external_edges()
-    for i in range(len(cover)):
-        ext_edge_per_node = [0]*cover.graph.vcount()
-        degree_per_node = cover.graph.degree()
-        for edge in external_edges[i]:
-            node_index = edge.source if i in cover.membership[edge.source] else edge.target
-            ext_edge_per_node[node_index] += 1.0
-        flake = []
-        for pair in zip(ext_edge_per_node, degree_per_node):
-            flake += [ pair[0] > pair[1]/2.0 ]
-        rv += [sum(flake)/cover.subgraph(i).vcount()]
+        rv += [ratios]
     return rv
 
 def external_edges(cover) :
@@ -180,6 +174,7 @@ Cover.cut_ratio = cut_ratio
 Cover.conductance = conductance
 Cover.normalized_cut = normalized_cut
 Cover.fraction_over_median_degree = fomd
+Cover._out_degree_fraction = out_degree_fraction
 Cover.maximum_out_degree_fraction = maximum_out_degree_fraction
 Cover.average_out_degree_fraction = average_out_degree_fraction
 Cover.flake_out_degree_fraction = flake_out_degree_fraction
