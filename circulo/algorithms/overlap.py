@@ -252,11 +252,7 @@ class CrispOverlap(object):
         for count, comm in enumerate(pp):
             print("Community {0}:".format(count))
             for v in comm:
-                print("\t", end=' ')
-                if label == 'CONGA_index':
-                    print(v.index)
-                else:
-                    print(v[label])
+                print('\t {0}'.format(v.index if label == 'CONGA_index' else v[label]))
             print()
 
 
