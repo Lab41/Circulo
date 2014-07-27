@@ -1,8 +1,9 @@
 import importlib
 import igraph 
-from circulo import metrics, omega
 import pickle
 import argparse
+
+from circulo import metrics
 
 
 
@@ -12,9 +13,6 @@ import argparse
 
 
 def run_omega(data_name,ground_name):
-    #data_name = 'data.congress_voting-fastgreedy.pickle' 
-    #ground_name = 'data.congress_voting-groundtruth.pickle'
-
     data = pickle.load(open(data_name,'rb'))
     data_ground = pickle.load(open(ground_name,'rb'))
 
@@ -22,12 +20,12 @@ def run_omega(data_name,ground_name):
         x = data
         data = data_ground
         data_ground = x
-    
+
     rv = []
     for i in range(len(data_ground['vc'])):
         v_ground = data_ground['vc'][i].membership
         for j in range(i, len(data['vc'])):
-            rv += [omega.omega_index(data['vc'][j].membership,v_ground,True)]
+            rv += [metrics.omega_index(data['vc'][j].membership,v_ground,True)]
 
     return rv
 

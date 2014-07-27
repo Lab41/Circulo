@@ -84,24 +84,19 @@ def __get_omega_e(A1, A2, sparse):
     rv /= (2*M)**2
     return rv;
 
-def omega_index(vc1, vc2, sparse=True):
+def omega_index(cover_membership_a, cover_membership_b, sparse=True):
     '''
-    inputs: List of lists (VertexCover) from two different community detection algorithms
-            on the same Graph.
-
-            Example - ll = [[0,1],[1],[0,2]]
-
-    output: Omega Index score - compares how similiar two covers are.
-            Best match = 1, No match = 0
+    Uses the Omega Index metrics to compare two covers of a given domain, e.g. a Graph.
+    @param cover_membership_a : A list of vertex to membership list.
+            Example - a = [[0,1],[1],[0,2]]
+    @param cover_membership_b : A list of vertex to membership list.
+    @returns: Best match = 1, No match = 0
     '''
 
-    A1 = __get_matrix(vc1, sparse)
-    A2 = __get_matrix(vc2, sparse)
+    A1 = __get_matrix(cover_membership_a, sparse)
+    A2 = __get_matrix(cover_membership_b, sparse)
     omega_u = __get_omega_u(A1, A2, sparse)
     omega_e = __get_omega_e(A1, A2, sparse)
 
-
-#    print('omega_u = ',str(omega_u))
-#    print('omega_e = ',str(omega_e))
     return (omega_u - omega_e)/(1-omega_e)
 
