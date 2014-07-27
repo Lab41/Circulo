@@ -41,7 +41,7 @@ args = parser.parse_args()
 # Get dataset and run cd algorithm
 data_set_name = args.dataset[0]
 algo_name = args.algo[0]
-data_mod = importlib.import_module(data_set_name+'.run')
+data_mod = importlib.import_module('data.'+data_set_name+'.run')
 
 # Get community covers
 cc, stochastic = getattr(community, 'comm_'+algo_name)(data_mod)
@@ -55,7 +55,7 @@ for i in range(Ns*stochastic + 1):
     vc += [to_cover(cc())]
     t_diff = time.time() - t0
     elapsed = [t_diff]
-    print('size of clusters = ',sorted(vc[i].sizes(),reverse=True))
+    print('size of clusters = {0}'.format(sorted(vc[i].sizes(),reverse=True)))
 
 # Save results
 results = {}
