@@ -1,5 +1,5 @@
 # Goal is to annotate a vertex cover with dictionary representing various cluster metrics 
-from igraph import Cover
+from igraph import Cover, VertexCover
 from scipy import nansum, nanmax
 
 def fomd(cover):
@@ -10,8 +10,7 @@ def fomd(cover):
     import scipy
     median = scipy.median(cover.graph.degree())
     rv = []
-    for i in range(len(cover)):
-        subgraph = cover.subgraph(i)
+    for subgraph in cover.subgraphs():
         rv += [sum(1.0 for v in subgraph.degree() if v > median)/subgraph.vcount()]
     return rv 
 
@@ -32,9 +31,9 @@ def cut_ratio(cover):
     '''
     rv = []
     external_edges = cover.external_edges()
+    size_g = cover.graph.vcount()
     for i in range(len(cover)):
         size_i = cover.size(i)
-        size_g = cover.graph.vcount()
         rv += [1.0*len(external_edges[i])/(size_i*(size_g-size_i))]
     return rv
 
@@ -101,7 +100,7 @@ def flake_out_degree_fraction(cover):
     '''
     Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
     and its internal edges. Flake ODF returns the number of nodes for which this ratio is less than 1, i.e. a node has fewer internal edges than external ones.
-     '''
+    '''
     rv = []
     odf = out_degree_fraction(cover)
     for i in range(len(cover)):
@@ -166,16 +165,16 @@ def compute_metrics(cover):
         cover.metrics['Subgraphs'] += [sg.metrics]
 
 
-Cover.metrics = None
-Cover.compute_metrics = compute_metrics
-Cover.external_edges = external_edges
-Cover.expansion = expansion
-Cover.cut_ratio = cut_ratio
-Cover.conductance = conductance
-Cover.normalized_cut = normalized_cut
 Cover.fraction_over_median_degree = fomd
-Cover._out_degree_fraction = out_degree_fraction
-Cover.maximum_out_degree_fraction = maximum_out_degree_fraction
-Cover.average_out_degree_fraction = average_out_degree_fraction
-Cover.flake_out_degree_fraction = flake_out_degree_fraction
-Cover.separability = separability
+VertexCover.metrics = None
+VertexCover.compute_metrics = compute_metrics
+VertexCover.external_edges = external_edges
+VertexCover.expansion = expansion
+VertexCover.cut_ratio = cut_ratio
+VertexCover.conductance = conductance
+VertexCover.normalized_cut = normalized_cut
+VertexCover._out_degree_fraction = out_degree_fraction
+VertexCover.maximum_out_degree_fraction = maximum_out_degree_fraction
+VertexCover.average_out_degree_fraction = average_out_degree_fraction
+VertexCover.flake_out_degree_fraction = flake_out_degree_fraction
+VertexCover.separability = separability
