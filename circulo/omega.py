@@ -1,5 +1,5 @@
 import numpy as np
-import scipy 
+import scipy
 import scipy.sparse as sp
 
 from igraph import Graph, VertexCover
@@ -48,7 +48,7 @@ def __get_matrix(vc, sparse):
         A = A+Ai
     # DO NOT ZERO THE DIAGONALS HERE, __get_omega_e depends on them.
     return A.tocsr() if sparse else A
-                
+
 def __get_omega_u(A1, A2, sparse):
     '''
     inputs: Two __get_matrix results
@@ -57,8 +57,8 @@ def __get_omega_u(A1, A2, sparse):
     '''
     n = A1.shape[0]
     M = n*(n-1)/2.0
-    A = __reset_diagonal((A1 == A2)*1 , sparse)
-    rv = A.sum()
+    notA = __reset_diagonal((A1 != A2), sparse)
+    rv = n*(n-1) - notA.sum()
     return rv/(2*M)
 
 def __get_omega_e(A1, A2, sparse):
@@ -70,10 +70,15 @@ def __get_omega_e(A1, A2, sparse):
     n = A1.shape[0]
     M = n*(n-1)/2.0
     k = max(max((__get_diagonal(A1, sparse))), max(__get_diagonal(A2, sparse)))
-    rv = 0
-    for i in range(k+1):
-        t_i_1 = __reset_diagonal((A1 == i)*1, sparse)
-        t_i_2 = __reset_diagonal((A2 == i)*1, sparse)
+
+    # The 0th iteration is done with a negation since it is a sparse matrix
+    t_not0_1 = __reset_diagonal((A1 != 0), sparse)
+    t_not0_2 = __reset_diagonal((A2 != 0), sparse)
+    rv = n*(n-1) - t_not0_1.sum()
+    rv *= n*(n-1) - t_not0_2.sum()
+    for i in range(1, k+1):
+        t_i_1 = __reset_diagonal((A1 == i), sparse)
+        t_i_2 = __reset_diagonal((A2 == i), sparse)
 
         rv += t_i_1.sum()*t_i_2.sum()
     rv /= (2*M)**2
