@@ -12,7 +12,7 @@ from collections import namedtuple
 import numpy as np
 import sklearn.metrics
 import json
-import statistics
+import scipy
 
 '''
 TODO:
@@ -72,6 +72,7 @@ class ClusterMetric:
         self.clustering_coefficient = None
         self.tpr = None
 
+    @staticmethod
     def generateMetric(cover_id, cover, median_degree_G=None):
 
         m = ClusterMetric()
@@ -88,7 +89,7 @@ class ClusterMetric:
         #for efficiency pruposes we allow the caller to send in the median
         #however, if not provided we must calculate it
         if m.median_degree_G is None:
-            m.median_degree_G = statistics.median(m.G.degree())
+            m.median_degree_G = scipy.median(m.G.degree())
 
         #set all values to 0 by default
         for v in m.community:
@@ -404,6 +405,7 @@ class VertexCoverMetric:
         self.comm_metrics = list()
         self.modularity = None
 
+    @staticmethod
     def run_analysis(cover, weights="weight"):
         '''
         :cover: the vertex cover representing the communities
