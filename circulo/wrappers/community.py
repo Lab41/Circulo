@@ -1,13 +1,13 @@
 from functools import partial
-import igraph 
+import igraph
 import circulo.algorithms
 import circulo.algorithms.radicchi
 
 def comm_infomap(data_mod) :
     G = data_mod.get_graph()
-    edge_weight = 'weight' if G.is_weighted() else None
-    vertex_weight = None
-    rv = partial(igraph.Graph.community_infomap, G, edge_weight, vertex_weight)
+    edge_weights = 'weight' if G.is_weighted() else None
+    vertex_weights = None
+    rv = partial(igraph.Graph.community_infomap, G, edge_weights=edge_weights, vertex_weights=vertex_weights)
     stochastic = True
     return rv, stochastic
 
