@@ -15,7 +15,6 @@ from profilehooks import profile
 # TODO:
 #    * only call fix_betweennesses when needed
 
-#@profile
 def CONGO(OG, h=2):
     """
     Provides an Implementation of the CONGO algorithm defined by Steve Gregory
@@ -139,7 +138,7 @@ def fix_betweennesses(G):
     fix_pair_betweennesses(G)
     fix_edge_betweennesses(G)
 
-#@profile
+
 def split_vertex(G, vToSplit, instr, h):
     """
     Splits the vertex v into two new vertices, each with
@@ -165,7 +164,7 @@ def split_vertex(G, vToSplit, instr, h):
     # check if the two new vertices are disconnected.
     return check_for_split(G, (vToSplit, new_index))
 
-#@profile
+
 def max_split_betweenness(G, vInteresting):
     """
     Performs the greedy algorithm discussed in the 2007 CONGA paper
@@ -439,10 +438,10 @@ def matrix_min(mat):
 def run_demo():
     """
     Finds the communities of the Zachary graph and gets the optimal one using
-    Lazar's measure of modularity. Finally, pretty-prints the optimal cover.
+    Lazar's measure of modularity with h=3. Finally, pretty-prints the optimal cover.
     """
     G = ig.Graph().Famous("Zachary").as_undirected()
-    result = CONGO(G, 200)
+    result = CONGO(G, 3)
     result.pretty_print_cover(result.optimal_count, label='CONGA_index')
 
 
