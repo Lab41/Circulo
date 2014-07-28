@@ -32,11 +32,6 @@ def CONGA(OG, calculate_modularities=None, optimal_count=None):
 
     # Store the original ids of all vertices
     G.vs['CONGA_orig'] = [i.index for i in OG.vs]
-
-    # Initialize the modDict with the modularity of the original graph
-    if calculate_modularities is None:
-        modDict = {nClusters: G.modularity(comm.membership)}
-    else: modDict = None
     allCovers = {nClusters : ig.VertexCover(OG)}
     while G.es:
         split = remove_edge_or_split_vertex(G)
@@ -46,11 +41,8 @@ def CONGA(OG, calculate_modularities=None, optimal_count=None):
             nClusters += 1
             # short circuit stuff would go here.
             allCovers[nClusters] = cover
-            if calculate_modularities is None:
-                modDict[nClusters] = G.modularity(comm)
     if calculate_modularities is None: calculate_modularities = "lazar"
-    return overlap.CrispOverlap(OG, allCovers, 
-                                    modularities=modDict, 
+    return overlap.CrispOverlap(OG, allCovers,  
                                     modularity_measure=calculate_modularities, 
                                     optimal_count=optimal_count)
 

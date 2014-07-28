@@ -39,67 +39,6 @@ def count_communities(G, cover):
     return counts
 
 
-# def count_internal_edges(G, vertex, cluster):
-#     """
-#     Given a graph, a vertex in the graph, and a list of vertex
-#     ids "cluster", returns a set of edge ids that are internal
-#     to the cluster, as well as the difference between the number of
-#     internal edges and external edges.
-#     """
-#     internal = set()
-#     internalExternalCount = 0
-#     for edge in G.es[G.incident(vertex)]:
-#         if edge.tuple[1] in cluster:
-#             internal.add(edge)
-#             internalExternalCount += 1
-#         else: internalExternalCount -= 1
-#     return internal, internalExternalCount
-
-
-# def lazar_modularity(G, cover):
-#     """
-#     Returns the crisp modularity measure as defined by Lazar et al. 2009
-
-#     Defined as the average edge density times normalized difference
-#     between inter and intracommunity edges for each community.
-
-#     See CONGA 2010 or Lazar's paper for a precise definition.
-#     """
-
-#     counts = count_communities(G, cover)
-#     totalModularity = 0
-#     for cluster in cover:
-#         clusterSet = set(cluster)
-#         edgeSet = set()
-#         totalNormalizedDiff = 0
-#         for vertex in cluster:
-#             neighbors = G.neighbors(vertex)
-#             internalEdges, internalExternalCount = count_internal_edges(G, vertex, clusterSet)
-
-#             # Counting internal edges in a set so we don't repeat.
-#             edgeSet |= internalEdges
-
-#             # Normalizing by the vertex's degree and the number of communities it is in.
-#             normalization = G.vs[vertex].degree() * counts[vertex]
-#             if normalization == 0: return 0
-#             totalNormalizedDiff += (internalExternalCount)/float(normalization)
-
-#         # Multiplying by the edge density.
-#         numEdges = float(len(edgeSet))
-#         numVertices = float(len(cluster))
-#         try:
-#             edgeDensity = numEdges / ((numVertices * numVertices-1) / 2)
-#         except ZeroDivisionError:
-#             # Not well defined for single vertex communities.
-#             # We can assume it is a bad cover, however,
-#             # so we return a 0 modularity.
-#             return 0
-#         edgeDensity *= 1 / numVertices
-#         totalModularity += totalNormalizedDiff * edgeDensity
-
-#     return totalModularity / len(cover)
-
-
 def get_weights(G):
     """
     Given a graph G, returns a list of weights. If the graph is unweighted,
