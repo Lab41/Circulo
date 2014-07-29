@@ -21,20 +21,17 @@ To write an etl script for a new dataset, follow these steps. We'll pretend our 
 ## Progress
 | Dataset | Description | `run.py` implemented? | README written? |
 | ------- | ------------|:---------------------:|:---------------:|
-| citi | New York bike trip histories recorded by [citibike](http://www.citibikenyc.com/system-data) | No | No |
-| congress_voting | Historical congress voting data | Yes | No (need to update) |
-| federal_contrib | Contribution records to political entities | In progress | No |
-| flights | Flights data from <openflights.org> | Yes | No |
-| football | NCAA D1A games played in the Fall 2000 season | Yes | No |
-| karate | Famous data set of Zachary's karate club | Yes | No |
-| nba_schedule | Games played in the 2013-2014 NBA season | Yes | No |
-| netscience | Graph of collaborators on papers about network science | Yes | No |
-| pgp | Interactions in pretty good privacy | Yes | No |
-| school | Face-to-face interactions in a primary school | Yes | [ ] |
-| twitter | several datasets taken from twitter | No | No |
-
-Test: [ ]
-Test1: [x]
+| citi | New York bike trip histories recorded by [citibike](http://www.citibikenyc.com/system-data) | **No** | **No** |
+| congress_voting | Historical congress voting data | Yes | **No (need to update)** |
+| federal_contrib | Contribution records to political entities | **In progress** | **No** |
+| flights | Flights data from <openflights.org> | Yes | **No** |
+| football | NCAA D1A games played in the Fall 2000 season | Yes | **No** |
+| karate | Famous data set of Zachary's karate club | Yes | **No** |
+| nba_schedule | Games played in the 2013-2014 NBA season | Yes | **No** |
+| netscience | Graph of collaborators on papers about network science | Yes | **No** |
+| pgp | Interactions in pretty good privacy | Yes | **No** |
+| school | Face-to-face interactions in a primary school | Yes | **No** |
+| twitter | several datasets taken from twitter | **No** | **No** |
 
 ## Resources
 Here are some links with lots of graphs. Most of these sites also point you towards other resources. If you need a graph that we don't provide a script for, these sires are a good place to start looking.
