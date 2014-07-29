@@ -20,19 +20,19 @@ To write an etl script for a new dataset, follow these steps. We'll pretend our 
 6. Add a row to the Progress table in this README.
 
 ## Progress
-| Dataset | Description | `run.py` implemented? | README written? |
-| ------- | ------------|:---------------------:|:---------------:|
-| citi | New York bike trip histories recorded by [citibike](http://www.citibikenyc.com/system-data) | **No** | **In Progress** |
-| congress_voting | Historical congress voting data | Yes | Yes |
-| federal_contrib | Contribution records to political entities | **In progress** | **No** |
-| flights | Flights data from <http://openflights.org/data.html> | Yes | Yes |
-| football | NCAA D1A games played in the Fall 2000 season | Yes | Yes |
-| karate | Famous data set of Zachary's karate club | Yes | **No** |
-| nba_schedule | Games played in the 2013-2014 NBA season | Yes | **No** |
-| netscience | Graph of collaborators on papers about network science | Yes | **No** |
-| pgp | Interactions in pretty good privacy | Yes | **No** |
-| school | Face-to-face interactions in a primary school | Yes | **No** |
-| twitter | Several datasets taken from twitter | **No** | **No** |
+| Dataset | Description | `run.py` implemented? | README written? | Ground Truth implemented?
+| ------- | ------------|:---------------------:|:---------------:|:----:|
+| citi | New York bike trip histories recorded by [citibike](http://www.citibikenyc.com/system-data) | **No** | **In Progress** | **No** |
+| congress_voting | Historical congress voting data | Yes | Yes | Yes |
+| federal_contrib | Contribution records to political entities | **In progress** | **No** | **No** |
+| flights | Flights data from <http://openflights.org/data.html> | Yes | Yes | Yes |
+| football | NCAA D1A games played in the Fall 2000 season | Yes | Yes | Yes |
+| karate | Famous data set of Zachary's karate club | Yes | **No** | **No** |
+| nba_schedule | Games played in the 2013-2014 NBA season | Yes | **No** | **No** |
+| netscience | Graph of collaborators on papers about network science | Yes | **No** | **No** |
+| pgp | Interactions in pretty good privacy | Yes | **No** | **No** |
+| school | Face-to-face interactions in a primary school | Yes | **No** | **No** |
+| twitter | Several datasets taken from twitter | **No** | **No** | **No** |
 
 ## Resources
 Here are some links with lots of graphs. Most of these sites also point you towards other resources. If you need a graph that we don't provide a script for, these sires are a good place to start looking.

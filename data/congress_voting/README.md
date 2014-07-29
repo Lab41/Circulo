@@ -27,6 +27,9 @@ There is an edge between two nodes whenever the congresspeople vote together on 
 Attributes:
 * **weight**: The number of times the congresspeople on each side of this edge have voted the same way.
 
+## Ground Truth
+`get_ground_truth` returns a VertexClustering grouped by the parties of the politicians.
+
 ## Other Notes
 * See `run.py` for specific details
 

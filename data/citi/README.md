@@ -21,6 +21,8 @@ Attributes:
 
 Attributes:
 
+## Ground Truth
+(describe the ground truth implemented, if any)
 
 ## Other Notes
 * See `run.py` for specific details

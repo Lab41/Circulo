@@ -43,6 +43,9 @@ Attributes (only available in multigraph. Otherwise, the only attribute is "weig
 * **dest_id**: Unique OpenFlights identifier for destination airport.
 * **airline**: 2-letter (IATA) or 3-letter (ICAO) code of the airline.
 
+## Ground Truth
+`get_ground_truth` returns a VertexClustering of vertices grouped by some attribute from the vertex attributes supplied by the user. Currently, the ground truth defaults to clustering by country.
+
 ## Other Notes
 * See `run.py` for specific details
 

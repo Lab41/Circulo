@@ -27,6 +27,9 @@ Attributes: None
 ## Other Notes
 * See `run.py` for specific details
 
+## Ground Truth
+`get_ground_truth` groups the vertices by conference.
+
 ## References
 Data from Mark Newman's personal website. 
 
