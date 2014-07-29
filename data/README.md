@@ -27,7 +27,7 @@ To write an etl script for a new dataset, follow these steps. We'll pretend our 
 | federal_contrib | Contribution records to political entities | **In progress** | **No** | **No** |
 | flights | Flights data from <http://openflights.org/data.html> | Yes | Yes | Yes |
 | football | NCAA D1A games played in the Fall 2000 season | Yes | Yes | Yes |
-| karate | Famous data set of Zachary's karate club | Yes | **No** | **No** |
+| karate | Famous data set of Zachary's karate club | Yes | Yes | **No** |
 | nba_schedule | Games played in the 2013-2014 NBA season | Yes | **No** | **No** |
 | netscience | Graph of collaborators on papers about network science | Yes | **No** | **No** |
 | pgp | Interactions in pretty good privacy | Yes | **No** | **No** |
