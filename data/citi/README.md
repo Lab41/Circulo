@@ -6,7 +6,9 @@ The data can be found at <http://www.citibikenyc.com/system-data>
 (Give a high level description of the data set.)
 
 Directed: TODO
+
 Weighted: TODO
+
 Multigraph: TODO
 
 ### Vertices 

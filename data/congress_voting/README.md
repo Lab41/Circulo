@@ -1,60 +1,34 @@
+## Congress Voting Data
 
-#Congress Voting Data Analysis
+The data can be found at <https://www.govtrack.us/developers/data>
 
+## Description
+(Give a high level description of the data set.)
 
-### Data Prep
+Directed: No
 
-- The data can be found at [https://www.govtrack.us/developers/data](https://www.govtrack.us/developers/data)
-- To download the 2014 votes, you would do the following
-	
-	`rsync -avz --delete --delete-excluded --exclude **/text-versions/ govtrack.us::govtrackdata/congress/113/votes/2014 .`
-- To download the legislator list that matches to the ids
-	
-	`rsync -avz --delete --delete-excluded --exclude **/text-versions/ govtrack.us::govtrackdata/congress-legislators/legislators-current.csv .`
+Weighted: Yes
 
+Multigraph: No
 
+### Vertices 
+Each vertex represents a congressperson for whom we have voting data.
 
-## Exercise
+Attributes:
+**name**: Unique identifying id
+**full_name**: Name of the congressperson
+**state**: State represented
+**id**: Unique identifier. In most cases, use "name."
+**party**: Political party.
 
-__Requirements__
+### Edges
+There is an edge between two nodes whenever the congresspeople vote together on an issue. The edges are weighted by the number of votes that are shared. 
 
-- NetworkX Fork from ....
-- IPython QtConsole
-- Snap from ...
+Attributes:
+**weight**: The number of times the congresspeople on each side of this edge have voted the same way.
 
+## Other Notes
+* See `run.py` for specific details
 
-
-From the iPython QtConsole 
-
-	#inline images
-	import matplotlib
-	%matplotlib inline  
-
-	import os
-	os.environ['SNAPHOME'] = '/path/to/snap'
-
-
-	#set the inline image size to be larger
- 	import matplotlib.pylab as pylab
- 	pylab.rcParams['figure.figsize'] = (14.0, 12.0)
-
-	#ETL the congress voting data
-	%run parse_congress.py Filter
-	
-	import networkx as nx
-	
-	#from the senate dir, read in the senate data (you can do the house data too)
-	G = nx.read_graphml('senate/senate.graphml', node_type=int)
-	
-	#set the layout
-	pos = nx.fruchterman_reingold_layout(G, k=2)
-	
-	#create the labels
-	labels=dict((n, d['name'] + ' ' + d['party']) for n,d in G.nodes(data=True) if d.has_key('party'))
-
-	
-	nx.draw(G, pos = pos, node_size=60, node_color="red", edge_color="grey", with_labels=True, labels=labels)
-
-
-
-
+## References
+Thanks to GovTrack.us

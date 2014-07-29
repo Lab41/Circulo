@@ -6,7 +6,9 @@ The data can be found at <http://data.influenceexplorer.com/bulk/>
 (Give a high level description of the data set.)
 
 Directed: TODO
+
 Weighted: TODO
+
 Multigraph: TODO
 
 ### Vertices 
