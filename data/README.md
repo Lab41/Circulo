@@ -2,18 +2,18 @@
 
 This directory contains links to various data sets and scrips to extract them into a format [readable by igraph](http://igraph.org/python/doc/tutorial/tutorial.html#igraph-and-the-outside-world). 
 
-Each subdirectory's `run.py` provides the methods `get_graph()` and most provide `get_ground_truth()`. `get_graph` returns an igraph graph of the given data, described in the individual dataset's readme. `get_ground_truth` returns an VertexClustering object of what we believe to be ground truth in the given data, again described in the specific readme.
+Each subdirectory's `run.py` provides the methods `get_graph()` and most provide `get_ground_truth()`. `get_graph` returns an igraph graph of the given data, described in the individual dataset's README. `get_ground_truth` returns a VertexClustering object of what we believe to be ground truth in the given data, again described in the specific README.
 
 Running `python3 run.py` in some subdirectory will populate that directory with a new `data/` directory containing all relevant files, including a file in igraph-readable format.
 
 
-## Instructions
+## Adding a new dataset
 
 To write an etl script for a new dataset, follow these steps. We'll pretend our new dataset is called "friends":
 
 1. Create a new subdirectory with a name describing the new dataset: `mkdir friends`
 2. Copy the etl template into the new directory, naming it `run.py`: `cp run_template.py friends/run.py`
-3. Create a README: `echo "TODO" > friends/README.md`
+2. Copy the README template into the new directory, naming it `README.md`: `cp README_template.md friends/README.md`
 4. Implement all functions in `run.py`. If the file is already in igraph readable format, this should only involve changing the constants at the top of the file. Otherwise, you'll have to do the conversion yourself, in `__prepare__`.
 5. Fill out the README
 6. Add a row to the Progress table in this README.
@@ -31,7 +31,7 @@ To write an etl script for a new dataset, follow these steps. We'll pretend our 
 | netscience | Graph of collaborators on papers about network science | Yes | **No** |
 | pgp | Interactions in pretty good privacy | Yes | **No** |
 | school | Face-to-face interactions in a primary school | Yes | **No** |
-| twitter | several datasets taken from twitter | **No** | **No** |
+| twitter | Several datasets taken from twitter | **No** | **No** |
 
 ## Resources
 Here are some links with lots of graphs. Most of these sites also point you towards other resources. If you need a graph that we don't provide a script for, these sires are a good place to start looking.
