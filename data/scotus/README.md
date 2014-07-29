@@ -1,28 +1,31 @@
 ## [Dataset Name]
-
-The data can be found at (Link to dataset)
+The data can be found at http://jhfowler.ucsd.edu/judicial.htm.
 
 ## Description
-(Give a high level description of the data set.)
+The dataset represents the citation graph of the Supreme Court of the United States from 1762-2001
 
-Directed: TODO
+Directed: True
 
-Weighted: TODO
+Weighted: False
 
-Multigraph: TODO
+Multigraph: False
 
 ### Vertices 
-(describe what the vertices represent, and their attributes)
+Each vertex of the graph represents a case argued before the U.S. Supreme Court. 
 
 Attributes:
+    - caseid: Internal ID used for identifying cases.
+    - usid: ID of the case in the U.S. Supreme Court archives (volume and case number)
+    - parties: Disputing parties in the case (e.g. 'Marbury v. Madison', 'Brown v. Board of Education of Topeka')
+    - year: Year the case was argued.
 
 ### Edges
-(describe what the edges represent, and their attributes)
+Edges represent majority opinion citations of previous cases; they are directed and point from citing case to cited case.
 
-Attributes:
+Attributes: none.
 
 ## Ground Truth
-(describe the ground truth implemented, if any)
+No ground truth exists for this dataset.
 
 ## Other Notes
 * See `run.py` for specific details
