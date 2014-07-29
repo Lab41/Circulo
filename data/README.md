@@ -30,7 +30,7 @@ To write an etl script for a new dataset, follow these steps. We'll pretend our 
 | karate | Famous data set of Zachary's karate club | Yes | Yes | **No** |
 | nba_schedule | Games played in the 2013-2014 NBA season | Yes | Yes | Yes |
 | netscience | Graph of collaborators on papers about network science | Yes | Yes | **No** |
-| pgp | Interactions in pretty good privacy | Yes | **No** | **No** |
+| pgp | Interactions in pretty good privacy | Yes | Yes | **No** |
 | school | Face-to-face interactions in a primary school | Yes | **No** | **No** |
 | twitter | Several datasets taken from twitter | **No** | **No** | **No** |
 
