@@ -9,5 +9,6 @@
     (describe what the edges represent)
 
 ## Other Notes
+* See `run.py` for specific details
 
 ## References

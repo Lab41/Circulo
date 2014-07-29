@@ -15,6 +15,7 @@ To write an etl script for a new dataset, follow these steps. We'll pretend our 
 2. Copy the etl template into the new directory, naming it `run.py`: `cp run_template.py friends/run.py`
 2. Copy the README template into the new directory, naming it `README.md`: `cp README_template.md friends/README.md`
 4. Implement all functions in `run.py`. If the file is already in igraph readable format, this should only involve changing the constants at the top of the file. Otherwise, you'll have to do the conversion yourself, in `__prepare__`.
+5. Add an empty __init__.py to the subdirectory: `echo '' > friends/__init__.py`
 5. Fill out the README
 6. Add a row to the Progress table in this README.
 
