@@ -1,27 +1,42 @@
+## Primary School - Cumulative Networks
 
-#Primary School - Cumulative Networks
+The data can be found at <http://www.sociopatterns.org/datasets/primary-school-cumulative-networks/>
 
-- If circulo is not installed, be sure to set the PYTHONPATH to the project home directory, otherwise the circulo package will not be found
+## Description
+A network of face to face time between people at a primary school.
 
-###Data Prep
+Directed: No
 
-__Requirements__
+Weighted: No (but can easily be modified to be weighted)
 
-- NetworkX from https://networkx.github.io
-- iGraph from http://igraph.org
+Multigraph: No
 
+### Vertices 
+Each vertex represents a person at the school (either a student or a teacher).
 
-The data can be found at [http://www.sociopatterns.org/datasets/primary-school-cumulative-networks/](http://www.sociopatterns.org/datasets/primary-school-cumulative-networks/)
+Attributes:
+* **classname**: The school class and grade, if a student. Otherwise, "Teachers"
+* **label**: Unique identifier.
+* **id**: Yet another unique identifier.
+* **gender**: M, F, or Unknown
+* **viz**: Undocumented. Always 0.0
 
+### Edges
+An edge exists where some actor was face to face with another one. 
 
-To download and extract the two data sets, do the following:
+Attributes:
+* **id**: Unique identifier. 
+* **count**: The number of times that contact was established during the day.
+* **duration**: The total time that the nodes on this edge spent in face to face contact, measured in 20 second intervals.
 
-	`python run.py`
-	
-This should create a new directory, "data", if it doesn't already exist, and populate it with the new data in .gexf and .graphml format.
-	
+## Ground Truth
+`get_ground_truth` returns a VertexClustering object in which the vertices are grouped by "classname".
 
-__Code__
+## Other Notes
+* See `run.py` for specific details
+* Either "count" or "duration" would make sense as a weight for use with a weighted algorithm.
+* `run.py` requires NetworkX from <https://networkx.github.io>.
 
-- Please refer to run.py
+## References
 
+Thanks to sociopatterns.org. 
