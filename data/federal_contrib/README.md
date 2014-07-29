@@ -1,6 +1,26 @@
+## State and Federal Contributions
 
-#State and Federal Campaign Contributions
+The data can be found at <http://data.influenceexplorer.com/bulk/>
 
-###Data Prep
+## Description
+(Give a high level description of the data set.)
 
--The data can be found at http://data.influenceexplorer.com/bulk/
+Directed: TODO
+Weighted: TODO
+Multigraph: TODO
+
+### Vertices 
+(describe what the vertices represent, and their attributes)
+
+Attributes:
+
+### Edges
+(describe what the edges represent, and their attributes)
+
+Attributes:
+
+
+## Other Notes
+* See `run.py` for specific details
+
+## References
