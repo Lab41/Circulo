@@ -31,5 +31,5 @@ No ground truth exists for this dataset.
 * See `run.py` for specific details.
 
 ## References
-[1] "The Authority of Supreme Court Precedent." James H. Fowler, Sangick Jeon. _Social Neworks_ 30 (1): 16-30 (January 2008)
-[2] "Network Analysis and the Law: Measuring the Legal Importance of Supreme Court Precedents." James H. Fowler, Timothy R. Johnson, James F. Spriggs II, Sangick Jeon, Paul J. Wahlbeck. _Political Analysis,_ 15 (3): 324-346 (July 2007).
+- [1] "The Authority of Supreme Court Precedent." James H. Fowler, Sangick Jeon. _Social Neworks_ 30 (1): 16-30 (January 2008)
+- [2] "Network Analysis and the Law: Measuring the Legal Importance of Supreme Court Precedents." James H. Fowler, Timothy R. Johnson, James F. Spriggs II, Sangick Jeon, Paul J. Wahlbeck. _Political Analysis,_ 15 (3): 324-346 (July 2007).
