@@ -19,7 +19,7 @@ def download_with_notes(url, filename, data_dir):
     print("Download complete.")
     try:
         z = zipfile.ZipFile(os.path.join(data_dir, filename))
-    except BadZipFile:
+    except zipfile.BadZipFile:
         return
     print("Unzipping...")
     z.extractall(path=data_dir)
