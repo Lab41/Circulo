@@ -5,10 +5,10 @@ import sys
 import urllib.request
 from circulo.download_utils import download_with_notes
 
-
-GRAPH_NAME = # Graph name goes here.
-DOWNLOAD_URL = # url goes here.
-GRAPH_TYPE = # extension goes here. Something like .net, .gml, .graphml...
+GRAPH_NAME = 'SCOTUS'
+DOWNLOAD_URL = 'http://jhfowler.ucsd.edu/data/judicial.csv'
+DOWNLOAD_URL_2 = 'http://jhfowler.ucsd.edu/data/allcites.txt'
+GRAPH_TYPE = '.edgelist'
 
 def __download__(data_dir):
     """
@@ -17,7 +17,6 @@ def __download__(data_dir):
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
     download_with_notes(DOWNLOAD_URL, GRAPH_NAME, data_dir)
-
 
 def __prepare__(data_dir):
     """
