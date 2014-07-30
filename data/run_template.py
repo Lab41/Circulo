@@ -30,7 +30,7 @@ def __prepare__(data_dir):
     """
     TEMPLATE COMMENT: prepare the data into graphml format.
     """
-    raise(NotImplementedError)
+    pass
 
 
 def get_graph():
@@ -55,11 +55,6 @@ def get_ground_truth(G=None):
     ground truth of the graph G.
     """
     raise(NotImplementedError)
-
-    # if G is None:
-    #     G = get_graph()
-
-    # return # VertexClustering(G, membership)
 
 
 def main():
