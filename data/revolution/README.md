@@ -18,9 +18,9 @@ Graph properties:
    - Bipartite: True
 
 ### Vertices 
-The seven Type 1 nodes represent these seven groups (St. Andrew's Lodge, the Loyal
-Nine, the North Caucus, the Long Room Club, the Boston Tea Party, the Boston Committe, and the London Enemies). 
-The 254 Type 2 nodes represent colonial Americans (including John Adams, Paul Revere, and Joseph Warren). 
+The seven Type 1 nodes represent seven Whig groups: St. Andrew's Lodge, the Loyal Nine, the North Caucus, 
+the Long Room Club, the Boston Tea Party, the Boston Committe, and the London Enemies. 
+The 254 Type 2 nodes represent colonial Americans who attended meetings of these groups (including John Adams, Paul Revere, and Joseph Warren). 
 
 Attributes: None. 
 
