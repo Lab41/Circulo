@@ -1,6 +1,6 @@
 ## Revolutionary War participants
-
-The data can be found at https://github.com/kjhealy/revere.git. 
+This dataset is drawn from the appendix of David Hackett Fischer's _Paul Revere's Ride_; a CSV version is available within
+the repository https://github.com/kjhealy/revere.git. 
 
 ## Description
 This is a bipartite graph representing colonial American dissidents' membership in seven Whig (anti-British) groups during the
