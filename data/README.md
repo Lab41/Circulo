@@ -33,6 +33,8 @@ To write an etl script for a new dataset, follow these steps. We'll pretend our 
 | pgp | Interactions in pretty good privacy | Yes | Yes | **No** |
 | school | Face-to-face interactions in a primary school | Yes | Yes | **No** |
 | twitter | Several datasets taken from twitter | **No** | **No** | **No** |
+| scotus | Supreme court case citation network | Yes | Yes | **No** |
+| revolution | Colonial American dissidents club attendence network | Yes | Yes | **No** |
 
 ## Resources
 Here are some links with lots of graphs. Most of these sites also point you towards other resources. If you need a graph that we don't provide a script for, these sires are a good place to start looking.
