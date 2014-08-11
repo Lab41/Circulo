@@ -1,9 +1,9 @@
 # A better makefile is in Makefile_modify, but it's currently broken.
 all:
-	g++ -O3 -std=c++0x -Wall -g -pedantic working_biSBM.cpp -I/usr/local/Cellar/igraph/0.7.1/include/igraph -o working_biSBM -L/usr/local/Cellar/igraph/0.7.1/lib -ligraph
+	gcc -O3 -Wall -g -pedantic working_biSBM.c -I/usr/local/Cellar/igraph/0.7.1/include/igraph -o working_biSBM -L/usr/local/Cellar/igraph/0.7.1/lib -ligraph
 
 
-
+# -std=c++0x or something like that for cpp
 
 
 # # here's a better Makefile, but it doesn't currently work. TODO!
