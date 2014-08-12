@@ -2,7 +2,8 @@
 all:
 	gcc -O3 -Wall -g -pedantic working_biSBM.c -I/usr/local/Cellar/igraph/0.7.1/include/igraph -o working_biSBM -L/usr/local/Cellar/igraph/0.7.1/lib -ligraph
 
-
+unopt:
+	gcc -Wall -g -pedantic working_biSBM.c -I/usr/local/Cellar/igraph/0.7.1/include/igraph -o working_biSBM -L/usr/local/Cellar/igraph/0.7.1/lib -ligraph
 # -std=c++0x or something like that for cpp
 
 
