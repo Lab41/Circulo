@@ -45,7 +45,48 @@ def get_ground_truth(G=None):
     returns a VertexClustering object of the 
     ground truth of the graph G.
     """
-    raise(NotImplementedError)
+    
+    #ground truth table
+    groups = {
+            "1":0,
+            "2":0,
+            "3":0,
+            "4":0,
+            "5":0,
+            "6":0,
+            "7":0,
+            "8":0,
+            "9":1,
+            "10":1,
+            "11":0,
+            "12":0,
+            "13":0,
+            "14":0,
+            "15":1,
+            "16":1,
+            "17":0,
+            "18":0,
+            "19":1,
+            "20":0,
+            "21":1,
+            "22":0,
+            "23":1,
+            "24":1,
+            "25":1,
+            "26":1,
+            "27":1,
+            "28":1,
+            "29":1,
+            "30":1,
+            "31":1,
+            "32":1,
+            "33":1,
+            "34":1,
+            }
+
+    membership = [ groups[karatemember] for karatemember in G.vs['name']]
+
+    return VertexClustering(G, membership)
 
 def main():
     G = get_graph()
