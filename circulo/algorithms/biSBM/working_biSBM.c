@@ -97,8 +97,60 @@ double score_partition(int *partition, igraph_t *graph){
   return 0.0;
 }
 
-double iterate_once(int *partition, int a, igraph_vector_bool_t *types, igraph_t *graph){
-  return score_partition(partition, graph);
+double make_best_switch(int *partition, int a, int b, igraph_vector_bool_t *types, igraph_t *graph, bool *used, int num_used){
+  int best_switch = -1;
+  double best_score = 0; 
+  for (int i = 0; i < igraph_vector_bool_size(types); i++){
+    if (used[i]){
+      continue; // meh. don't do it this way. TODO
+    }
+    if (partition[i] < a){
+      // TODO decompose
+      for (int group = 0; group < a; group++){
+        if (group != partition[i]){
+          //swap and score
+          score = score_partition();// TODO
+          if (score > best_score){
+            best_switch = i;
+            best_score = score;
+          }
+        }
+      }
+    }
+    else {
+      for (int group = a; group < a + b; group++){
+        if (group != partition[i]){
+          //swap and score TODO same as above, decompose
+        }
+      }
+    }
+  }
+
+  used[best_switch] = true;
+}
+
+
+double iterate_once(int *partition, int a, int b, igraph_vector_bool_t *types, igraph_t *graph){
+  int *working_partition = malloc(sizeof(int) * igraph_vector_bool_size(types)); // TODO: allocate on stack
+  memcpy(working_partition, partition, sizeof(int) * igraph_vector_bool_size(types));
+
+  double max_score = 0;
+  int num_used = 0;
+
+  // initialize to 0
+  bool *used = calloc(sizeof(bool) * igraph_vector_bool_size(types)); // TODO: allocate on stack
+
+  while (num_used < igraph_vector_bool_size(types)){
+    new_score = make_best_switch(working_partition, a, b, types, graph, used, num_used);
+    if (new_score > max_score){
+      max_score = new_score;
+      memcpy(partition, working_partition, sizeof(int) * igraph_vector_bool_size(types));
+    }
+    num_used++;
+  }
+
+
+
 }
 
 double run_algorithm(int *partition, int a, igraph_vector_bool_t *types, igraph_t *graph, int max_iters){
@@ -143,7 +195,7 @@ int main(int argc, char *argv[]) {
 
   int *partition = initialize_groups(a, b, &types);
 
-  double best_score = run_algorithm(partition, a, &types, &graph, max_iters);
+  double best_score = run_algorithm(partition, a, b, &types, &graph, max_iters);
 
   printf("%f\n", best_score);
   // result is stored in partition
