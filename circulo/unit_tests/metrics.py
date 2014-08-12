@@ -13,6 +13,9 @@ class TestMetrics(unittest.TestCase):
                     [0,1,2,3,7,11,12,13,17,19,21],
                     [4,5,6,10,16],
                     [8,9,14,15,18,20,22,23,24,25,26,27,28,29,30,31,32,33]]
+        weights=[5,7,4,5,8,7,2,1,1,6,7,4,9,6,8,2,2,1,2,5,6,5,7,7,3,4,4,6,7,7,5,7,4,8,5,4,5,3,1,6,4,3,3,3,1,6,2,7,8,8,1,7,5,7,5,4,7,3,7,5,8,9,4,2,8,8,6,3,6,6,8,5,6,7,5,7,7,7]
+        self.G.es['weight'] = weights
+
         self.cover=igraph.VertexCover(self.G, membership)
 
         self.comm_metrics = None
@@ -21,9 +24,10 @@ class TestMetrics(unittest.TestCase):
           metrics=vcm.run_analysis(self.cover, weights = None)
           self.comm_metrics = metrics.comm_metrics
 
-    def test_density(self):
+    def test_internaldensity(self):
+        #doesn't apply to weighted graphs
         truth = [.4181818, .6, .22875817]
-
+        
         #Density is an igraph ``metric''
         test  = [ s.density() for s in self.cover.subgraphs() ]
         self.assertListAlmostEquals(truth, test, 2)
@@ -45,6 +49,15 @@ class TestMetrics(unittest.TestCase):
           test = [a.degree_avg for a in self.comm_metrics]
           self.assertListAlmostEquals(truth, test, 2)
 
+    def test_wavgdegree(self):
+        truth = [24, 15.2, 23.3333334]
+
+        # Average degree is an igraph + python method
+        from scipy import mean
+        test  = [ mean(s.strength(weights='weight')) for s in self.cover.subgraphs() ]
+        self.assertListAlmostEquals(truth, test, 2)
+
+
     def test_FOMD(self):
         truth = [0.545454545, 0, 0.277777778]
 
@@ -54,6 +67,13 @@ class TestMetrics(unittest.TestCase):
         if self.comm_metrics:
           test = [a.fomd for a in self.comm_metrics]
           self.assertListAlmostEquals(truth, test, 2)
+
+    def test_WFOMD(self):
+        truth = [0.545454545, 0.4 , 0.388888889]
+
+        test  = self.cover.fraction_over_median_degree(weights='weight')
+        self.assertListAlmostEquals(truth, test, 2)
+
 
     def test_expansion(self):
         truth = [1.272727, 0.8, 0.555556]
@@ -65,8 +85,14 @@ class TestMetrics(unittest.TestCase):
           test  = [a.degree_boundary_avg for a in self.comm_metrics]
           self.assertListAlmostEquals(truth, test, 2)
 
+    def test_wexpansion(self):
+        truth = [2.181818, 1.2, 1]
+ 
+        test  = self.cover.expansion(weights='weight')
+        self.assertListAlmostEquals(truth, test, 2)
 
     def test_cutratio(self):
+        #not applicable to weighted graphs
         truth = [.05534,.02759,.03472,]
 
         test  = self.cover.cut_ratio()
@@ -75,7 +101,6 @@ class TestMetrics(unittest.TestCase):
         if self.comm_metrics:
           test  = [a.cut_ratio for a in self.comm_metrics]
           self.assertListAlmostEquals(truth, test, 2)
-
 
     def test_conductance(self):
         truth = [0.2333333,0.25, 0.125]
@@ -87,6 +112,12 @@ class TestMetrics(unittest.TestCase):
           test  = [a.conductance for a in self.comm_metrics]
           self.assertListAlmostEquals(truth, test, 2)
 
+    def test_wconductance(self):
+        truth = [0.083333, 0.0731707, 0.0410959]
+
+        test  = self.cover.conductance(weights='weight')
+        self.assertListAlmostEquals(truth, test, 2)
+
     def test_normalizedcut(self):
         truth = [0.346236559, 0.277027027, 0.229166667]
 
@@ -97,8 +128,15 @@ class TestMetrics(unittest.TestCase):
           test  = [a.normalized_cut for a in self.comm_metrics]
           self.assertListAlmostEquals(truth, test, 2)
 
+    def test_wnormalizedcut(self):
+        truth = [0.125586854, 0.081300813, 0.085430866]
+        
+        test  = self.cover.normalized_cut(weights='weight')
+        self.assertListAlmostEquals(truth, test, 2)
+    
     def test_TPR(self):
-        truth = [0.9091,0.6, 0.9444]
+        #same for weighted and unweighted graphs
+        truth = [0.9091,0.6, 0.9444444]
 
         test  = [ s.triangle_participation_ratio() 
                   for s in self.cover.subgraphs() ]
@@ -118,6 +156,12 @@ class TestMetrics(unittest.TestCase):
           test  = [a.odf_dict['max'] for a in self.comm_metrics]
           self.assertListAlmostEquals(truth, test, 2)
 
+    def test_WMaxODF(self):
+        truth = [0.222222222, 0.153846154, 0.2]
+    
+        test  = self.cover.maximum_out_degree_fraction(weights='weight')
+        self.assertListAlmostEquals(truth, test, 2)
+
     def test_avgODF(self):
         truth = [0.138131313, 0.233333333, 0.117592593]
 
@@ -128,14 +172,27 @@ class TestMetrics(unittest.TestCase):
           test  = [a.odf_dict['average'] for a in self.comm_metrics]
           self.assertListAlmostEquals(truth, test, 2)
 
+    def test_wavgODF(self):
+        truth = [0.064922913, 0.080586081, 0.041399798]
+
+        test  = self.cover.average_out_degree_fraction(weights='weight')
+        self.assertListAlmostEquals(truth, test, 2)
+
     def test_FlakeODF(self):
         truth = [0,0,0]
+
         test  = self.cover.flake_out_degree_fraction()
         self.assertListAlmostEquals(truth, test, 2)
 
         if self.comm_metrics:
           test  = [a.odf_dict['flake'] for a in self.comm_metrics]
           self.assertListAlmostEquals(truth, test, 2)
+    
+    def test_WFLakeODF(self):
+        truth = [0,0,0]
+
+        test  = self.cover.flake_out_degree_fraction(weights='weight')
+        self.assertListAlmostEquals(truth, test, 2)
 
     def test_separability(self):
         truth = [1.6428571,1.5, 3.5]
@@ -147,8 +204,16 @@ class TestMetrics(unittest.TestCase):
           test  = [a.separability for a in self.comm_metrics]
           self.assertListAlmostEquals(truth, test, 2)
 
+    def test_wseparability(self):
+        truth = [5.5, 6.3333333333, 11.666666667]
+
+        test  = self.cover.separability(weights='weight')
+        self.assertListAlmostEquals(truth, test, 2)
 
     def test_localclusteringcoefficient(self):
+        #This averages the local clustering coefficient
+        #Results are the same for weighted and unweighted graphs
+
         truth = [0.75310245, 0.33333333, 0.65153920]
 
         # Local Clustering Coeff is an igraph function

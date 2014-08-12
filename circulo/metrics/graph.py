@@ -35,7 +35,7 @@ def triangle_participation_ratio(G):
     rv = G.triangle_participation()
     return 1.0*sum(rv)/G.vcount()
 
-def cohesiveness(G):
+def cohesiveness(G, weights=None):
     '''
     Equation: g(S) = minS′⊂S φ(S′) where φ(S′) is the conductance of S′ measured in the induced subgraph by S.
     To iterate over all possible subgraphs of a community would be too inefficient 2^n, therefore we approximate
@@ -48,7 +48,7 @@ def cohesiveness(G):
         val = 1
     else:
         #TODO: Consider using G_i.mincut() instead.
-        val, vc = G.min_conductance()
+        val, vc = G.min_conductance(weights=weights)
     return val
 
 def compute_metrics(G, refresh = True):
