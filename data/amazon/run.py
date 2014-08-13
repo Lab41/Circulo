@@ -3,7 +3,9 @@ import urllib.request
 import igraph as ig
 import gzip
 import pickle
-
+import shutil
+import sys
+from circulo.download_utils import download_with_notes, _unzip
 
 ## First pass at downloading SNAP data.
 # 1. SNAP uses gzip for compression
@@ -29,35 +31,27 @@ def _download(data_dir):
     '''
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
-    
-    # Get Graph
-    zipfilepath = os.path.join(data_dir,DATA_ZIP_NAME)
-    datapath = os.path.join(data_dir,DATA_NAME)
-    print('Downloading graph from ' + DOWNLOAD_URL + '....')
-    urllib.request.urlretrieve(DOWNLOAD_URL,zipfilepath)
-    print('Unzipping graph')
-    _unzip(zipfilepath,datapath)
-    
-    # Get Ground Truth
-    zipfilepath = os.path.join(data_dir,GROUNDTRUTH_ZIP_NAME)
-    datapath = os.path.join(data_dir,GROUNDTRUTH_NAME)
-    
-    print('Downloading ground truth from ' + DOWNLOAD_URL_GROUNDTRUTH + '....')
-    urllib.request.urlretrieve(DOWNLOAD_URL_GROUNDTRUTH,zipfilepath)
-    print('Unzipping ground truth')
-    _unzip(zipfilepath,datapath)
 
-def _unzip(zipfilepath,datapath):
-    '''
-    unzips .gz file, ignoring comments "#"
-    '''
-    with gzip.open(zipfilepath,'rb') as infile:
-        with open(datapath,'wb') as outfile:
-            for line in infile:
-                    if line.decode('utf-8')[0] != '#':
-                        outfile.write(line)
+    #download the graph as an edgelist
+    download_with_notes(DOWNLOAD_URL, DATA_ZIP_NAME, data_dir)
+
+    #download ground truth
+    download_with_notes(DOWNLOAD_URL_GROUNDTRUTH, GROUNDTRUTH_ZIP_NAME, data_dir)
 
 def _prepare(data_dir):
+
+    data_path_old = os.path.join(data_dir, DATA_NAME + ".old")
+    data_path = os.path.join(data_dir, DATA_NAME)
+
+    #remove non edge data from edgelist
+    shutil.move(data_path, data_path_old)
+
+    with open(data_path_old, "r") as f:
+        with open(data_path, "w") as out:
+            for line in f:
+                if(line.startswith('#') == False):
+                    out.write(line)
+
     datapath = os.path.join(data_dir,DATA_NAME)
     groundtruthpath = os.path.join(data_dir,GROUNDTRUTH_NAME)
     graphpath = os.path.join(data_dir,GRAPH_NAME)
@@ -65,9 +59,9 @@ def _prepare(data_dir):
 
     print('Creating graphml file')
     # Read in Edgelist. Note that igraph creates extra nodes
-    # with no edges for ids missing in sequential order 
+    # with no edges for ids missing in sequential order
     # from the graph. We will delete these isolates later
-    g = ig.Graph.Read_Edgelist(datapath,directed=False)				
+    g = ig.Graph.Read_Edgelist(datapath,directed=False)
 
     # Assign communities as node attributes
     import csv
@@ -75,12 +69,12 @@ def _prepare(data_dir):
             csvreader = csv.reader(gtp,delimiter='\t')
             # note that converting to graphml, attributes cannot be lists
             # only boolean,int,long,float,double,or string
-            # 
+            #
             # storing groundtruth communities as both arrays and strings
             # so that graphml file can retain attribute
             g.vs.set_attribute_values('groundtruth',[[]])
             g.vs.set_attribute_values('groundtruth_str',[''])
-     
+
             count = 0
             for line in csvreader:
                 for v in line:
@@ -95,11 +89,11 @@ def _prepare(data_dir):
                 max_clusters = count
 
     # remove isolates - this changes node ids!
-    g.delete_vertices(g.vs.select(_degree=0))	
+    g.delete_vertices(g.vs.select(_degree=0))
 
     # Write out graphml file
     g.write_graphml(graphpath)
-    
+
     # Write out groundTruth VertexCover as pickle
     print('Saving graph pickle')
     clusters = [[] for i in range(max_clusters)]
@@ -107,9 +101,9 @@ def _prepare(data_dir):
         for c in v['groundtruth']:
             clusters[c].append(v.index) #have to re-do this since id's were likely changed by removing isolates
     groundtruth_vc = ig.VertexCover(g,clusters)
-   
+
     # save groundtruth cover as class variable
-    setattr(g,'groundtruth',groundtruth_vc) 
+    setattr(g,'groundtruth',groundtruth_vc)
     with open(picklepath,'wb') as savefile:
         pickle.dump(g,savefile)
 
@@ -117,6 +111,7 @@ def get_graph():
     data_dir = os.path.join(os.path.dirname(__file__),'data')
     pickle_path = os.path.join(data_dir,PICKLE_NAME)
 
+    #make sure the serialized graph exists
     if not os.path.isfile(pickle_path):
         _download(data_dir)
         _prepare(data_dir)
@@ -126,8 +121,12 @@ def get_graph():
     with open(pickle_path,'rb') as loadfile:
         return pickle.load(loadfile)
 
-def get_groundtruth(g):
-    return g.groundtruth
+def get_ground_truth(G=None):
+
+    if G is None:
+        G = get_graph()
+
+    return G.groundtruth
 
 def main():
     g = get_graph()
