@@ -116,7 +116,7 @@ int *initialize_groups(int a, int b, igraph_vector_bool_t *types){
 
 
 
-double calculate_term(int *partition, igraph_t *graph, int r, int s, igraph_eit_t *eit){
+double calculate_term(int *partition, igraph_t *graph, igraph_matrix_t *mat, int r, int s, igraph_eit_t *eit){
   int m_rs = 0;
   int k_r = 0;
   int k_s = 0;
@@ -171,8 +171,8 @@ double calculate_term(int *partition, igraph_t *graph, int r, int s, igraph_eit_
   igraph_vector_destroy(&r_deg);
   igraph_vector_destroy(&s_deg);
   // // check
-  if (k_r * k_s == 0) return -DBL_MAX;
-  if (m_rs == 0) return -DBL_MAX;
+  if (k_r * k_s == 0) return -INFINITY;
+  if (m_rs == 0) return -INFINITY;
  
   double term_2 = log((double) m_rs / (double) (k_r * k_s));
   //printf("term2: %f\n", term_2);
@@ -222,7 +222,7 @@ double score_partition_degree_corrected(int *partition, igraph_t *graph, int a, 
 double swap_and_score(int *partition, int v, int a, int b, int group, igraph_t *graph){
   // the swap wouldn't do anything or it would swap to the wrong type
   if ((partition[v] == group) || (partition[v] < a && group >= a) || (partition[v] >= a && group < a)){
-    return -DBL_MAX;
+    return -INFINITY;
   }
   int temp = partition[v];
   partition[v] = group;
@@ -242,22 +242,22 @@ double swap_and_score(int *partition, int v, int a, int b, int group, igraph_t *
 double make_best_switch(int *partition, int a, int b, igraph_vector_bool_t *types, igraph_t *graph, bool *used){
   int best_switch_vertex = -1;
   int best_switch_group = -1;
-  double best_switch_score = -DBL_MAX; 
+  double best_switch_score = -INFINITY; 
   for (int v = 0; v < igraph_vector_bool_size(types); v++){
     if (used[v]){ // can't swap because we've already swapped this vertex.
       continue; // meh. don't do it this way. TODO
     }
-    double best_curr_score = -DBL_MAX;
+    double best_curr_score = -INFINITY;
     int best_curr_group = -1;
     for (int group = 0; group < a + b; group++){
       // Try swapping with all other groups
       double score = swap_and_score(partition, v, a, b, group, graph);
-      if (score > best_curr_score){
+      if (score >= best_curr_score){
         best_curr_score = score;
         best_curr_group = group;
       }
     }
-    if (best_curr_score > best_switch_score){
+    if (best_curr_score >= best_switch_score){
       best_switch_vertex = v;
       best_switch_group = best_curr_group;
       best_switch_score = best_curr_score;
@@ -282,7 +282,7 @@ double iterate_once(int *partition, int a, int b, igraph_vector_bool_t *types, i
   int working_partition[igraph_vector_bool_size(types)];
   memcpy(working_partition, partition, sizeof(int) * igraph_vector_bool_size(types));
 
-  double max_score = -DBL_MAX;
+  double max_score = -INFINITY;
   int num_used = 0;
 
   // initialize to 0
@@ -297,7 +297,7 @@ double iterate_once(int *partition, int a, int b, igraph_vector_bool_t *types, i
       memcpy(partition, working_partition, sizeof(int) * igraph_vector_bool_size(types));
     }
     num_used++;
-    printf("Used: %d\n", num_used);
+    //printf("Used: %d\n", num_used);
   }
   return max_score;
 }
@@ -321,11 +321,15 @@ double run_algorithm(int *partition, int a, int b, igraph_vector_bool_t *types, 
   for (int i = 0; i < max_iters; i++){
     printf("Performing iteration %d...\n", i);
     double new_score = iterate_once(latest_grouping, a, b, types, graph);
+
+
     if (new_score <= score) {
-      printf("Score has not improved. Algorithm has converged.\n");
+      printf("Score has not improved. Terminating algorithm.\n");
       // partition is not changed
       return score;
     }
+    printf("new score: %f\n", new_score);
+
     score = new_score;
     // partition is improved to latest_grouping!
     memcpy(partition, latest_grouping, sizeof(int) * igraph_vector_bool_size(types));
@@ -365,7 +369,7 @@ int main(int argc, char *argv[]) {
   printf("Initialization successful.\n");
 
   printf("Running algorithm...\n");
-  double best_score = run_algorithm(partition, a, b, &types, &graph, max_iters);
+  double best_score = run_algorithm(partition, a, b, &types, &graph, &mat, max_iters);
   printf("Algorithm completed successfully.\n");
 
   printf("%f\n", best_score);

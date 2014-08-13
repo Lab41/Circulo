@@ -1,6 +1,6 @@
 # A better makefile is in Makefile_modify, but it's currently broken.
 all:
-	gcc -O3 -Wall -g -pedantic working_biSBM.c -I/usr/local/Cellar/igraph/0.7.1/include/igraph -o working_biSBM -L/usr/local/Cellar/igraph/0.7.1/lib -ligraph
+	clang -O3 -Wall -g -pedantic working_biSBM.c -I/usr/local/Cellar/igraph/0.7.1/include/igraph -o working_biSBM -L/usr/local/Cellar/igraph/0.7.1/lib -ligraph
 
 unopt:
 	gcc -Wall -g -pedantic working_biSBM.c -I/usr/local/Cellar/igraph/0.7.1/include/igraph -o working_biSBM -L/usr/local/Cellar/igraph/0.7.1/lib -ligraph
