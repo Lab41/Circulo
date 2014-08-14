@@ -2,6 +2,7 @@
 from igraph import Cover, VertexCover
 from scipy import nansum, nanmax
 import uuid
+import collections
 
 def __get_weight_attr(G, name, weights):
     if isinstance(weights, str):
@@ -199,13 +200,24 @@ def compute_metrics(cover, weights=None):
             'Average Out Degree Fraction'   : average_out_degree_fraction(cover, weights),
             'Flake Out Degree Fraction'     : flake_out_degree_fraction(cover, weights),
             'Separability'                  : separability(cover, weights),
-            'Subgraphs'                     : []
             }
 
    for i in range(len(cover)):
         sg = cover.subgraph(i)
         sg.compute_metrics(refresh=False)
-        cover.metrics['Subgraphs'] += [sg.metrics]
+        for key in sg.metrics.keys():
+            val = sg.metrics[key]
+            if isinstance(sg.metrics[key], collections.Iterable) and 'Arithmetic Mean' in sg.metrics[key]:
+                val = sg.metrics[key]['Arithmetic Mean']
+                key = key + ' (Arithmetic Mean)'
+            if key not in cover.metrics:
+                cover.metrics[key] = []
+            cover.metrics[key] += [val]
+
+   cover.metrics_stats = {}
+   for key in cover.metrics:
+       from circulo.metrics.graph import __describe
+       cover.metrics_stats[key] = __describe(cover.metrics[key])
 
 
 def print_metrics(cover):
@@ -234,6 +246,7 @@ def print_metrics(cover):
 
 Cover.fraction_over_median_degree = fomd
 VertexCover.metrics = None
+VertexCover.metrics_stats = None
 VertexCover.print_metrics = print_metrics
 VertexCover.compute_metrics = compute_metrics
 VertexCover.external_edges = external_edges

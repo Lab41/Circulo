@@ -203,5 +203,7 @@ def main():
 
     print(communities)
 
+ig.Graph.community_radicchi = radicchi
 if __name__ == "__main__":
     main()
+

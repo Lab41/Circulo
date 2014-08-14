@@ -67,4 +67,3 @@ results['vc'] = vc
 output = open(args.output[0] + '/' + vc_name + '.pickle', 'wb')
 pickle.dump(results, output)
 output.close()
-

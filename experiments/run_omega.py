@@ -5,12 +5,9 @@ import argparse
 
 from circulo import metrics
 
-
-
 # read in the pickle file
 # run metric on community cover in the file
 # output metric
-
 
 def run_omega(data_name,ground_name):
     data = pickle.load(open(data_name,'rb'))
@@ -34,10 +31,8 @@ parser.add_argument('cover_a', type=str, nargs=1,
                           help='pickle file for first cover')
 parser.add_argument('cover_b', nargs=1,
         help='pickle file for second cover.')
-
 args = parser.parse_args()
 
 diff = run_omega(args.cover_a[0],args.cover_b[0])
 
 print(diff)
-
