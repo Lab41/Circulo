@@ -20,6 +20,9 @@
 #define ILLEGAL_FORMAT 5
 
 
+
+#define INTERCOMMUNITY(inter_comm, c_a, c_b, a) (MATRIX(inter_comm, c_a, c_b - a))
+
 /**
  * TODO
  *     * get rid of excessive allocation
@@ -99,19 +102,18 @@ void print_usage_and_exit(int exitstatus){
  * a group in the range [0, a). If it is 1, it will be randomly
  * placed into a group in the range [a, a+b)
  */
-int *initialize_groups(int a, int b, igraph_vector_bool_t *types){
-  int *groupings = malloc(sizeof(int) * igraph_vector_bool_size(types));
+void initialize_groups(int a, int b, igraph_vector_bool_t *types, int *partition){
+  //int *groupings = malloc(sizeof(int) * igraph_vector_bool_size(types));
   igraph_rng_t *rng = igraph_rng_default();
   // assign seed to some constant for repeatable results.
   int seed = time(NULL); 
   igraph_rng_seed(rng, seed);
   for (int i = 0; i < igraph_vector_bool_size(types); i++){
     if (!VECTOR(*types)[i]) // type 0
-      groupings[i] = igraph_rng_get_integer(rng, 0, a - 1);
+      partition[i] = igraph_rng_get_integer(rng, 0, a - 1);
     else // type 1
-      groupings[i] = igraph_rng_get_integer(rng, a, a + b - 1);
+      partition[i] = igraph_rng_get_integer(rng, a, a + b - 1);
   }
-  return groupings;
 }
 
 
@@ -136,14 +138,18 @@ double calculate_term(int *partition, igraph_t *graph, igraph_matrix_t *mat, int
     }
   }
 
-  igraph_bool_t res;
+  //igraph_bool_t res;
 
   for (int vr = 0; vr < r_len; vr++){
     for (int vs = 0; vs < s_len; vs++){
       // do something else, this is really slow.
-      igraph_are_connected(graph, r_type[vr], s_type[vs], &res);
-      if (res)
+      if (MATRIX(*mat, (int) r_type[vr], (int) s_type[vs])){
+      //  printf("here\n");
         m_rs++;
+      }
+      // igraph_are_connected(graph, r_type[vr], s_type[vs], &res);
+      // if (res)
+      //   m_rs++;
     }
   }
 
@@ -196,7 +202,7 @@ double calculate_term(int *partition, igraph_t *graph, igraph_matrix_t *mat, int
  */
  // TODO: should be able to score whole thing once then make minor modifications
  // with individual switches.
-double score_partition_degree_corrected(int *partition, igraph_t *graph, int a, int b){
+double score_partition_degree_corrected(int *partition, igraph_t *graph, igraph_matrix_t *mat, int a, int b){
   //printf("scoring...\n");
   double log_likelihood = 0;
   igraph_es_t es;
@@ -205,7 +211,7 @@ double score_partition_degree_corrected(int *partition, igraph_t *graph, int a, 
   igraph_eit_create(graph, es, &eit);
   for (int r = 0; r < a; r++){
     for (int s = a; s < a + b; s++){
-      log_likelihood += calculate_term(partition, graph, r, s, &eit);
+      log_likelihood += calculate_term(partition, graph, mat, r, s, &eit);
     }
   }
   igraph_eit_destroy(&eit);
@@ -219,17 +225,25 @@ double score_partition_degree_corrected(int *partition, igraph_t *graph, int a, 
  * Scores the partition `partition` where partition[v] = group. 
  * If the group assignment is illegal, returns -1. 
  */
-double swap_and_score(int *partition, int v, int a, int b, int group, igraph_t *graph){
+double swap_and_score(int *partition, int v, int a, int b, int group, igraph_t *graph, igraph_matrix_t *mat){
   // the swap wouldn't do anything or it would swap to the wrong type
   if ((partition[v] == group) || (partition[v] < a && group >= a) || (partition[v] >= a && group < a)){
     return -INFINITY;
   }
   int temp = partition[v];
   partition[v] = group;
-  double score = score_partition_degree_corrected(partition, graph, a, b);
+  double score = score_partition_degree_corrected(partition, graph, mat, a, b);
   partition[v] = temp;
   return score;
 }
+
+
+// double compute_likelihood_change(int v, int from, int to){
+//   if (from == to) return 0;
+
+
+// }
+
 
 
 /**
@@ -239,7 +253,7 @@ double swap_and_score(int *partition, int v, int a, int b, int group, igraph_t *
  * Modifies `partition` to reflect the best switch and `used` to store the vertex switched.
  * Returns the score of the switch made.
  */
-double make_best_switch(int *partition, int a, int b, igraph_vector_bool_t *types, igraph_t *graph, bool *used){
+double make_best_switch(int *partition, int a, int b, igraph_vector_bool_t *types, igraph_t *graph, igraph_matrix_t *mat, bool *used){
   int best_switch_vertex = -1;
   int best_switch_group = -1;
   double best_switch_score = -INFINITY; 
@@ -251,7 +265,7 @@ double make_best_switch(int *partition, int a, int b, igraph_vector_bool_t *type
     int best_curr_group = -1;
     for (int group = 0; group < a + b; group++){
       // Try swapping with all other groups
-      double score = swap_and_score(partition, v, a, b, group, graph);
+      double score = swap_and_score(partition, v, a, b, group, graph, mat);
       if (score >= best_curr_score){
         best_curr_score = score;
         best_curr_group = group;
@@ -277,7 +291,7 @@ double make_best_switch(int *partition, int a, int b, igraph_vector_bool_t *type
  * the MLE described in the paper. Returns the maximum score, and stores the grouping that yields
  * that score in `partition`.
  */
-double iterate_once(int *partition, int a, int b, igraph_vector_bool_t *types, igraph_t *graph){
+double iterate_once(int *partition, int a, int b, igraph_vector_bool_t *types, igraph_t *graph, igraph_matrix_t *mat){
   //int *working_partition = malloc(sizeof(int) * igraph_vector_bool_size(types)); // TODO: allocate on stack
   int working_partition[igraph_vector_bool_size(types)];
   memcpy(working_partition, partition, sizeof(int) * igraph_vector_bool_size(types));
@@ -291,13 +305,13 @@ double iterate_once(int *partition, int a, int b, igraph_vector_bool_t *types, i
   // bool *used = calloc(igraph_vector_bool_size(types), sizeof(bool)); // TODO: allocate on stack
 
   while (num_used < igraph_vector_bool_size(types)){
-    double new_score = make_best_switch(working_partition, a, b, types, graph, used);
+    double new_score = make_best_switch(working_partition, a, b, types, graph, mat, used);
     if (new_score > max_score){
       max_score = new_score;
       memcpy(partition, working_partition, sizeof(int) * igraph_vector_bool_size(types));
     }
     num_used++;
-    //printf("Used: %d\n", num_used);
+    printf("Used: %d\n", num_used);
   }
   return max_score;
 }
@@ -310,17 +324,17 @@ double iterate_once(int *partition, int a, int b, igraph_vector_bool_t *types, i
  * max_iters iterations. See the paper for more information.
  * http://danlarremore.com/pdf/2014_LCJ_EfficientlyInferringCommunityStructureInBipartiteNetworks_PRE.pdf
  */
-double run_algorithm(int *partition, int a, int b, igraph_vector_bool_t *types, igraph_t *graph, int max_iters){
+double run_algorithm(int *partition, int a, int b, igraph_vector_bool_t *types, igraph_t *graph, igraph_matrix_t *mat, int max_iters){
   int latest_grouping[igraph_vector_bool_size(types)];
   //int *latest_grouping = malloc(sizeof(int) * igraph_vector_bool_size(types));
 
   // working partition (latest_grouping) gets partition
   memcpy(latest_grouping, partition, sizeof(int) * igraph_vector_bool_size(types));
-  double score = score_partition_degree_corrected(partition, graph, a, b);
+  double score = score_partition_degree_corrected(partition, graph, mat, a, b);
   printf("Initial score: %f\n", score);
   for (int i = 0; i < max_iters; i++){
     printf("Performing iteration %d...\n", i);
-    double new_score = iterate_once(latest_grouping, a, b, types, graph);
+    double new_score = iterate_once(latest_grouping, a, b, types, graph, mat);
 
 
     if (new_score <= score) {
@@ -338,6 +352,48 @@ double run_algorithm(int *partition, int a, int b, igraph_vector_bool_t *types, 
 }
 
 
+
+igraph_real_t score_partition(int *partition, igraph_real_t *deg_sums, igraph_matrix_t *inter_comm, int a, int b){
+  igraph_real_t score = 0;
+  for (int c_a = 0; c_a < a; c_a++){
+    for (int c_b = a; c_b < a + b; c_b++){
+      igraph_real_t inter_community = INTERCOMMUNITY(*inter_comm, c_a, c_b, a);
+      igraph_real_t c_a_sum = deg_sums[c_a];
+      igraph_real_t c_b_sum = deg_sums[c_b];
+      if (!inter_community || !c_a_sum || !c_b_sum) return -INFINITY; // really raise an error.
+      score += inter_community * log(inter_community / (c_a_sum * c_b_sum));
+    }
+  }
+  return score;
+}
+
+
+// add possibility for uncorrected
+void initialize_degree_sums(int *partition, igraph_real_t *comm_degree, igraph_vector_t *deg){
+  for (int v = 0; v < igraph_vector_size(deg); v++){
+    comm_degree[partition[v]] += VECTOR(*deg)[v]; // += 1 for uncorrected.
+  }
+}
+
+
+void initialize_inter_comm(igraph_matrix_t *inter_comm, int *partition, igraph_matrix_t *mat, int a, int size){
+  igraph_matrix_null(inter_comm);
+  for (int row = 0; row < size; row++){
+    // just gets the lower triangular
+    for (int col = row + 1; col < size; col++){
+      if (MATRIX(*mat, row, col)){
+        int group_r = partition[row];
+        int group_c = partition[col];
+        if (group_r < a && group_c >= a)
+          MATRIX(*inter_comm, group_r, group_c - a)++;
+        else if (group_r >= a && group_r < a)
+          MATRIX(*inter_comm, group_c, group_r - a)++;
+      }
+    }
+  }
+}
+
+
 int main(int argc, char *argv[]) {
   if (argc != 6) // TODO: check all arguments
     print_usage_and_exit(WRONG_OPTION_COUNT);
@@ -346,17 +402,16 @@ int main(int argc, char *argv[]) {
   int a = atoi(argv[3]);
   int b = atoi(argv[4]);
   int max_iters = atoi(argv[5]);
-
+  int size = igraph_vcount(&graph);
 
   printf("Graph with %d vertices and %d edges read successfully.\n"
-            , igraph_vcount(&graph), igraph_ecount(&graph)); 
+            , size, igraph_ecount(&graph)); 
 
-  igraph_bool_t is_bipartite;
   igraph_vector_bool_t types;
-  igraph_vector_bool_init(&types, igraph_vcount(&graph));
+  igraph_vector_bool_init(&types, size);
 
   printf("Finding a bipartite mapping...\n");
-  // TODO: check for error code
+  igraph_bool_t is_bipartite;
   igraph_is_bipartite(&graph, &is_bipartite, &types);
   if (!is_bipartite){
     printf("Input graph is not bipartite. Exiting...\n");
@@ -364,21 +419,53 @@ int main(int argc, char *argv[]) {
   }
   printf("Mapping successful.\n");
 
+  igraph_matrix_t mat;
+  igraph_matrix_init(&mat, size, size);
+  // TOOD: use IGRAPH_GET_ADJACENCY_UPPER instead, perhaps last param true?
+  igraph_get_adjacency(&graph, &mat, IGRAPH_GET_ADJACENCY_BOTH, false);
+
+  igraph_vector_t deg;
+  igraph_vector_init(&deg, size);
+  igraph_degree(&graph, &deg, igraph_vss_all(), IGRAPH_ALL, true);
+
+  //igraph_vector_t partition;
+  //igraph_vector_init(&partition, size);
   printf("Initializing to random groups...\n");
-  int *partition = initialize_groups(a, b, &types);
+  int partition[size];
+  initialize_groups(a, b, &types, partition);
   printf("Initialization successful.\n");
 
-  printf("Running algorithm...\n");
-  double best_score = run_algorithm(partition, a, b, &types, &graph, &mat, max_iters);
-  printf("Algorithm completed successfully.\n");
+  igraph_matrix_t inter_comm;
+  igraph_matrix_init(&inter_comm, a, b);
+  initialize_inter_comm(&inter_comm, partition, &mat, a, size);
 
-  printf("%f\n", best_score);
-  for (int i = 0; i < igraph_vcount(&graph); i++){
-    printf("Vertex %d: group %d\n", i, partition[i]);
+
+  igraph_real_t comm_degree[a + b];
+  initialize_degree_sums(partition, comm_degree, &deg);
+
+  printf("initial score: %f\n", score_partition(partition, comm_degree, &inter_comm, a, b));
+
+  // for each swap in possible swaps, score the swap and choose the best one. make the best swap
+  // and repeat until all vertices have been swapped once. Take the best partition from 
+  // that and iterate.
+
+  for (int i = 0; i < a; i++){
+    for (int j = a; j < a+b; j++){
+      printf("inter %d - %d: %d\n", i, j, (int) INTERCOMMUNITY(inter_comm, i, j, a));
+    }
   }
-  free(partition);
-  igraph_vector_bool_destroy(&types);
-  igraph_destroy(&graph);
+
+  // printf("Running algorithm...\n");
+  // double best_score = run_algorithm(partition, a, b, &types, &graph, &mat, max_iters);
+  // printf("Algorithm completed successfully.\n");
+
+  // printf("%f\n", best_score);
+  // for (int i = 0; i < igraph_vcount(&graph); i++){
+  //   printf("Vertex %d: group %d\n", i, partition[i]);
+  // }
+  // free(partition);
+  // igraph_vector_bool_destroy(&types);
+  // igraph_destroy(&graph);
   return 0;
 
 }
