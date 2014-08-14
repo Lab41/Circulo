@@ -1,4 +1,4 @@
-# Goal is to annotate a vertex cover with dictionary representing various cluster metrics 
+# Goal is to annotate a vertex cover with dictionary representing various cluster metrics
 from igraph import Cover, VertexCover
 from scipy import nansum, nanmax
 import uuid
@@ -21,7 +21,7 @@ def __weighted_sum(external_edges, w_attr):
 
 def fomd(cover, weights=None):
     '''
-    Fraction over median (weighted) degree is the number of nodes that have an internal (weighted) degree greater than the median (weighted) degree of 
+    Fraction over median (weighted) degree is the number of nodes that have an internal (weighted) degree greater than the median (weighted) degree of
     all nodes in the graph.
     '''
     w_attr, remove = __get_weight_attr(cover.graph, 'fomd', weights)
@@ -33,7 +33,7 @@ def fomd(cover, weights=None):
         rv += [sum(1.0 for v in subgraph.strength(weights=w_attr) if v > median)/subgraph.vcount()]
 
     __remove_weight_attr(cover.graph, w_attr, remove)
-    return rv 
+    return rv
 
 def expansion(cover, weights=None):
     '''
@@ -117,7 +117,7 @@ def normalized_cut(cover, weights=None):
 
 def maximum_out_degree_fraction(cover, weights=None):
     '''
-    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
+    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges
     and its internal edges. Maximum ODF returns the maximum fraction for the cluster.
     '''
     odf = out_degree_fraction(cover, weights=weights)
@@ -125,7 +125,7 @@ def maximum_out_degree_fraction(cover, weights=None):
 
 def average_out_degree_fraction(cover, weights=None):
     '''
-    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
+    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges
     and its internal edges. Average ODF returns the average fraction for the cluster.
     '''
     rv = []
@@ -137,7 +137,7 @@ def average_out_degree_fraction(cover, weights=None):
 
 def flake_out_degree_fraction(cover, weights=None):
     '''
-    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
+    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges
     and its internal edges. Flake ODF returns the number of nodes for which this ratio is less than 1, i.e. a node has fewer internal edges than external ones.
     '''
     rv = []
@@ -149,7 +149,7 @@ def flake_out_degree_fraction(cover, weights=None):
 
 def out_degree_fraction(cover, weights=None):
     '''
-    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges 
+    Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges
     and its internal edges.
     '''
     w_attr, remove = __get_weight_attr(cover.graph, 'out_degree_fraction', weights)
@@ -175,30 +175,30 @@ def external_edges(cover) :
     @param cover a VertexCover object.
     @returns an array of external edges per cluster in the cover.
     '''
-    array_of_sets = [ [] for v in cover ] 
+    array_of_sets = [ [] for v in cover ]
     #Iterate over crossing edges
     for edge in [ a[1] for a in zip(cover.crossing(), cover.graph.es()) if a[0]]:
         membership = [cover.membership[edge.source]]
         if not cover.graph.is_directed():
             membership += [cover.membership[edge.target]]
 
-        for node_membership in membership: 
+        for node_membership in membership:
             for cluster_id in node_membership:
                 array_of_sets[cluster_id] += [edge]
 
     return array_of_sets
 
-def compute_metrics(cover):
+def compute_metrics(cover, weights=None):
    cover.metrics = {
-            'Fraction over a Median Degree' : fomd(cover),
-            'Expansion'                     : expansion(cover),
-            'Cut Ratio'                     : cut_ratio(cover),    
-            'Conductance'                   : conductance(cover),    
-            'Normalized Cut'                : normalized_cut(cover),     
-            'Maximum Out Degree Fraction'   : maximum_out_degree_fraction(cover), 
-            'Average Out Degree Fraction'   : average_out_degree_fraction(cover),
-            'Flake Out Degree Fraction'     : flake_out_degree_fraction(cover),
-            'Separability'                  : separability(cover),
+            'Fraction over a Median Degree' : fomd(cover, weights),
+            'Expansion'                     : expansion(cover, weights),
+            'Cut Ratio'                     : cut_ratio(cover),
+            'Conductance'                   : conductance(cover, weights),
+            'Normalized Cut'                : normalized_cut(cover, weights),
+            'Maximum Out Degree Fraction'   : maximum_out_degree_fraction(cover, weights),
+            'Average Out Degree Fraction'   : average_out_degree_fraction(cover, weights),
+            'Flake Out Degree Fraction'     : flake_out_degree_fraction(cover, weights),
+            'Separability'                  : separability(cover, weights),
             'Subgraphs'                     : []
             }
 
@@ -208,8 +208,33 @@ def compute_metrics(cover):
         cover.metrics['Subgraphs'] += [sg.metrics]
 
 
+def print_metrics(cover):
+
+    if cover.metrics == None:
+        if cover.graph.is_weighted():
+            cover.compute_metrics(weights="weight")
+        else:
+            cover.compute_metrics()
+
+    key_print_buffer = 40
+
+    for cover_id in range(len(cover)):
+        print("\n\nCover {}".format(cover_id))
+        for k,v in cover.metrics.items():
+            num_dots = key_print_buffer - len(k)
+            dot_str = '.' * num_dots
+            if(k != "Subgraphs"):
+                print("{}{}{}".format(k, dot_str,v[cover_id]))
+            else:
+                print("Subgraph_____")
+                #for k,v in v.items():
+                #    print("{}...".format(k))
+                for i in v:
+                    print(i)
+
 Cover.fraction_over_median_degree = fomd
 VertexCover.metrics = None
+VertexCover.print_metrics = print_metrics
 VertexCover.compute_metrics = compute_metrics
 VertexCover.external_edges = external_edges
 VertexCover.expansion = expansion
