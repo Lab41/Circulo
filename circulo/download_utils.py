@@ -17,14 +17,37 @@ def download_with_notes(url, filename, data_dir):
     except Exception as e:
         print("Data download failed -- make sure the url is still valid, and that urllib is properly installed.\n\n")
         raise(e)
-    print("Download complete.") 
-    try:
-        z = zipfile.ZipFile(os.path.join(data_dir, filename))
-    except zipfile.BadZipFile:
-        return
-    print("Unzipping...")
-    z.extractall(path=data_dir)
-    os.remove(os.path.join(data_dir, filename))
+    print("Download complete.")
+
+    _unzip(data_dir, filename)
+
+def _unzip(data_dir, filename):
+
+    zip_path = os.path.join(data_dir, filename)
+
+    if zipfile.is_zipfile(zip_path):
+
+        try:
+            z = zipfile.ZipFile(zip_path)
+        except zipfile.BadZipFile as e:
+            print("ZipFile error: {}".format(e))
+            sys.exit(0)
+        print("Unzipping...")
+        z.extractall(path=data_dir)
+
+    else:
+        try:
+            unzip_file = os.path.splitext(zip_path)[0]
+
+            with gzip.open(zip_path,'rb') as infile:
+                file_content = infile.read()
+
+                with open(unzip_file, "wb") as f:
+                    f.write(file_content)
+
+        except Exception as e:
+            print("gzip error: {}".format(e))
+            sys.exit(0)
 
 
 def progress(blockNum, blockSize, totSize):
