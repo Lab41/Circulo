@@ -378,13 +378,13 @@ igraph_real_t score_partition(Housekeeping *hk){
 void make_swap(Housekeeping *hk, int v, int to){
   int from = hk->partition[v];
   //if (from == to) return;
-  printf("to: %d, from: %d\n", to, from);
+ // printf("to: %d, from: %d\n", to, from);
   hk->partition[v] = to;
   igraph_vector_t *neighbors = hk->adj_list[v];
   int degree = igraph_vector_size(neighbors);
   hk->comm_tot_degree[from] -= degree;
   hk->comm_tot_degree[to] += degree;
-  int c_1 = v;
+  int c_1 = from;
   for (int neigh = 0; neigh < degree; neigh++){
     int neighbor_comm = hk->partition[(int) VECTOR(*neighbors)[neigh]];
     int c_2 = neighbor_comm;
@@ -400,9 +400,10 @@ void make_swap(Housekeeping *hk, int v, int to){
 }
 
 double score_swap(Housekeeping *hk, int v, int to){
+  int tmp = hk->partition[v];
   make_swap(hk, v, to);
   double score = score_partition(hk);
-  make_swap(hk, to, v);
+  make_swap(hk, v, tmp);
   return score;
 }
 
@@ -417,6 +418,8 @@ double score_swaps(Housekeeping *hk, int v, int *dest){
   }
   double best_score = -INFINITY;
   for (int to = begin; to < end; to++){
+    if (to == from) continue;
+    //printf("Trying to switch from community %d to %d\n", hk->partition[v], to);
     double new_score = score_swap(hk, v, to);
     if (new_score > best_score){
       best_score = new_score;
@@ -430,13 +433,13 @@ double score_swaps(Housekeeping *hk, int v, int *dest){
 
 void make_best_swap(Housekeeping *hk, bool *used){
   int max_v = -1;
-  int max_score = -INFINITY;
+  double max_score = -INFINITY;
   int max_swap = -1;
   for (int v = 0; v < hk->size; v++){
     if (used[v]) continue;
     int dest;
     double score = score_swaps(hk, v, &dest);
-    printf("New score: %f, vertex: %d, from: %d, to: %d\n", score, v, hk->partition[v], dest);
+    
     if (score > max_score){
       
       max_score = score;
@@ -444,10 +447,12 @@ void make_best_swap(Housekeeping *hk, bool *used){
       max_v = v;
     }
   }
-  printf("here\n");
-  make_swap(hk, max_v, max_swap);
+  //printf("here\n");
   assert(max_v >= 0);
   assert(max_swap >= 0); 
+  printf("Swapping. %f, vertex: %d, from: %d, to: %d\n", max_score, max_v, hk->partition[max_v], max_swap);
+  make_swap(hk, max_v, max_swap);
+
   used[max_v] = true;
 
 }
@@ -459,6 +464,7 @@ void run_iteration(Housekeeping *hk){
   for (int i = 0; i < hk->size; i++){ 
     make_best_swap(hk, used);
   }
+  // need to save best state and go back to it before the next iteration.
 }
 
 
@@ -493,7 +499,7 @@ void initialize_groups(int a, int b, igraph_vector_bool_t *types, int *partition
   //int *groupings = malloc(sizeof(int) * igraph_vector_bool_size(types));
   igraph_rng_t *rng = igraph_rng_default();
   // assign seed to some constant for repeatable results.
-  int seed = time(NULL); 
+  int seed = 2;//time(NULL); 
   igraph_rng_seed(rng, seed);
   for (int i = 0; i < igraph_vector_bool_size(types); i++){
     if (!VECTOR(*types)[i]) // type 0
