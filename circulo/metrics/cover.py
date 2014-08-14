@@ -59,7 +59,8 @@ def cut_ratio(cover):
     size_g = cover.graph.vcount()
     for i in range(len(cover)):
         size_i = cover.size(i)
-        rv += [1.0*len(external_edges[i])/(size_i*(size_g-size_i))]
+        denominator = (size_i*(size_g-size_i))
+        rv += [1.0*len(external_edges[i])/denominator if denominator > 0 else float('nan')]
     return rv
 
 def conductance(cover, weights=None):
@@ -73,7 +74,8 @@ def conductance(cover, weights=None):
     for i in range(len(cover)):
         int_edges_cnt = __weighted_sum(cover.subgraph(i).es(), w_attr)
         ext_edges_cnt = __weighted_sum(external_edges[i], w_attr)
-        rv += [ext_edges_cnt/(2.0*int_edges_cnt+ext_edges_cnt)]
+        denominator = (2.0*int_edges_cnt+ext_edges_cnt)
+        rv += [ext_edges_cnt/denominator if denominator > 0 else float('nan')]
 
     __remove_weight_attr(cover.graph, w_attr, remove)
     return rv
@@ -89,7 +91,7 @@ def separability(cover, weights=None):
     for i in range(len(cover)):
         int_edges_cnt = __weighted_sum(cover.subgraph(i).es(), w_attr)
         ext_edges_cnt = __weighted_sum(external_edges[i], w_attr)
-        rv += [1.0*int_edges_cnt/ext_edges_cnt]
+        rv += [1.0*int_edges_cnt/ext_edges_cnt if ext_edges_cnt > 0 else float('nan')]
 
     __remove_weight_attr(cover.graph, w_attr, remove)
     return rv
@@ -107,7 +109,8 @@ def normalized_cut(cover, weights=None):
         int_edges_cnt = __weighted_sum(cover.subgraph(i).es(), w_attr)
         ext_edges_cnt = __weighted_sum(external_edges[i], w_attr)
         tot_edge_cnt = __weighted_sum(cover.graph.es(), w_attr)
-        rv[i] += ext_edges_cnt/(2.0*(tot_edge_cnt - int_edges_cnt)+ext_edges_cnt)
+        denominator = (2.0*(tot_edge_cnt - int_edges_cnt)+ext_edges_cnt)
+        rv[i] += ext_edges_cnt/denominator if denominator > 0 else float('nan')
 
     __remove_weight_attr(cover.graph, w_attr, remove)
     return rv
