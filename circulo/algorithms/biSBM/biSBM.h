@@ -16,7 +16,7 @@
 
 int igraph_community_bipartite_sbm(igraph_t *graph, igraph_vector_t *membership, 
                                    igraph_integer_t k_a, igraph_integer_t k_b, 
-                                   igraph_integer_t max_iters);
+                                   igraph_integer_t max_iters, igraph_bool_t degree_correct);
 
 int log_message(const char *message, ...);
 
