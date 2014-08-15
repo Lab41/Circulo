@@ -69,7 +69,8 @@ void igraph_read_graph_generic(igraph_t *graph, char *type, char *file_name){
     printf("Attempting to read in .gml file...\n");
 
     // TODO: this function segfaults when it fails. Submit a bugfix!
-    // As such, err isn't doing anything.
+    // As such, err isn't doing anything. There also seems to be a 
+    // memory leak in this function.
     int err = igraph_read_graph_gml(graph, infile);
     fclose(infile);
     if (err) exit(GRAPH_READ_FAILED);
@@ -132,7 +133,8 @@ igraph_real_t score_partition(Housekeeping *hk){
       igraph_real_t inter_community = INTERCOMMUNITY(*(hk->inter_comm_edges), c_a, c_b, hk->a);
       igraph_real_t c_a_sum = hk->comm_tot_degree[c_a];
       igraph_real_t c_b_sum = hk->comm_tot_degree[c_b];
-      if (!inter_community || !c_a_sum || !c_b_sum) return -INFINITY; // really raise an error.
+      //printf("%d, %d, %d\n", (int) inter_community, (int) c_a_sum, (int) c_b_sum);
+      if (!(int) inter_community || !(int) c_a_sum || !(int) c_b_sum) return -INFINITY; // really raise an error.
       score += inter_community * log(inter_community / (c_a_sum * c_b_sum));
     }
   }
@@ -394,12 +396,17 @@ void initialize_partition(Housekeeping *hk){
 
 void initialize_neighbors(Housekeeping *hk, igraph_t *graph){
   igraph_vector_t **neighbors = malloc(sizeof(igraph_vector_t *) * hk->size);
-  igraph_vector_t *neigh = malloc(sizeof(igraph_vector_t) * hk->size);
+  
+  //igraph_vector_t *neigh = malloc(sizeof(igraph_vector_t) * hk->size);
   for (int v = 0; v < hk->size; v++){
-    igraph_vector_init(&neigh[v], 0);
-    igraph_neighbors(graph, &neigh[v], v, IGRAPH_ALL);
-    neighbors[v] = &neigh[v];
+    neighbors[v] = malloc(sizeof(igraph_vector_t));
+    igraph_vector_init(neighbors[v], 0);
+    //igraph_vector_init(&neigh[v], 0);
+    //igraph_neighbors(graph, &neigh[v], v, IGRAPH_ALL);
+    igraph_neighbors(graph, neighbors[v], v, IGRAPH_ALL);
+    //neighbors[v] = &neigh[v];
   }
+  //free(neigh);
   hk->adj_list = neighbors;
 }
 
@@ -424,11 +431,12 @@ void initialize_inter_comm(Housekeeping *hk, igraph_t *graph){
       }
     }
   }
+  igraph_matrix_destroy(&mat);
 }
 
 
 void initialize_degree_sums(Housekeeping *hk){
-  igraph_real_t *comm_degree = malloc(sizeof(igraph_real_t) * (hk->a + hk->b));
+  igraph_real_t *comm_degree = calloc(hk->a + hk->b, sizeof(igraph_real_t));
   for (int v = 0; v < hk->size; v++){
     comm_degree[hk->partition[v]] += igraph_vector_size(hk->adj_list[v]);//VECTOR(*deg)[v]; // += 1 for uncorrected.
   }
@@ -446,13 +454,27 @@ void initialize_housekeeping(Housekeeping *hk, igraph_t *graph, igraph_integer_t
   initialize_neighbors(hk, graph);
   initialize_inter_comm(hk, graph);
 
+  for (int a = 0; a < hk->a; a++){
+    for (int b = hk->a; b < hk->a + hk->b; b++){
+      printf("Matrix %d, %d: %d\n", a, b, (int) INTERCOMMUNITY(*(hk->inter_comm_edges), a, b, hk->a));
+    }
+  }
   // must be called after neighbors is initialized
   initialize_degree_sums(hk);
 }
 
 
 void free_housekeeping(Housekeeping *hk){
-  //TODO
+  free(hk->partition);
+  for (int i = 0; i < hk->size; i++){
+    igraph_vector_destroy(hk->adj_list[i]);
+    free(hk->adj_list[i]);
+  }
+  free(hk->adj_list);
+  igraph_vector_bool_destroy(hk->types);
+  igraph_matrix_destroy(hk->inter_comm_edges);
+  free(hk->comm_tot_degree);
+
 }
 
 
@@ -464,21 +486,22 @@ int igraph_community_bipartite_sbm(igraph_t *graph, igraph_vector_t *membership,
                                    igraph_integer_t max_iters){
   Housekeeping hk;
   igraph_vector_bool_t types;
-  //igraph_vector_t *adj_list[igraph_vcount(graph)];
-  igraph_matrix_t inter_comm_edges;
   hk.types = &types;
-  //hk.adj_list = &adj_list;
+  igraph_matrix_t inter_comm_edges;
   hk.inter_comm_edges = &inter_comm_edges;
-  //hk.comm_tot_degree = &comm_tot_degree;
+
   initialize_housekeeping(&hk, graph, k_a, k_b);
+
   run_algorithm(&hk, max_iters);
-  free_housekeeping(&hk);
+
+  
+
   if (igraph_vector_size(membership) != hk.size)
     igraph_vector_resize(membership, hk.size);
-
   // todo: only use igraph_vector_t instead
   for (int i = 0; i < hk.size; i++)
     VECTOR(*membership)[i] = hk.partition[i];
+  free_housekeeping(&hk);
 }
 
 
@@ -571,7 +594,8 @@ int main(int argc, char *argv[]) {
   }
 
 
-
+  igraph_vector_destroy(&membership);
+  igraph_destroy(&graph);
 
   // for each swap in possible swaps, score the swap and choose the best one. make the best swap
   // and repeat until all vertices have been swapped once. Take the best partition from 
