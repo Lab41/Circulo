@@ -2,16 +2,6 @@
  *
  *
  */
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <limits.h>
-#include <stdbool.h>
-#include <math.h>  // log
-#include <float.h>
-#include <assert.h>
-// TODO move to .h
-
 #include "working_biSBM.h"
 
 #define WRONG_OPTION_COUNT 1
@@ -20,17 +10,32 @@
 #define GRAPH_READ_FAILED 4
 #define ILLEGAL_FORMAT 5
 
-#define DOUBLE_ERROR .00000001
-
-
 #define INTERCOMMUNITY(inter_comm, c_a, c_b, a) (MATRIX(inter_comm, c_a, c_b - a))
 
 
 
+
+/**
+ * TODO
+ *     * change assert statements to something more graceful
+ *     * possibly check for error code on all igraph calls
+ *     * possibly replace c arrays with igraph_vector_t/igraph_vector_integer_t
+ *     * implement non degree-corrected version
+ *     * make things const when they need to be
+ *     * do something to deal with degree 0 vertices (put them all in community -1 or something?)
+ *     * make sure igraph_real_t always behaves nicely
+ *     * possibly modify the algorithm to a weight corrected version
+ *     * possibly return error codes from igraph_community_bipartite_SBM
+ */
+
+
+
+// Logs messages to standard out if verbose.
+bool verbose = false;
+
 typedef struct {
   int a, b, size;
   int *partition;
-  //igraph_matrix_t *adj_mat;
   igraph_vector_t **adj_list;
   igraph_vector_bool_t *types;
   igraph_matrix_t *inter_comm_edges;
@@ -41,14 +46,27 @@ typedef struct {
   int v, src, dest;
 } Swaprecord;
 
-/**
- * TODO
- *     * get rid of excessive allocation
- *     * check for null on malloc
- *     * free all allocated memory
- *     * check for error code on all igraph calls
- */
+typedef struct {
+  char *graph_type;
+  char *path_to_graph;
+  int k_a;
+  int k_b;
+  int max_iters;
+} Arglist;
 
+
+
+int log_message(const char *message, ...){
+  if (verbose){
+    int retval;
+    va_list args;
+    va_start(args, message);
+    retval = vprintf(message, args);
+    va_end(args);
+    return retval;
+  }
+  return 0;
+}
 
 /**
  * Function: igraph_read_graph_generic
@@ -61,12 +79,11 @@ void igraph_read_graph_generic(igraph_t *graph, char *type, char *file_name){
   FILE * infile;
   infile = fopen (file_name, "r");
   if (infile == NULL){
-    printf("Could not open file: %s\n", file_name);
+    log_message("Could not open file: %s\n", file_name);
     print_usage_and_exit(BAD_FILE);
   }
-
   if (!strcmp(type, "gml")){
-    printf("Attempting to read in .gml file...\n");
+    log_message("Attempting to read in .gml file...\n");
 
     // TODO: this function segfaults when it fails. Submit a bugfix!
     // As such, err isn't doing anything. There also seems to be a 
@@ -76,9 +93,8 @@ void igraph_read_graph_generic(igraph_t *graph, char *type, char *file_name){
     if (err) exit(GRAPH_READ_FAILED);
     return;
   }
-
   if (!strcmp(type, "graphml")){
-    printf("Attempting to read in graphml file...\n");
+    log_message("Attempting to read in graphml file...\n");
 
     // TODO: this function aborts when it fails, so err isn't doing
     // anything.
@@ -87,11 +103,10 @@ void igraph_read_graph_generic(igraph_t *graph, char *type, char *file_name){
     if (err) exit(GRAPH_READ_FAILED);
     return;
   }
-
   if (!strcmp(type, "edgelist")){
-    printf("Attempting to read in edgelist file...\n");
+    log_message("Attempting to read in edgelist file...\n");
 
-    // TODO: this function aborts when it fails, so err isn't doing
+    // TODO: this function aborts the process when it fails, so err isn't doing
     // anything.
     int err = igraph_read_graph_edgelist(graph, infile, 0, false);
     fclose(infile);
@@ -100,7 +115,6 @@ void igraph_read_graph_generic(igraph_t *graph, char *type, char *file_name){
   }
   // TODO: add more types!
   print_usage_and_exit(UNKNOWN_GRAPH_TYPE);
-  
 }
 
 
@@ -112,14 +126,16 @@ void igraph_read_graph_generic(igraph_t *graph, char *type, char *file_name){
  */
 void print_usage_and_exit(int exitstatus){
   printf("\nUsage:\n");
-  printf("  ./working_biSBM [graph type] [path to graph] [K_a] [K_b] [max iterations]\n");
+  printf("  ./working_biSBM [graph type] [path to graph] [K_a] [K_b] [max iterations] [verbose]\n");
   printf("  Where graph type is one of:\n");
   printf("    gml\n");
   printf("    graphml\n");
+  printf("    edgelist\n");
   // //TODO: ADD SUPPORT FOR MORE
   printf("  K_a is the number of groups of type a\n");
   printf("  K_b is the number of groups of type b\n");
   printf("  max iterations is the maximum number of iterations that the algorithm will attempt.\n\n");
+  printf("  verbose (optional) is 1 to activate logging, and 0 or missing otherwise.");
   exit(exitstatus);
 }
 
@@ -133,7 +149,7 @@ igraph_real_t score_partition(Housekeeping *hk){
       igraph_real_t inter_community = INTERCOMMUNITY(*(hk->inter_comm_edges), c_a, c_b, hk->a);
       igraph_real_t c_a_sum = hk->comm_tot_degree[c_a];
       igraph_real_t c_b_sum = hk->comm_tot_degree[c_b];
-      //printf("%d, %d, %d\n", (int) inter_community, (int) c_a_sum, (int) c_b_sum);
+      //log_message("%d, %d, %d\n", (int) inter_community, (int) c_a_sum, (int) c_b_sum);
       if (!(int) inter_community || !(int) c_a_sum || !(int) c_b_sum) return -INFINITY; // really raise an error.
       score += inter_community * log(inter_community / (c_a_sum * c_b_sum));
     }
@@ -142,15 +158,10 @@ igraph_real_t score_partition(Housekeeping *hk){
 }
 
 
-
-
-
-
-
 void make_swap(Housekeeping *hk, int v, int to){
   int from = hk->partition[v];
   if (to == from) return; // check if this line speeds things up
- // printf("to: %d, from: %d\n", to, from);
+ // log_message("to: %d, from: %d\n", to, from);
   hk->partition[v] = to;
   igraph_vector_t *neighbors = hk->adj_list[v];
   int degree = igraph_vector_size(neighbors);
@@ -173,6 +184,7 @@ void make_swap(Housekeeping *hk, int v, int to){
   // not degree correct suff would go here
 }
 
+
 double score_swap(Housekeeping *hk, int v, int to){
   int tmp = hk->partition[v];
   make_swap(hk, v, to);
@@ -193,7 +205,6 @@ double score_swaps(Housekeeping *hk, int v, int *dest){
   double best_score = -INFINITY;
   for (int to = begin; to < end; to++){
     if (to == from) continue;
-    //printf("Trying to switch from community %d to %d\n", hk->partition[v], to);
     double new_score = score_swap(hk, v, to);
     if (new_score > best_score){
       best_score = new_score;
@@ -202,7 +213,6 @@ double score_swaps(Housekeeping *hk, int v, int *dest){
   }
   return best_score;
 }
-
 
 
 double make_best_swap(Housekeeping *hk, bool *used, Swaprecord *swaprecord, int i){
@@ -236,13 +246,11 @@ double make_best_swap(Housekeeping *hk, bool *used, Swaprecord *swaprecord, int 
 }
 
 
-
 void rewind_swaps(Housekeeping *hk, Swaprecord *swaprecord, int best_swap){
   for (int i = hk->size - 1; i > best_swap; i--){
     make_swap(hk, swaprecord[i].v, swaprecord[i].src);
   }
 }
-
 
 
 bool run_iteration(Housekeeping *hk, double init_score){
@@ -252,7 +260,7 @@ bool run_iteration(Housekeeping *hk, double init_score){
   for (int i = 0; i < hk->size; i++) used[i] = false;
   for (int i = 0; i < hk->size; i++){ 
     double new_score = make_best_swap(hk, used, swaprecord, i);
-    if (new_score > init_score + DOUBLE_ERROR){
+    if (new_score > init_score){
       init_score = new_score;
       best_swap = i;
     }
@@ -266,79 +274,19 @@ bool run_iteration(Housekeeping *hk, double init_score){
 
 double run_algorithm(Housekeeping *hk, int max_iters){
   double score = score_partition(hk);
-  printf("Initial score: %f\n", score);
+  log_message("Initial score: %f\n", score);
   for (int i = 0; i < max_iters; i++){
-    printf("Beginning iteration %d\n", i + 1);
+    log_message("Beginning iteration %d\n", i + 1);
     bool is_last_iteration = run_iteration(hk, score);
     score = score_partition(hk);
-    printf("Score after iteration %d: %f\n", i + 1, score);
+    log_message("Score after iteration %d: %f\n", i + 1, score);
     if (is_last_iteration){
-      printf("Score has not improved. Terminating...\n");
+      log_message("Score has not improved. Terminating...\n");
       return score;
     }
   }
   return score;
 }
-
-
-// /**
-//  * Function: initialize_groups
-//  * ---------------------------
-//  * Given group sizes `a` and `b`, randomly initializes each vertex to 
-//  * a group. If the vertex type is 0, it will be randomly placed into
-//  * a group in the range [0, a). If it is 1, it will be randomly
-//  * placed into a group in the range [a, a+b)
-//  */
-// void initialize_groups(int a, int b, igraph_vector_bool_t *types, int *partition){
-//   //int *groupings = malloc(sizeof(int) * igraph_vector_bool_size(types));
-//   igraph_rng_t *rng = igraph_rng_default();
-//   // assign seed to some constant for repeatable results.
-//   int seed = time(NULL); 
-//   igraph_rng_seed(rng, seed);
-//   for (int i = 0; i < igraph_vector_bool_size(types); i++){
-//     if (!VECTOR(*types)[i]) // type 0
-//       partition[i] = igraph_rng_get_integer(rng, 0, a - 1);
-//     else // type 1
-//       partition[i] = igraph_rng_get_integer(rng, a, a + b - 1);
-//   }
-// }
-
-
-// //  TODO: add possibility for uncorrected
-// void initialize_degree_sums(int *partition, igraph_real_t *comm_degree, igraph_vector_t *deg){
-//   for (int v = 0; v < igraph_vector_size(deg); v++){
-//     comm_degree[partition[v]] += VECTOR(*deg)[v]; // += 1 for uncorrected.
-//   }
-// }
-
-
-// void initialize_inter_comm(igraph_matrix_t *inter_comm, int *partition, igraph_matrix_t *mat, int a, int size){
-//   igraph_matrix_null(inter_comm);
-//   for (int row = 0; row < size; row++){
-//     // just gets the lower triangular
-//     for (int col = row + 1; col < size; col++){
-//       if (MATRIX(*mat, row, col)){
-//         int group_r = partition[row];
-//         int group_c = partition[col];
-//         if (group_r < a && group_c >= a)
-//           MATRIX(*inter_comm, group_r, group_c - a)++;
-//         else if (group_r >= a && group_r < a)
-//           MATRIX(*inter_comm, group_c, group_r - a)++;
-//       }
-//     }
-//   }
-// }
-
-
-// void initialize_neighbors(igraph_t *graph, igraph_vector_t *neighbors[]){
-//   igraph_vector_t *neigh = malloc(sizeof(igraph_vector_t) * igraph_vcount(graph));
-//   for (int v = 0; v < igraph_vcount(graph); v++){
-//     igraph_vector_init(&neigh[v], 0);
-//     igraph_neighbors(graph, &neigh[v], v, IGRAPH_ALL);
-//     neighbors[v] = &neigh[v];
-//   }
-// }
-
 
 
 int delete_lonely_nodes(igraph_t *graph, igraph_vector_t *deg){
@@ -353,35 +301,29 @@ int delete_lonely_nodes(igraph_t *graph, igraph_vector_t *deg){
     igraph_vector_remove(deg, VECTOR(lonely_ids)[i]);
   }
   igraph_delete_vertices(graph, igraph_vss_vector(&lonely_ids));
-  // free lonely ids
+  igraph_vector_destroy(&lonely_ids);
   return num_lonely;
-
 }
 
 
 void initialize_types(Housekeeping *hk, igraph_t *graph){
-  //igraph_vector_bool_t types;
-  printf("here\n");
   igraph_vector_bool_init(hk->types, hk->size);
-  printf("here1\n");
-  printf("Finding a bipartite mapping...\n");
+  log_message("Finding a bipartite mapping...\n");
   igraph_bool_t is_bipartite;
   igraph_is_bipartite(graph, &is_bipartite, hk->types);
   if (!is_bipartite){
-    printf("Input graph is not bipartite. Exiting...\n");
+    log_message("Input graph is not bipartite. Exiting...\n");
     exit(ILLEGAL_FORMAT);
   }
-  printf("Mapping successful.\n");
-  //hk->types = &types;
-  printf("373. there are %ld types\n", igraph_vector_bool_size(hk->types));
+  log_message("Mapping successful.\n");
 }
 
 
 void initialize_partition(Housekeeping *hk){
   int *partition = malloc(sizeof(int) * hk->size);
+  assert(partition != NULL);
   igraph_rng_t *rng = igraph_rng_default();
   // assign seed to some constant for repeatable results.
-  printf("381. there are %ld types\n", igraph_vector_bool_size(hk->types));
   int seed = time(NULL); 
   igraph_rng_seed(rng, seed);
   for (int i = 0; i < hk->size; i++){
@@ -396,19 +338,16 @@ void initialize_partition(Housekeeping *hk){
 
 void initialize_neighbors(Housekeeping *hk, igraph_t *graph){
   igraph_vector_t **neighbors = malloc(sizeof(igraph_vector_t *) * hk->size);
-  
-  //igraph_vector_t *neigh = malloc(sizeof(igraph_vector_t) * hk->size);
+  assert(neighbors != NULL);
   for (int v = 0; v < hk->size; v++){
     neighbors[v] = malloc(sizeof(igraph_vector_t));
+    assert(neighbors[v] != NULL);
     igraph_vector_init(neighbors[v], 0);
-    //igraph_vector_init(&neigh[v], 0);
-    //igraph_neighbors(graph, &neigh[v], v, IGRAPH_ALL);
     igraph_neighbors(graph, neighbors[v], v, IGRAPH_ALL);
-    //neighbors[v] = &neigh[v];
   }
-  //free(neigh);
   hk->adj_list = neighbors;
 }
+
 
 void initialize_inter_comm(Housekeeping *hk, igraph_t *graph){
   igraph_matrix_t mat;
@@ -419,7 +358,6 @@ void initialize_inter_comm(Housekeeping *hk, igraph_t *graph){
   igraph_matrix_null(hk->inter_comm_edges);
 
   for (int row = 0; row < hk->size; row++){
-    // just gets the lower (upper? check) triangular
     for (int col = row + 1; col < hk->size; col++){
       if (MATRIX(mat, row, col)){
         int group_r = hk->partition[row];
@@ -437,11 +375,13 @@ void initialize_inter_comm(Housekeeping *hk, igraph_t *graph){
 
 void initialize_degree_sums(Housekeeping *hk){
   igraph_real_t *comm_degree = calloc(hk->a + hk->b, sizeof(igraph_real_t));
+  assert(comm_degree != NULL);
   for (int v = 0; v < hk->size; v++){
     comm_degree[hk->partition[v]] += igraph_vector_size(hk->adj_list[v]);//VECTOR(*deg)[v]; // += 1 for uncorrected.
   }
   hk->comm_tot_degree = comm_degree;
 }
+
 
 // todo: allow the user to supply an id or something in community a, so they aren't assigned arbitrarily.
 void initialize_housekeeping(Housekeeping *hk, igraph_t *graph, igraph_integer_t k_a, igraph_integer_t k_b){
@@ -449,17 +389,9 @@ void initialize_housekeeping(Housekeeping *hk, igraph_t *graph, igraph_integer_t
   hk->b = k_b;
   hk->size = igraph_vcount(graph);
   initialize_types(hk, graph);
-  printf("449. there are %ld types\n", igraph_vector_bool_size(hk->types));
   initialize_partition(hk);
   initialize_neighbors(hk, graph);
   initialize_inter_comm(hk, graph);
-
-  for (int a = 0; a < hk->a; a++){
-    for (int b = hk->a; b < hk->a + hk->b; b++){
-      printf("Matrix %d, %d: %d\n", a, b, (int) INTERCOMMUNITY(*(hk->inter_comm_edges), a, b, hk->a));
-    }
-  }
-  // must be called after neighbors is initialized
   initialize_degree_sums(hk);
 }
 
@@ -474,13 +406,9 @@ void free_housekeeping(Housekeeping *hk){
   igraph_vector_bool_destroy(hk->types);
   igraph_matrix_destroy(hk->inter_comm_edges);
   free(hk->comm_tot_degree);
-
 }
 
 
-// TODO: do something better about degree 0 vertices.
-
- // TODO: include degree uncorrected option, modify algorithm to include weights.
 int igraph_community_bipartite_sbm(igraph_t *graph, igraph_vector_t *membership, 
                                    igraph_integer_t k_a, igraph_integer_t k_b, 
                                    igraph_integer_t max_iters){
@@ -489,137 +417,61 @@ int igraph_community_bipartite_sbm(igraph_t *graph, igraph_vector_t *membership,
   hk.types = &types;
   igraph_matrix_t inter_comm_edges;
   hk.inter_comm_edges = &inter_comm_edges;
-
   initialize_housekeeping(&hk, graph, k_a, k_b);
-
   run_algorithm(&hk, max_iters);
-
-  
-
   if (igraph_vector_size(membership) != hk.size)
     igraph_vector_resize(membership, hk.size);
-  // todo: only use igraph_vector_t instead
   for (int i = 0; i < hk.size; i++)
     VECTOR(*membership)[i] = hk.partition[i];
   free_housekeeping(&hk);
+  return 0;
 }
 
 
-
-int main(int argc, char *argv[]) {
-  if (argc != 6) // TODO: check all arguments
+/**
+ * Function: parse_args
+ * --------------------
+ * Takes user input and returns an Arglist struct containing the
+ * options specified. Note: does **not** do agressive error checking. 
+ */
+Arglist parse_args(int argc, char **argv){
+  if (argc < 6){
+    printf("Too few arguments.\n");
     print_usage_and_exit(WRONG_OPTION_COUNT);
-  igraph_t graph;
-  igraph_read_graph_generic(&graph, argv[1], argv[2]);
-  int a = atoi(argv[3]);
-  int b = atoi(argv[4]);
-  int max_iters = atoi(argv[5]);
+  }
+  if (argc > 7)
+    printf("Ignoring extra arguments...");
+  Arglist args;
+  args.graph_type = argv[1];
+  args.path_to_graph = argv[2];
+  args.k_a = atoi(argv[3]);
+  args.k_b = atoi(argv[4]);
+  args.max_iters = atoi(argv[5]);
+  if (argc >= 7)
+    verbose = (bool) atoi(argv[6]);
+  return args;
+}
 
-  printf("Graph with %d vertices and %d edges read successfully.\n"
+
+int main(int argc, char *argv[]){
+  Arglist args = parse_args(argc, argv);
+
+  igraph_t graph;
+  igraph_read_graph_generic(&graph, args.graph_type, args.path_to_graph);
+  log_message("Graph with %d vertices and %d edges read successfully.\n"
             , igraph_vcount(&graph), igraph_ecount(&graph)); 
 
   igraph_vector_t membership;
   igraph_vector_init(&membership, 0);
-  igraph_community_bipartite_sbm(&graph, &membership, a, b, max_iters);
+  igraph_community_bipartite_sbm(&graph, &membership, args.k_a, args.k_b, args.max_iters);
 
-
-
-//   igraph_vector_t deg;
-//   igraph_vector_init(&deg, igraph_vcount(&graph));
-//   igraph_degree(&graph, &deg, igraph_vss_all(), IGRAPH_ALL, true);
-
-//   printf("Deleting all vertices of degree 0...\n");
-//   int num_lonely = delete_lonely_nodes(&graph, &deg);
-//   printf("Deletion successful. %d nodes deleted.\n", num_lonely);
-
-//   int size = igraph_vcount(&graph);
-
-//   igraph_vector_bool_t types;
-//   igraph_vector_bool_init(&types, size);
-
-//   printf("Finding a bipartite mapping...\n");
-//   igraph_bool_t is_bipartite;
-//   igraph_is_bipartite(&graph, &is_bipartite, &types);
-//   if (!is_bipartite){
-//     printf("Input graph is not bipartite. Exiting...\n");
-//     exit(ILLEGAL_FORMAT);
-//   }
-//   printf("Mapping successful.\n");
-
-//   igraph_matrix_t mat;
-//   igraph_matrix_init(&mat, size, size);
-//   // TOOD: use IGRAPH_GET_ADJACENCY_UPPER instead, perhaps last param true?
-//   igraph_get_adjacency(&graph, &mat, IGRAPH_GET_ADJACENCY_UPPER, false);
-
-
-
-//   igraph_vector_t *neighbors[size];
-//   initialize_neighbors(&graph, neighbors);
-
-//   //igraph_vector_t partition;
-//   //igraph_vector_init(&partition, size);
-//   printf("Initializing to random groups...\n");
-//   int partition[size];
-//   initialize_groups(a, b, &types, partition);
-//   printf("Initialization successful.\n");
-
-//   igraph_matrix_t inter_comm;
-//   igraph_matrix_init(&inter_comm, a, b);
-//   initialize_inter_comm(&inter_comm, partition, &mat, a, size);
-
-
-//   igraph_real_t comm_degree[a + b];
-//   initialize_degree_sums(partition, comm_degree, &deg);
-
-
-
-// // todo: replace all degree by neighbors
-
-//   Housekeeping hk;
-//   hk.a = a;
-//   hk.b = b;
-//   hk.size = size;
-//   hk.partition = partition;
-//   hk.adj_list = neighbors;
-//   //hk.adj_mat = &mat;
-//   hk.inter_comm_edges = &inter_comm;
-//   hk.comm_tot_degree = comm_degree;
-
-//   printf("Running algorithm...\n");
-//   run_algorithm(&hk, max_iters);
-
-
+  log_message("Membership: ");
   for (int i = 0; i < igraph_vcount(&graph); i++){
-    printf("%d: %d\n", i, (int) VECTOR(membership)[i]);
+    log_message("%d ", (int) VECTOR(membership)[i]);
   }
-
+  log_message("\n");
 
   igraph_vector_destroy(&membership);
   igraph_destroy(&graph);
-
-  // for each swap in possible swaps, score the swap and choose the best one. make the best swap
-  // and repeat until all vertices have been swapped once. Take the best partition from 
-  // that and iterate.
-
-
-
-  // for (int i = 0; i < a; i++){
-  //   for (int j = a; j < a+b; j++){
-  //     printf("inter %d - %d: %d\n", i, j, (int) INTERCOMMUNITY(inter_comm, i, j, a));
-  //   }
-  // }
-
-  // printf("Running algorithm...\n");
-  // double best_score = run_algorithm(partition, a, b, &types, &graph, &mat, max_iters);
-  // printf("Algorithm completed successfully.\n");
-
-  // printf("%f\n", best_score);
-  // for (int i = 0; i < igraph_vcount(&graph); i++){
-  //   printf("Vertex %d: group %d\n", i, partition[i]);
-  // }
-  // free(partition);
-  // igraph_vector_bool_destroy(&types);
-  // igraph_destroy(&graph);
   return 0;
-
 }
