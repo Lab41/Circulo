@@ -20,6 +20,7 @@
 #define GRAPH_READ_FAILED 4
 #define ILLEGAL_FORMAT 5
 
+#define DOUBLE_ERROR .00000001
 
 
 #define INTERCOMMUNITY(inter_comm, c_a, c_b, a) (MATRIX(inter_comm, c_a, c_b - a))
@@ -85,6 +86,17 @@ void igraph_read_graph_generic(igraph_t *graph, char *type, char *file_name){
     if (err) exit(GRAPH_READ_FAILED);
     return;
   }
+
+  if (!strcmp(type, "edgelist")){
+    printf("Attempting to read in edgelist file...\n");
+
+    // TODO: this function aborts when it fails, so err isn't doing
+    // anything.
+    int err = igraph_read_graph_edgelist(graph, infile, 0, false);
+    fclose(infile);
+    if (err) exit(GRAPH_READ_FAILED);
+    return;
+  }
   // TODO: add more types!
   print_usage_and_exit(UNKNOWN_GRAPH_TYPE);
   
@@ -135,7 +147,7 @@ igraph_real_t score_partition(Housekeeping *hk){
 
 void make_swap(Housekeeping *hk, int v, int to){
   int from = hk->partition[v];
-  //if (from == to) return;
+  if (to == from) return; // check if this line speeds things up
  // printf("to: %d, from: %d\n", to, from);
   hk->partition[v] = to;
   igraph_vector_t *neighbors = hk->adj_list[v];
@@ -143,6 +155,7 @@ void make_swap(Housekeeping *hk, int v, int to){
   hk->comm_tot_degree[from] -= degree;
   hk->comm_tot_degree[to] += degree;
   int c_1 = from;
+  // if degree correct
   for (int neigh = 0; neigh < degree; neigh++){
     int neighbor_comm = hk->partition[(int) VECTOR(*neighbors)[neigh]];
     int c_2 = neighbor_comm;
@@ -155,6 +168,7 @@ void make_swap(Housekeeping *hk, int v, int to){
       INTERCOMMUNITY(*(hk->inter_comm_edges), c_2, to, hk->a) += 1;
     }
   }
+  // not degree correct suff would go here
 }
 
 double score_swap(Housekeeping *hk, int v, int to){
@@ -205,13 +219,21 @@ double make_best_swap(Housekeeping *hk, bool *used, Swaprecord *swaprecord, int 
       max_v = v;
     }
   }
-  //printf("here\n");
-  assert(max_v >= 0);
-  assert(max_swap >= 0); 
+  //printf("max_v: %d\n", max_v);
+
+  if (max_v == -1){
+    // don't make any swaps -- we assume an empty community is illegal.
+    // a little hackish here -- we just record an empty swap on vertex 0.
+    swaprecord[i].v = 0;
+    swaprecord[i].src = hk->partition[0];
+    swaprecord[i].dest = hk->partition[0];
+    return max_score;
+  }
+
   swaprecord[i].v = max_v;
   swaprecord[i].src = hk->partition[max_v];
   swaprecord[i].dest = max_swap;
-  printf("Swapping. %f, vertex: %d, from: %d, to: %d\n", max_score, max_v, hk->partition[max_v], max_swap);
+  //printf("Swapping. %f, vertex: %d, from: %d, to: %d\n", max_score, max_v, hk->partition[max_v], max_swap);
   make_swap(hk, max_v, max_swap);
   
   used[max_v] = true;
@@ -229,23 +251,22 @@ void rewind_swaps(Housekeeping *hk, Swaprecord *swaprecord, int best_swap){
 
 
 
-void run_iteration(Housekeeping *hk, double init_score){
+bool run_iteration(Housekeeping *hk, double init_score){
   bool used[hk->size];
   Swaprecord swaprecord[hk->size];
   int best_swap = -1;
   for (int i = 0; i < hk->size; i++) used[i] = false;
   for (int i = 0; i < hk->size; i++){ 
-    int new_score = make_best_swap(hk, used, swaprecord, i);
-    if (new_score > init_score){
+    double new_score = make_best_swap(hk, used, swaprecord, i);
+    if (new_score > init_score + DOUBLE_ERROR){
       init_score = new_score;
       best_swap = i;
     }
   }
-  if (best_swap == -1){
-    printf("Score has not improved. Terminating...");
-    exit(0);
-  }
   rewind_swaps(hk, swaprecord, best_swap);
+  if (best_swap == -1)
+    return true;
+  return false;
   // need to save best state and go back to it before the next iteration.
 }
 
@@ -260,9 +281,13 @@ double run_algorithm(Housekeeping *hk, int max_iters){
   printf("Initial score: %f\n", score);
   for (int i = 0; i < max_iters; i++){
     printf("Beginning iteration %d\n", i + 1);
-    run_iteration(hk, score);
+    bool is_last_iteration = run_iteration(hk, score);
     score = score_partition(hk);
     printf("Score after iteration %d: %f\n", i + 1, score);
+    if (is_last_iteration){
+      printf("Score has not improved. Terminating...\n");
+      return score;
+    }
   }
   return score;
 }
@@ -281,7 +306,7 @@ void initialize_groups(int a, int b, igraph_vector_bool_t *types, int *partition
   //int *groupings = malloc(sizeof(int) * igraph_vector_bool_size(types));
   igraph_rng_t *rng = igraph_rng_default();
   // assign seed to some constant for repeatable results.
-  int seed = 1;//time(NULL); 
+  int seed = time(NULL); 
   igraph_rng_seed(rng, seed);
   for (int i = 0; i < igraph_vector_bool_size(types); i++){
     if (!VECTOR(*types)[i]) // type 0
@@ -329,6 +354,24 @@ void initialize_neighbors(igraph_t *graph, igraph_vector_t *neighbors[]){
 
 
 
+int delete_lonely_nodes(igraph_t *graph, igraph_vector_t *deg){
+  igraph_vector_t lonely_ids;
+  igraph_vector_init(&lonely_ids, 0);
+  for (int i = 0; i < igraph_vcount(graph); i++){
+    if (!VECTOR(*deg)[i])
+      igraph_vector_push_back(&lonely_ids, i);
+  }
+  int num_lonely = igraph_vector_size(&lonely_ids);
+  for (int i = 0; i < num_lonely; i++){
+    igraph_vector_remove(deg, VECTOR(lonely_ids)[i]);
+  }
+  igraph_delete_vertices(graph, igraph_vss_vector(&lonely_ids));
+  // free lonely ids
+  return num_lonely;
+
+}
+
+
 int main(int argc, char *argv[]) {
   if (argc != 6) // TODO: check all arguments
     print_usage_and_exit(WRONG_OPTION_COUNT);
@@ -337,10 +380,19 @@ int main(int argc, char *argv[]) {
   int a = atoi(argv[3]);
   int b = atoi(argv[4]);
   int max_iters = atoi(argv[5]);
-  int size = igraph_vcount(&graph);
 
   printf("Graph with %d vertices and %d edges read successfully.\n"
-            , size, igraph_ecount(&graph)); 
+            , igraph_vcount(&graph), igraph_ecount(&graph)); 
+
+  igraph_vector_t deg;
+  igraph_vector_init(&deg, igraph_vcount(&graph));
+  igraph_degree(&graph, &deg, igraph_vss_all(), IGRAPH_ALL, true);
+
+  printf("Deleting all vertices of degree 0...\n");
+  int num_lonely = delete_lonely_nodes(&graph, &deg);
+  printf("Deletion successful. %d nodes deleted.\n", num_lonely);
+
+  int size = igraph_vcount(&graph);
 
   igraph_vector_bool_t types;
   igraph_vector_bool_init(&types, size);
@@ -359,9 +411,10 @@ int main(int argc, char *argv[]) {
   // TOOD: use IGRAPH_GET_ADJACENCY_UPPER instead, perhaps last param true?
   igraph_get_adjacency(&graph, &mat, IGRAPH_GET_ADJACENCY_BOTH, false);
 
-  igraph_vector_t deg;
-  igraph_vector_init(&deg, size);
-  igraph_degree(&graph, &deg, igraph_vss_all(), IGRAPH_ALL, true);
+
+
+  igraph_vector_t *neighbors[size];
+  initialize_neighbors(&graph, neighbors);
 
   //igraph_vector_t partition;
   //igraph_vector_init(&partition, size);
@@ -378,8 +431,7 @@ int main(int argc, char *argv[]) {
   igraph_real_t comm_degree[a + b];
   initialize_degree_sums(partition, comm_degree, &deg);
 
-  igraph_vector_t *neighbors[size];
-  initialize_neighbors(&graph, neighbors);
+
 
 // todo: replace all degree by neighbors
 
@@ -397,7 +449,9 @@ int main(int argc, char *argv[]) {
   run_algorithm(&hk, max_iters);
 
 
-
+  for (int i = 0; i < hk.size; i++){
+    printf("%d: %d\n", i, hk.partition[i]);
+  }
 
 
 
