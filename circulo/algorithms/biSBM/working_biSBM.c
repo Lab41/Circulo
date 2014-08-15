@@ -35,6 +35,9 @@ typedef struct {
   igraph_real_t *comm_tot_degree;
 } Housekeeping;
 
+typedef struct {
+  int v, src, dest;
+} Swaprecord;
 
 /**
  * TODO
@@ -431,7 +434,7 @@ double score_swaps(Housekeeping *hk, int v, int *dest){
 
 
 
-void make_best_swap(Housekeeping *hk, bool *used){
+double make_best_swap(Housekeeping *hk, bool *used, Swaprecord *swaprecord, int i){
   int max_v = -1;
   double max_score = -INFINITY;
   int max_swap = -1;
@@ -450,20 +453,44 @@ void make_best_swap(Housekeeping *hk, bool *used){
   //printf("here\n");
   assert(max_v >= 0);
   assert(max_swap >= 0); 
+  swaprecord[i].v = max_v;
+  swaprecord[i].src = hk->partition[max_v];
+  swaprecord[i].dest = max_swap;
   printf("Swapping. %f, vertex: %d, from: %d, to: %d\n", max_score, max_v, hk->partition[max_v], max_swap);
   make_swap(hk, max_v, max_swap);
-
+  
   used[max_v] = true;
+  return max_score;
 
 }
 
 
-void run_iteration(Housekeeping *hk){
+
+void rewind_swaps(Housekeeping *hk, Swaprecord *swaprecord, int best_swap){
+  for (int i = hk->size - 1; i > best_swap; i--){
+    make_swap(hk, swaprecord[i].v, swaprecord[i].src);
+  }
+}
+
+
+
+void run_iteration(Housekeeping *hk, double init_score){
   bool used[hk->size];
+  Swaprecord swaprecord[hk->size];
+  int best_swap = -1;
   for (int i = 0; i < hk->size; i++) used[i] = false;
   for (int i = 0; i < hk->size; i++){ 
-    make_best_swap(hk, used);
+    int new_score = make_best_swap(hk, used, swaprecord, i);
+    if (new_score > init_score){
+      init_score = new_score;
+      best_swap = i;
+    }
   }
+  if (best_swap == -1){
+    printf("Score has not improved. Terminating...");
+    exit(0);
+  }
+  rewind_swaps(hk, swaprecord, best_swap);
   // need to save best state and go back to it before the next iteration.
 }
 
@@ -478,7 +505,7 @@ double run_algorithm(Housekeeping *hk, int max_iters){
   printf("Initial score: %f\n", score);
   for (int i = 0; i < max_iters; i++){
     printf("Beginning iteration %d\n", i + 1);
-    run_iteration(hk);
+    run_iteration(hk, score);
     score = score_partition(hk);
     printf("Score after iteration %d: %f\n", i + 1, score);
   }
