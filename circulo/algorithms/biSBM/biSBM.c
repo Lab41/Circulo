@@ -1,7 +1,7 @@
 /**
  * File: biSBM.c
  * -------------
- * TODO
+ * See biSBM.h for detailed overview.
  */
 #include "biSBM.h"
 
@@ -31,7 +31,7 @@
 /**
  * Global: verbose
  * ---------------
- * TODO
+ * If verbose == true, then logging statements are printed to standard out.
  */
 bool verbose = true;
 
@@ -39,23 +39,32 @@ bool verbose = true;
 /**
  * Struct: Housekeeping
  * --------------------
- * TODO
+ * This struct contains all information needed to calculate the scores
+ * of a partition.
  */
 typedef struct {
-  int a, b, size;
-  int *partition;
-  bool degree_correct;
-  igraph_vector_t **adj_list;
-  igraph_vector_bool_t *types;
+  // number of type a, number of type b, number of vertices
+  int a, b, size; 
+  // community membership list
+  int *partition; 
+  // true if we are using degree correction
+  bool degree_correct; 
+  // the graph in adjacency list format
+  igraph_vector_t **adj_list; 
+  // For each vertex i, false if types[i] is in group a, true if group b
+  igraph_vector_bool_t *types; 
+  // a matrix in which cell ab is the number of edges between community a and b
   igraph_matrix_t *inter_comm_edges;
-  igraph_real_t *comm_tot_degree;
+  // For each community, the sum of the degree of all vertices in the community.
+  igraph_real_t *comm_tot_degree; 
 } Housekeeping;
 
 
 /**
  * Struct: Swaprecord
  * ------------------
- * TODO
+ * A Swaprecord contains the vertex id (v), its original community (src)
+ * and the destination community (dest).
  */
 typedef struct {
   int v, src, dest;
@@ -65,7 +74,17 @@ typedef struct {
 /**
  * Function: score_partition
  * -------------------------
- * TODO
+ * Given a partition stored in hk, scores the partition using the 
+ * log-likelihood metric described in equation (16) of the paper. 
+ *   Parameters:
+ *     Housekeeping *hk: A struct Housekeeping containing all graph 
+ *                       and community information
+ *   Returns: 
+ *     The score of the partition stored in hk.
+ * 
+ * TODO: implement non-degree corrected (equation 9).
+ * TODO: implement change in score instead of total score for an optimization.
+ * 
  */
 static igraph_real_t score_partition(Housekeeping *hk){
   igraph_real_t score = 0;
@@ -88,7 +107,13 @@ static igraph_real_t score_partition(Housekeeping *hk){
 /**
  * Function: make_swap
  * -------------------
- * TODO
+ * Swaps vertex v from its current community to the new community  `to`.
+ * All changes are reflected in hk.
+ *   Parameters:
+ *     Housekeeping *hk: A struct Housekeeping containing all graph 
+ *                       and community information
+ *     int v: The index of the vertex to be swapped.
+ *     int to: the community to which v is to be swapped.
  */
 static void make_swap(Housekeeping *hk, int v, int to){
   int from = hk->partition[v];
@@ -117,7 +142,18 @@ static void make_swap(Housekeeping *hk, int v, int to){
 /**
  * Function: score_swap
  * --------------------
- * TODO
+ * A naive scoring method that actually makes the swap that we
+ * aim to score, scores the partition, then swaps back. Returns
+ * the score.
+ *   Parameters:
+ *     Housekeeping *hk: A struct Housekeeping containing all graph 
+ *                       and community information
+ *     int v: The index of the vertex to be swapped for scoring.
+ *     int to: the community to which v is to be swapped for scoring.
+ *   Returns: 
+ *     The score of the partition after the swap specified by the parameters.
+ *  
+ * TODO: optimize this to not actually make the swaps.
  */
 static double score_swap(Housekeeping *hk, int v, int to){
   int tmp = hk->partition[v];
@@ -131,7 +167,16 @@ static double score_swap(Housekeeping *hk, int v, int to){
 /**
  * Function: score_swaps
  * ---------------------
- * TODO
+ * Given a vertex v, populates dest with the best community to change to.
+ * Returns the score if swapped to dest.
+ *   Parameters:
+ *     Housekeeping *hk: A struct Housekeeping containing all graph 
+ *                       and community information
+ *     int v: The index of the vertex to be swapped for scoring.
+ *     int *dest: A pointer to an uninitialized int where the best swap will be stored.
+ *   Returns: 
+ *     The score of the optimal swap for v. 
+ *  
  */
 static double score_swaps(Housekeeping *hk, int v, int *dest){
   int from = hk->partition[v];
@@ -157,7 +202,21 @@ static double score_swaps(Housekeeping *hk, int v, int *dest){
 /**
  * Function: make_best_swap
  * ------------------------
- * TODO
+ * This function tries all possible swaps of all unused vertices to all communities,
+ * then makes the best one. Returns the score after this optimal swap.
+ * Takes a housekeeping struct, a bool array representing whether each vertex has been 
+ * used, an array of swaprecords to give the ability to rewind to the best swap, and 
+ * and int i representing the swap number that we're on. 
+ *   Parameters:
+ *     Housekeeping *hk: A struct Housekeeping containing all graph 
+ *                       and community information
+ *     bool *used: An array of length hk->size where used[i] is false if vertex i is in 
+ *                 group a, true if group b.
+ *     Swaprecord *swaprecord: An array of swaprecords in order, each representing one swap.
+ *     int i: the number of vertices already swapped, and the swaprecord index.
+ *   Returns:
+ *     The score of the partition after the best swap.
+ *  
  */
 static double make_best_swap(Housekeeping *hk, bool *used, Swaprecord *swaprecord, int i){
   int max_v = -1;
@@ -193,7 +252,9 @@ static double make_best_swap(Housekeeping *hk, bool *used, Swaprecord *swaprecor
 /**
  * Function: rewind_swaps
  * ----------------------
- * TODO
+ * Given an array of Swaprecords along with the index in that array best_swap,
+ * swaps vertices back and updates housekeeping to reflect the best swap for the
+ * current iteration.
  */
 static void rewind_swaps(Housekeeping *hk, Swaprecord *swaprecord, int best_swap){
   for (int i = hk->size - 1; i > best_swap; i--){
@@ -205,7 +266,8 @@ static void rewind_swaps(Housekeeping *hk, Swaprecord *swaprecord, int best_swap
 /**
  * Function: run_iteration
  * -----------------------
- * TODO
+ * Runs the algorithm one iteration forward. If it improves the score, 
+ * return false, otherwise return true.
  */
 static bool run_iteration(Housekeeping *hk, double init_score){
   bool used[hk->size];
@@ -229,7 +291,7 @@ static bool run_iteration(Housekeeping *hk, double init_score){
 /**
  * Function: run_algorithm
  * -----------------------
- * TODO
+ * Run the bipartite SBM algorithm a maximum of max_iters iterations.
  */
 static double run_algorithm(Housekeeping *hk, int max_iters){
   double score = score_partition(hk);
@@ -248,13 +310,11 @@ static double run_algorithm(Housekeeping *hk, int max_iters){
 }
 
 
-
-
-
 /**
  * Function: initialize_types
  * --------------------------
- * TODO
+ * Attempts to find a bipartite mapping of the graph, and loads such
+ * a mapping (if it exists) into hk->types. 
  */
 static void initialize_types(Housekeeping *hk, igraph_t *graph){
   igraph_vector_bool_init(hk->types, hk->size);
@@ -272,7 +332,9 @@ static void initialize_types(Housekeeping *hk, igraph_t *graph){
 /**
  * Function: initialize_partition
  * ------------------------------
- * TODO
+ * Randomly initializes hk->partition such that all vertices of type
+ * a are assigned a community 0 < c < k_a and all vertices of type b
+ * are assigned a community k_a <= c < k_b.
  */
 static void initialize_partition(Housekeeping *hk){
   int *partition = malloc(sizeof(int) * hk->size);
@@ -294,7 +356,7 @@ static void initialize_partition(Housekeeping *hk){
 /**
  * Function: initialize_neighbors
  * ---------------------------
- * TODO
+ * Assigns hk->adj_list as an adjacency list representation of the graph.
  */
 static void initialize_neighbors(Housekeeping *hk, igraph_t *graph){
   igraph_vector_t **neighbors = malloc(sizeof(igraph_vector_t *) * hk->size);
@@ -312,7 +374,9 @@ static void initialize_neighbors(Housekeeping *hk, igraph_t *graph){
 /**
  * Function: initialize_inter_comm
  * -------------------------------
- * TODO
+ * Initializes an A x B matrix hk->inter_comm_edges such that 
+ * inter_comm_edges[A][B] = the number of intercommunity edges from A to B.
+ * since the graph is undirected, only initializes the upper trianglular portion. 
  */
 static void initialize_inter_comm(Housekeeping *hk, igraph_t *graph){
   igraph_matrix_t mat;
@@ -320,7 +384,6 @@ static void initialize_inter_comm(Housekeeping *hk, igraph_t *graph){
   igraph_get_adjacency(graph, &mat, IGRAPH_GET_ADJACENCY_UPPER, false);
   igraph_matrix_init(hk->inter_comm_edges, hk->a, hk->b);
   igraph_matrix_null(hk->inter_comm_edges);
-
   for (int row = 0; row < hk->size; row++){
     for (int col = row + 1; col < hk->size; col++){
       if (MATRIX(mat, row, col)){
@@ -340,7 +403,8 @@ static void initialize_inter_comm(Housekeeping *hk, igraph_t *graph){
 /**
  * Function: initialize_degree_sums
  * --------------------------------
- * TODO
+ * Initializes an array hk->comm_tot_degree where comm_tot_degree[i] = the total degree of all vertices
+ * in community i.
  */
 static void initialize_degree_sums(Housekeeping *hk){
   igraph_real_t *comm_degree = calloc(hk->a + hk->b, sizeof(igraph_real_t));
@@ -355,7 +419,7 @@ static void initialize_degree_sums(Housekeeping *hk){
 /**
  * Function: initialize_housekeeping
  * ---------------------------------
- * TODO
+ * Initializes all data structures needed to run the algorithm.
  * todo: allow the user to supply an id or something in community a, so they aren't assigned arbitrarily.
  */
 static void initialize_housekeeping(Housekeeping *hk, igraph_t *graph, igraph_integer_t k_a, igraph_integer_t k_b){
@@ -373,7 +437,7 @@ static void initialize_housekeeping(Housekeeping *hk, igraph_t *graph, igraph_in
 /**
  * Function: free_housekeeping
  * ---------------------------
- * TODO
+ * Frees all allocated memory in housekeeping.
  */
 static void free_housekeeping(Housekeeping *hk){
   free(hk->partition);
@@ -391,7 +455,7 @@ static void free_housekeeping(Housekeeping *hk){
 /**
  * Function: igraph_community_bipartite_sbm
  * ----------------------------------------
- * TODO
+ * Runs the algorithm. See biSBM.h for detailed overview.
  */
 int igraph_community_bipartite_sbm(igraph_t *graph, igraph_vector_t *membership, 
                                    igraph_integer_t k_a, igraph_integer_t k_b, 
@@ -423,7 +487,7 @@ int igraph_community_bipartite_sbm(igraph_t *graph, igraph_vector_t *membership,
 /**
  * Struct: Arglist
  * ---------------
- * TODO
+ * Struct containing all of the command line arguments.
  */
 typedef struct {
   char *graph_type;
@@ -438,7 +502,7 @@ typedef struct {
 /**
  * Function: log_message
  * ---------------------
- * TODO
+ * Same interface as printf, but only prints if verbose=true.
  */
 int log_message(const char *message, ...){
   if (verbose){
@@ -557,7 +621,7 @@ Arglist parse_args(int argc, char **argv){
 /**
  * Function: print_membership
  * --------------------------
- * TODO
+ * Prints the membership list.
  */
 void print_membership(igraph_vector_t *membership, int size){
   log_message("Membership: ");

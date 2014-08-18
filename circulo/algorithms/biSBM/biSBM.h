@@ -8,7 +8,7 @@
 #include <string.h>
 #include <limits.h>
 #include <stdbool.h>
-#include <math.h>  // log
+#include <math.h>
 #include <float.h>
 #include <assert.h>
 #include <igraph.h>
