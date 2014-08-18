@@ -1,65 +1,67 @@
-# A better makefile is in Makefile_modify, but it's currently broken.
-all:
-	gcc -O3 -Wall -g -pedantic biSBM.c -I/usr/local/Cellar/igraph/0.7.1/include/igraph -o biSBM -L/usr/local/Cellar/igraph/0.7.1/lib -ligraph
-
-unopt:
-	gcc -Wall -g -pedantic biSBM.c -I/usr/local/Cellar/igraph/0.7.1/include/igraph -o biSBM -L/usr/local/Cellar/igraph/0.7.1/lib -ligraph
-# -std=c++0x or something like that for cpp
-
-
-# # here's a better Makefile, but it doesn't currently work. TODO!
-
 # # Makefile modified from http://www.cs.swarthmore.edu/~newhall/unixhelp/howto_makefiles.html
 
+
+# Essentially the commands that are being run:
+
+# all:
+# 	gcc -O3 -Wall -pedantic biSBM.c -I/usr/local/Cellar/igraph/0.7.1/include/igraph -o biSBM -L/usr/local/Cellar/igraph/0.7.1/lib -ligraph
+
+# debug:
+# 	gcc -Wall -g -pedantic biSBM.c -I/usr/local/Cellar/igraph/0.7.1/include/igraph -o biSBM_debug -L/usr/local/Cellar/igraph/0.7.1/lib -ligraph
+
+
 # # define the compiler to use
-# CC = g++
+CC = gcc
 
 # # define any compile-time flags
-# CFLAGS = -O3 -Wall -g -pedantic
+CFLAGS = -O3 -Wall -pedantic
+CFLAGS_DEBUG = -Wall -g -pedantic
 
 # # define any directories containing header files other than /usr/include
-# INCLUDES = -I/usr/local/Cellar/igraph/0.7.1/include/igraph
+INCLUDES = -I/usr/local/Cellar/igraph/0.7.1/include/igraph
 
 # # define library paths in addition to /usr/lib
-# LFLAGS = -L/usr/local/Cellar/igraph/0.7.1/lib
+LFLAGS = -L/usr/local/Cellar/igraph/0.7.1/lib
 
 # # define any libraries to link into executable:
-# LIBS = -ligraph
+LIBS = -ligraph
 
 # # define the source files
-# SRCS = working_biSBM.cpp
+SRCS = biSBM.c
 
 # # define the object files 
-# OBJS = $(SRCS:.cpp=.o)
+OBJS = $(SRCS:.c=.o)
 
 # # define the executable file 
-# MAIN = biSBM
+MAIN = biSBM
 
-# #
-# # The following part of the makefile is generic; it can be used to 
-# # build any executable just by changing the definitions above and by
-# # deleting dependencies appended to the file from 'make depend'
-# #
+MAIN_DEBUG = biSBM_debug
 
-# .PHONY: depend clean
+.PHONY: depend clean
 
-# all:    $(MAIN)
-# 	@echo  Compilation completed successfully.
+all:    $(MAIN)
+	@echo  Compilation completed successfully.
 
-# $(MAIN): $(OBJS) 
-# 	$(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
+debug:    $(MAIN_DEBUG)
+	@echo  Unoptimized compilation completed successfully.
 
-# # this is a suffix replacement rule for building .o's from .c's
-# # it uses automatic variables $<: the name of the prerequisite of
-# # the rule(a .c file) and $@: the name of the target of the rule (a .o file) 
-# # (see the gnu make manual section about automatic variables)
-# .c.o:
-# 	$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
+$(MAIN): $(OBJS) 
+	$(CC) $(CFLAGS) $(INCLUDES) -o $(MAIN) $(OBJS) $(LFLAGS) $(LIBS)
 
-# clean:
-# 	$(RM) *.o *~ $(MAIN)
+$(MAIN_DEBUG): $(OBJS)
+	$(CC) $(CFLAGS_UNOPT) $(INCLUDES) -o $(MAIN_DEBUG) $(OBJS) $(LFLAGS) $(LIBS)
 
-# depend: $(SRCS)
-# 	makedepend $(INCLUDES) $^
+# this is a suffix replacement rule for building .o's from .c's
+# it uses automatic variables $<: the name of the prerequisite of
+# the rule(a .c file) and $@: the name of the target of the rule (a .o file) 
+# (see the gnu make manual section about automatic variables)
+.c.o:
+	$(CC) $(CFLAGS) $(INCLUDES) -c $<  -o $@
+
+clean:
+	$(RM) *.o *~ $(MAIN) $(MAIN_DEBUG)
+
+depend: $(SRCS)
+	makedepend $(INCLUDES) $^
 
 # # DO NOT DELETE THIS LINE -- make depend needs it
