@@ -25,6 +25,7 @@
  *     * make sure igraph_real_t always behaves nicely
  *     * possibly modify the algorithm to a weight corrected version
  *     * possibly return error codes from igraph_community_bipartite_SBM
+ *     * parallelize on each vertex
  */
 
 
@@ -95,8 +96,7 @@ static igraph_real_t score_partition(Housekeeping *hk){
       igraph_real_t c_b_sum = hk->comm_tot_degree[c_b];
 
       // todo: put in degree correction stuff here. currently hk->degree_correct
-      //log_message("%d, %d, %d\n", (int) inter_community, (int) c_a_sum, (int) c_b_sum);
-      if (!(int) inter_community || !(int) c_a_sum || !(int) c_b_sum) return -INFINITY; // really raise an error.
+      if (!(int) inter_community || !(int) c_a_sum || !(int) c_b_sum) return -INFINITY;
       score += inter_community * log(inter_community / (c_a_sum * c_b_sum));
     }
   }
