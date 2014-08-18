@@ -35,6 +35,7 @@ To write an etl script for a new dataset, follow these steps. We'll pretend our 
 | twitter | Several datasets taken from twitter | **No** | **No** | **No** |
 | scotus | Supreme court case citation network | Yes | Yes | **No** |
 | revolution | Colonial American dissidents club attendence network | Yes | Yes | **No** |
+| malaria | Amino acids in malaria parasite | Yes | Yes | **No** |
 
 ## Resources
 Here are some links with lots of graphs. Most of these sites also point you towards other resources. If you need a graph that we don't provide a script for, these sires are a good place to start looking.
