@@ -14,7 +14,7 @@
 CC = gcc
 
 # # define any compile-time flags
-CFLAGS = -O3 -Wall -pedantic
+CFLAGS = -O3 -g -Wall -pedantic
 CFLAGS_DEBUG = -Wall -g -pedantic
 
 # # define any directories containing header files other than /usr/include

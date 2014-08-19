@@ -44,7 +44,7 @@ bool verbose = true;
  * of a partition.
  */
 typedef struct {
-  // number of type a, number of type b, number of vertices
+  // number of communities of type a, number of communities of type b, number of vertices
   int a, b, size; 
   // community membership list
   int *partition; 
@@ -97,7 +97,7 @@ static igraph_real_t score_partition(Housekeeping *hk){
 
       // todo: put in degree correction stuff here. currently hk->degree_correct
       if (!(int) inter_community || !(int) c_a_sum || !(int) c_b_sum) return -INFINITY;
-      score += inter_community * log(inter_community / (c_a_sum * c_b_sum));
+      score += inter_community * log(inter_community / (c_a_sum * c_b_sum)); // this line takes half the time... implement a cache?
     }
   }
   return score;
