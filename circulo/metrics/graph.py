@@ -59,7 +59,7 @@ def compute_metrics(G, refresh = True):
                 'Density'                       : G.density(),
                 'Degree Statistics'             : __describe(G.degree()),
                 'Diameter'                      : G.diameter(),
-                'Cohesiveness'                  : G.cohesiveness(), 
+                'Cohesiveness'                  : G.cohesiveness(),
                 'Triangle Participation Ratio'  : G.triangle_participation_ratio(),
                 'Transitivity Undirected (Global Clustering Coefficient)'
                                                 : G.transitivity_undirected(),
