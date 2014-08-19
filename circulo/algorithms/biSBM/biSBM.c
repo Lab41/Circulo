@@ -56,10 +56,8 @@ typedef struct {
   igraph_vector_bool_t *types; 
   // a matrix in which cell ab is the number of edges between community a and b
   igraph_matrix_t *inter_comm_edges;
-  igraph_matrix_t *inter_comm_logs;
   // For each community, the sum of the degree of all vertices in the community.
   igraph_real_t *comm_tot_degree; 
-  igraph_real_t *comm_tot_logs;
 } Housekeeping;
 
 
@@ -99,33 +97,12 @@ static igraph_real_t score_partition(Housekeeping *hk){
 
       // todo: put in degree correction stuff here. currently hk->degree_correct
       if (!(int) inter_community || !(int) c_a_sum || !(int) c_b_sum) return -INFINITY;
-
       score += inter_community * log(inter_community / (c_a_sum * c_b_sum)); // this line takes half the time... implement a cache?
-      // igraph_real_t icl = INTERCOMMUNITY(*(hk->inter_comm_logs), c_a, c_b, hk->a);
-      // igraph_real_t c_a_log = hk->comm_tot_logs[c_a];
-      // igraph_real_t c_b_log = hk->comm_tot_logs[c_b];
-      // score += inter_community * (icl - c_a_log - c_b_log);
     }
   }
   return score;
 }
 
-
-static inline void update_inter_comm_log(Housekeeping *hk, int c_1, int c_2){
-  int a = c_1;
-  int b = c_2;
-  if (a > b){
-    a = c_2;
-    b = c_1;
-  }
-  double log_e = log(INTERCOMMUNITY(*(hk->inter_comm_edges), a, b, hk->a));
-  INTERCOMMUNITY(*(hk->inter_comm_logs), a, b, hk->a) = log_e;
-}
-
-
-static inline void update_comm_tot_log(Housekeeping *hk, int c){
-  hk->comm_tot_logs[c] = log(hk->comm_tot_degree[c]);
-}
 
 /**
  * Function: make_swap
@@ -145,9 +122,7 @@ static void make_swap(Housekeeping *hk, int v, int to){
   igraph_vector_t *neighbors = hk->adj_list[v];
   int degree = igraph_vector_size(neighbors);
   hk->comm_tot_degree[from] -= degree;
-  //update_comm_tot_log(hk, from);
   hk->comm_tot_degree[to] += degree;
-  //update_comm_tot_log(hk, to);
   int c_1 = from;
   for (int neigh = 0; neigh < degree; neigh++){
     int neighbor_comm = hk->partition[(int) VECTOR(*neighbors)[neigh]];
@@ -160,10 +135,7 @@ static void make_swap(Housekeeping *hk, int v, int to){
       INTERCOMMUNITY(*(hk->inter_comm_edges), c_2, c_1, hk->a) -= 1;
       INTERCOMMUNITY(*(hk->inter_comm_edges), c_2, to, hk->a) += 1;
     }
-    //update_inter_comm_log(hk, c_1, c_2);
-    //update_inter_comm_log(hk, to, c_2);
   }
-  // update log of (c2, c1), (c1, c2), (to, )
 }
 
 
@@ -438,30 +410,9 @@ static void initialize_degree_sums(Housekeeping *hk){
   igraph_real_t *comm_degree = calloc(hk->a + hk->b, sizeof(igraph_real_t));
   assert(comm_degree != NULL);
   for (int v = 0; v < hk->size; v++){
-    comm_degree[hk->partition[v]] += igraph_vector_size(hk->adj_list[v]);//VECTOR(*deg)[v]; // += 1 for uncorrected.
+    comm_degree[hk->partition[v]] += igraph_vector_size(hk->adj_list[v]); // TODO += 1 for uncorrected.
   }
   hk->comm_tot_degree = comm_degree;
-}
-
-
-
-static void initialize_inter_comm_logs(Housekeeping *hk){
-  igraph_matrix_init(hk->inter_comm_logs, hk->a, hk->b);
-  for (int a = 0; a < hk->a; a++){
-    for (int b = hk->a; b < hk->a + hk->b; b++){
-      update_inter_comm_log(hk, a, b);
-    }
-  }
-}
-
-
-static void initialize_degree_sums_logs(Housekeeping *hk){
-  igraph_real_t *logs = malloc(sizeof(igraph_real_t) * (hk->a + hk->b));
-  assert(logs != NULL);
-  for (int c = 0; c < hk->a + hk->b; c++){
-    logs[c] = log(hk->comm_tot_degree[c]);
-  }
-  hk->comm_tot_logs = logs;
 }
 
 
@@ -479,9 +430,9 @@ static void initialize_housekeeping(Housekeeping *hk, igraph_t *graph, igraph_in
   initialize_partition(hk);
   initialize_neighbors(hk, graph);
   initialize_inter_comm(hk, graph);
-  initialize_inter_comm_logs(hk);
+  //initialize_inter_comm_logs(hk);
   initialize_degree_sums(hk);
-  initialize_degree_sums_logs(hk);
+  //initialize_degree_sums_logs(hk);
 }
 
 
@@ -499,8 +450,8 @@ static void free_housekeeping(Housekeeping *hk){
   free(hk->adj_list);
   igraph_vector_bool_destroy(hk->types);
   igraph_matrix_destroy(hk->inter_comm_edges);
-  igraph_matrix_destroy(hk->inter_comm_logs);
-  free(hk->comm_tot_logs);
+  //igraph_matrix_destroy(hk->inter_comm_logs);
+  //free(hk->comm_tot_logs);
   free(hk->comm_tot_degree);
 }
 
@@ -518,8 +469,8 @@ int igraph_community_bipartite_sbm(igraph_t *graph, igraph_vector_t *membership,
   hk.types = &types;
   igraph_matrix_t inter_comm_edges;
   hk.inter_comm_edges = &inter_comm_edges;
-  igraph_matrix_t inter_comm_logs;
-  hk.inter_comm_logs = &inter_comm_logs;
+  //igraph_matrix_t inter_comm_logs;
+  //hk.inter_comm_logs = &inter_comm_logs;
   hk.degree_correct = degree_correct;
   initialize_housekeeping(&hk, graph, k_a, k_b);
   run_algorithm(&hk, max_iters);
