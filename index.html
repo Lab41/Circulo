@@ -357,7 +357,7 @@
                     <td>Model Based, Divisive</td>
                     <td>O(m^2) on large systems</td>
                     <td/>
-                    <td/>    
+                    <td>None</td>    
                     <td>-d</td>
                     <td>A local algorithm that returns similar results to Girvan Newman betweenness but reduces computational cost by using a local quantitiy--the number of loops of a given length that contains an edge--to choose which edge to remove. </td>
                 </tr>
@@ -400,14 +400,25 @@
                     <td>-w,-d</td>
                     <td>Begins by identifying all cliques of size k in a network.  All cliques are collapsed into single vertex.  Vertices are connected if cliques that they are representing share k-1 members—connected components identify which cliques compose a community. Input value of k must be chosen and typically is between 3 and 6.</td>
                 <tr>
-                    <td>CONGA (Cluster-Overla Newman Girvan Algorithm) [28]</td>
+                    <td>CONGA (Cluster-Overlapping Newman Girvan Algorithm), 2007 [28]</td>
                     <td>Divisive</td>
                     <td>O(m^3)</td>
                     <td>D,G,O</td>
-                    <td/>
+                    <td>None</td>
                     <td>-w,-d</td>
                     <td>CONGA, like Girvan Newman, relies on calculation of betweenness to determine splits, but splits on vertices, rather than edges. The algorithm specifies when and how to split vertices allowing for overlapping membership.</td>
                 </tr>
+                <tr>
+                    <td>CONGO (CONGA Optimized), 2008 [32]</td>
+                    <td>Divisive</td>
+                    <td>O(n log n) Sparse Networks</td>
+                    <td>D,G,O</td>
+                    <td>None</td>
+                    <td>-w,-d</td>
+                    <td>Expands upon the CONGA algorithm by achieving a local form of betweenness.</td>
+                </tr>
+
+
                 <tr>
                     <td>Fuzzy Overlapping Group (FOG) [29]</td>
                     <td>Divisive</td>
@@ -420,11 +431,12 @@
                 <tr>
                     <td>Bipartite Stochastic Block Model (biSBM), 2014 [30]</td>
                     <td>Model Based</td>
-                    <td/>
+                    <td>O(N_aK_a(K_a + k)) + O(N_bK_b(K_b + k))</td>
                     <td/>
                     <td>Matlab</td>
                     <td>w</td>
-                    <td>The degree corrected Bipartite Stochastic Block Model uses probability to search for maximum likelihood partition of a network into communities.  It models a network's observed degree sequence before finding community structure.  It divdes verticies into groups of like types.  These calculations are done iteratively to continually propose movements of vertices that increases the likelihood function</td>
+                    <td>The degree corrected Bipartite Stochastic Block Model uses probability to search for maximum likelihood partition of a network into communities.  It models a network's observed degree sequence before finding community structure.  It divdes verticies into groups of like types.  These calculations are done iteratively to continually propose movements of vertices that increases the likelihood function. In ref to run time, k is avg degree of each node, N_a and N_b or
+                        number of vertices of type a and b, K_a and K_b are number of communities of type a and b</td>
                 </tr>
                 <tr>
                     <td>Spectral Clustering [31]</td>
@@ -544,5 +556,6 @@
             [29] George David and Kathleen Carley, Clearing the FOG: Fuzzy, Overlapping Groups in Social Networks. </a><br>
             [30] Daniel Larremore, Aaron Clauset, and Abigail Jacobs, Efficiently inferring community structure in bipartite networks.</a><<br>
             [31] Ulrike von Luxburg, A Tutorial On Spectral Clustering.</a><br>
+            [32] Steve Gregory, <a href="http://www.cs.bris.ac.uk/publications/Papers/2000885.pdf">A Fast Algorithm to Find Overlapping Communities in Networks</a>, 2008
         </body>
     </html> 
