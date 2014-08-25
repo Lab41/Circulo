@@ -86,17 +86,17 @@ def main():
 
     args = parser.parse_args()
 
-    if 'ALL' in args.algo[0]:
+    if 'ALL' in args.algo:
         algos = ['infomap', 'fastgreedy']
     else:
-        algos = args.algo[0]
+        algos = args.algo
 
 
-    if 'ALL' in args.dataset[0]:
+    if 'ALL' in args.dataset:
         data_choices.remove('ALL')
         datasets = data_choices
     else:
-        datasets = args.dataset[0]
+        datasets = args.dataset
 
     run(algos, datasets, args.output[0], args.samples[0])
 
