@@ -25,7 +25,7 @@ def comm_edge_betweenness(data_mod):
     G = data_mod.get_graph()
     weight_attribute = 'weight' if G.is_weighted() else None
     rv = partial(igraph.Graph.community_edge_betweenness, G, directed=G.is_directed(), weights=weight_attribute)
-    stochastic = False 
+    stochastic = False
     return rv, stochastic
 
 def comm_leading_eigenvector(data_mod):
@@ -50,7 +50,7 @@ def comm_label_propagation(data_mod):
     weight_attribute = 'weight' if G.is_weighted() else None
     rv = partial(igraph.Graph.community_label_propagation, G, weights=weight_attribute)
     stochastic = True
-    return rv,stochastic 
+    return rv,stochastic
 
 def comm_walktrap(data_mod):
     G = data_mod.get_graph()
@@ -68,20 +68,20 @@ def comm_spinglass(data_mod):
 
 def comm_conga(data_mod):
     G = data_mod.get_graph()
-    rv = partial(circulo.algorithms.conga.CONGA, G) 
+    rv = partial(circulo.algorithms.conga.CONGA, G)
     stochastic = False
     return rv,stochastic
 
 def comm_congo(data_mod):
     G = data_mod.get_graph()
-    rv = partial(circulo.algorithms.congo.CONGO, G) 
+    rv = partial(circulo.algorithms.congo.CONGO, G)
     stochastic = False
     return rv,stochastic
 
 def comm_radicchi_strong(data_mod):
     G = data_mod.get_graph()
     rv = partial(circulo.algorithms.radicchi.radicchi,G,'strong')
-    stochastic = False 
+    stochastic = False
     return rv,stochastic
 
 def comm_radicchi_weak(data_mod):
@@ -90,10 +90,10 @@ def comm_radicchi_weak(data_mod):
     stochastic = False
     return rv,stochastic
 
-    
+
 def comm_groundtruth(data_mod):
     G = data_mod.get_graph()
     rv = partial(data_mod.get_ground_truth,G)
-    stochastic = False 
+    stochastic = False
     return rv,stochastic
 

@@ -3,7 +3,7 @@ from igraph import VertexClustering
 import os
 import sys
 import urllib.request
-from circulo.download_utils import download_with_notes
+from circulo.download_utils import download_with_notes, multigraph_to_weights
 
 GRAPH_NAME = "football"
 DOWNLOAD_URL = "http://www-personal.umich.edu/~mejn/netdata/football.zip"
@@ -34,20 +34,23 @@ def get_graph():
     if not os.path.exists(graph_path):
         __download__(data_dir)
         __prepare__(data_dir)
-    else:
-        print(graph_path, "already exists. Using old file.")
 
-    return igraph.load(graph_path)
-
+    G = igraph.load(graph_path)
+    multigraph_to_weights(G)
+    return G
 
 def get_ground_truth(G=None):
     """
-    Returns a VertexClustering object of the 
+    Returns a VertexClustering object of the
     ground truth of the graph G. The ground truth for this
     football data is the conference to which each team belongs.
     """
     if G is None:
         G = get_graph()
+
+    if G is None:
+        print("Unable to get graph")
+        sys.exit(0)
 
     membership = G.vs['value']
     return VertexClustering(G, membership)
