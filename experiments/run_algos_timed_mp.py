@@ -30,12 +30,16 @@ def to_cover(result):
 
 
 #def run_single(algo, dataset, output_dir, iterations):
-def run_single(parameters):
+def run_single(tup):
 
-    algo = parameters[1][0]
-    dataset = parameters[1][1]
-    output_dir = parameters[1][2]
-    iterations = parameters[1][3]
+    dataset_name = tup[0]
+    algo = tup[1]
+    dataset = tup[2]
+    output_dir = tup[3]
+    iterations = tup[4]
+    #algos, dataset, output_dir, iterations)):
+
+    print(tup)
 
     # Get dataset and run cd algorithm
     data_mod = importlib.import_module('data.'+dataset+'.run')
@@ -64,7 +68,7 @@ def run_single(parameters):
         pickle.dump(results, f)
 
     print("Finished", algo, "algorithm with", dataset, "dataset at", datetime.datetime.now())
-    
+
 
 
 def run(algos, datasets, output_dir, iterations):
@@ -73,44 +77,36 @@ def run(algos, datasets, output_dir, iterations):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    mp_data = ()
+    map_inputs = []
     for algo in algos:
         for dataset in datasets:
-            mp_data = mp_data + ([algo + ' - ' + dataset, [algo, dataset, output_dir, iterations]], )
+            map_inputs.append((algo + ' - ' + dataset, algo, dataset, output_dir, iterations))
+
     p = multiprocessing.Pool(2)
-    p.map(run_single, mp_data)
+    p.map(run_single, map_inputs)
     p.close()
     p.join()
 
 def main():
 
     comm_choices = [ a.replace('comm_', '') for a in dir(community) if a.startswith('comm_')]
-    comm_choices.append('ALL')
-    data_choices = ['football', 'congress_voting', 'karate', 'malaria', 'nba_schedule', 'netscience', 'flights', 'ALL']
+    #data_choices = ['football', 'congress_voting', 'karate', 'malaria', 'nba_schedule', 'netscience', 'flights']
+    data_choices = ['football']
 
     # Parse user input
     parser = argparse.ArgumentParser(description='Run community detection on a dataset.')
-    parser.add_argument('dataset', nargs=1,choices=data_choices,help='dataset name. ALL will use all datasets')
-    parser.add_argument('algo', nargs=1,choices=comm_choices,help='Which community detection to run.')
+    parser.add_argument('dataset', nargs=1,choices=['ALL']+data_choices,help='dataset name. ALL will use all datasets')
+    parser.add_argument('algo', nargs=1,choices=['ALL']+comm_choices, help='Which community detection to run.')
     parser.add_argument('--output', type=str, nargs=1, default=[OUTPUT_DIR], help='Base output directory')
     parser.add_argument('--samples', type=int, nargs=1, default=[10], help='Number of samples for stochastic algos')
 
     args = parser.parse_args()
 
-    if 'ALL' in args.algo[0]:
-        algos = ['infomap', 'fastgreedy']
-    else:
-        algos = args.algo[0]
-
-
-    if 'ALL' in args.dataset[0]:
-        data_choices.remove('ALL')
-        datasets = data_choices
-    else:
-        datasets = args.dataset[0]
+    algos = comm_choices if 'ALL' in args.algo else args.algo
+    datasets = data_choices if 'ALL' in args.dataset else args.dataset
 
     overall_start_time = datetime.datetime.now()
-    run(algos, datasets, args.output[0], args.samples[0]) 
+    run(algos, datasets, args.output[0], args.samples[0])
     overall_end_time = datetime.datetime.now()
     print("Time elapsed:", (overall_end_time - overall_start_time))
 

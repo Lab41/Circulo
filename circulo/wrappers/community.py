@@ -1,7 +1,10 @@
 from functools import partial
 import igraph
 import circulo.algorithms
+
 import circulo.algorithms.radicchi
+import circulo.algorithms.conga
+
 
 def comm_infomap(data_mod) :
     G = data_mod.get_graph()

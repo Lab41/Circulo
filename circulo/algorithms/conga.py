@@ -5,19 +5,19 @@ import operator
 import itertools
 import argparse
 from collections import Counter
-import overlap
+import circulo.algorithms.overlap as overlap
 
 # Possible optimizations and notes:
 #   * Calculating the pair betweennesses is the large bottleneck.
-#       * However, calculation of all-pairs-shortest-paths 
+#       * However, calculation of all-pairs-shortest-paths
 #          and pair betweennesses are highly parallelizable.
-#   * Keep a record of splits or merges? 
+#   * Keep a record of splits or merges?
 #       * Right now, we store a lot of redundant information with a new
 #           VertexCover item for every split.
 
 def CONGA(OG, calculate_modularities=None, optimal_count=None):
     """
-    Defines the CONGA algorithm outlined in the Gregory 2007 paper 
+    Defines the CONGA algorithm outlined in the Gregory 2007 paper
     (An Algorithm to Find Overlapping Community Structure in Networks)
 
     Returns a CrispOverlap object of all of the covers.
@@ -42,8 +42,8 @@ def CONGA(OG, calculate_modularities=None, optimal_count=None):
             # short circuit stuff would go here.
             allCovers[nClusters] = cover
     if calculate_modularities is None: calculate_modularities = "lazar"
-    return overlap.CrispOverlap(OG, allCovers,  
-                                    modularity_measure=calculate_modularities, 
+    return overlap.CrispOverlap(OG, allCovers,
+                                    modularity_measure=calculate_modularities,
                                     optimal_count=optimal_count)
 
 
@@ -58,7 +58,7 @@ def remove_edge_or_split_vertex(G):
     eb = G.edge_betweenness()
 
     maxIndex, maxEb = max(enumerate(eb), key=operator.itemgetter(1))
-    # We might be able to calculate vertex betweenness and edge 
+    # We might be able to calculate vertex betweenness and edge
     # betweenness at the same time. The current implementation is slower
     # than the builtin, though.
     vb = G.betweenness()
@@ -71,7 +71,7 @@ def remove_edge_or_split_vertex(G):
 
     if not vi:
         split = delete_edge(G, edge)
-    else: 
+    else:
         pb = pair_betweenness(G, vi)
         maxSplit, vNum, splitInstructions = max_split_betweenness(G, pb)
         if maxSplit > maxEb:
@@ -84,7 +84,7 @@ def remove_edge_or_split_vertex(G):
 def get_cover(G, OG, comm):
     """
     Given the graph, the original graph, and a community
-    membership list, returns a vertex cover of the communities 
+    membership list, returns a vertex cover of the communities
     referring back to the original community.
     """
     coverDict = co.defaultdict(list)
@@ -94,8 +94,8 @@ def get_cover(G, OG, comm):
 
 
 def delete_edge(G, edge):
-    """ 
-    Given a graph G and one of its edges in tuple form, checks if the deletion 
+    """
+    Given a graph G and one of its edges in tuple form, checks if the deletion
     splits the graph.
     """
     G.delete_edges(edge)
@@ -116,17 +116,17 @@ def check_for_split(G, edge):
 def split_vertex(G, v, splitInstructions):
     """
     Splits the vertex v into two new vertices, each with
-    edges depending on s. Returns True if the split 
+    edges depending on s. Returns True if the split
     divided the graph, else False.
     """
     new_index = G.vcount()
     G.add_vertex()
     G.vs[new_index]['CONGA_orig'] = G.vs[v]['CONGA_orig']
-    
+
     # adding all relevant edges to new vertex, deleting from old one.
     for partner in splitInstructions:
         G.add_edge(new_index, partner)
-        G.delete_edges((v, partner)) 
+        G.delete_edges((v, partner))
 
     # check if the two new vertices are disconnected.
     return check_for_split(G, (v, new_index))
@@ -178,9 +178,9 @@ def pair_betweenness(G, relevant):
 
 def create_clique(G, v, pb):
     """
-    Given a vertex and its pair betweennesses, returns a k-clique 
+    Given a vertex and its pair betweennesses, returns a k-clique
     representing all of its neighbors, with edge weights determined by the pair
-    betweenness scores. Algorithm discussed on page 5 of the CONGA paper. 
+    betweenness scores. Algorithm discussed on page 5 of the CONGA paper.
     """
     neighbors = G.neighbors(v)
 
@@ -194,7 +194,7 @@ def create_clique(G, v, pb):
 
     for uw, score in pb.items():
 
-        
+
         clique[mapping[uw[0]], mapping[uw[1]]] = score
         clique[mapping[uw[1]], mapping[uw[0]]] = score
 
@@ -210,11 +210,11 @@ def max_split_betweenness(G, dic):
     Given a dictionary of vertices and their pair betweenness scores, uses the greedy
     algorithm discussed in the CONGA paper to find a (hopefully) near-optimal split.
 
-    Returns a 3-tuple (vMax, vNum, vSpl) where vMax is the max split betweenness, 
-    vNum is the vertex with said split betweenness, and vSpl is a list of which 
+    Returns a 3-tuple (vMax, vNum, vSpl) where vMax is the max split betweenness,
+    vNum is the vertex with said split betweenness, and vSpl is a list of which
     vertices are on each side of the optimal split.
-    """ 
-    vMax = 0   
+    """
+    vMax = 0
     # for every vertex of interest, we want to figure out the maximum score achievable
     # by splitting the vertices in various ways, and return that optimal split
     for v in dic:
@@ -222,7 +222,7 @@ def max_split_betweenness(G, dic):
 
         # initialize a list on how we will map the neighbors to the collapsing matrix
         vMap = [[ve] for ve in G.neighbors(v)]
-        
+
         # we want to keep collapsing the matrix until we have a 2x2 matrix and its
         # score. Then we want to remove index j from our vMap list and concatenate
         # it with the vMap[i]. This begins building a way of keeping track of how
@@ -239,15 +239,15 @@ def max_split_betweenness(G, dic):
 
 def matrix_min(mat):
     """
-    Given a symmetric matrix, find an index of the minimum value 
+    Given a symmetric matrix, find an index of the minimum value
     in the upper triangle (not including the diagonal.)
     """
-    # Currently, this function is unused, as its result is 
+    # Currently, this function is unused, as its result is
     # the same as that of mat_min, and it is not always
     # faster. Left in for reference in case mat_min becomes
-    # a bottleneck. 
+    # a bottleneck.
 
-    # find the minimum from the upper triangular matrix 
+    # find the minimum from the upper triangular matrix
     # (not including the diagonal)
     upperTri = np.triu_indices(mat.shape[0], 1)
     minDex = mat[upperTri].argmin()
@@ -272,7 +272,7 @@ def mat_min(M):
     # take a matrix we pass in, and fill the diagonal with the matrix max. This is
     # so that we don't grab any values from the diag.
     np.fill_diagonal(M, float('inf'))
-    
+
     # figure out the indices of the cell with the lowest value.
     i,j = np.unravel_index(M.argmin(), M.shape)
     np.fill_diagonal(M,0)
@@ -284,16 +284,16 @@ def reduce_matrix(M):
     Given a matrix M, collapses the row and column of the minimum value. This is just
     an adjacency matrix way of implementing the greedy "collapse" discussed in CONGA.
 
-    Returns the new matrix and the collapsed indices. 
+    Returns the new matrix and the collapsed indices.
     """
     i,j = mat_min(M)
     #i, j = matrix_min(M)
     # add the ith row to the jth row and overwrite the ith row with those values
     M[i,:] = M[j,:] + M[i,:]
-    
+
     # delete the jth row
     M = np.delete(M, (j), axis=0)
-    
+
     # similarly with the columns
     M[:,i] = M[:,j] + M[:,i]
     M = np.delete(M, (j), axis=1)
@@ -331,7 +331,7 @@ def run_demo():
 def main():
     parser = argparse.ArgumentParser(description="""Run CONGA from the command line. Mostly meant as a demo -- only prints one cover.""")
     parser.add_argument('-m', '--modularity_measure', choices=['lazar'],
-                   help="""Calculate the modularities using the specified 
+                   help="""Calculate the modularities using the specified
                             modularity measure. Currently only supports lazar.""")
     parser.add_argument('-n', '--num_clusters', type=int, help="""Specify the number of clusters to use.""")
     parser.add_argument('-d', '--demo', action='store_true', help="""Run a demo with the famous Zachary's Karate Club data set. Overrides all other options.""")
