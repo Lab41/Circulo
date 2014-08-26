@@ -1,2 +1,2 @@
 #import circulo.algorithms.conga
-from circulo.algorithms import spectral, min_conductance, radicchi
+from circulo.algorithms import spectral, min_conductance, radicchi, congo

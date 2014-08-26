@@ -52,7 +52,12 @@ def get_ground_truth(G=None):
         print("Unable to get graph")
         sys.exit(0)
 
-    membership = G.vs['value']
+    #by default conferences are identified by a float number
+    float_membership = G.vs['value']
+
+    #we need to convert that to an int
+    membership = [int(conference_id) for conference_id in float_membership]
+
     return VertexClustering(G, membership)
 
 

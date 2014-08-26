@@ -4,12 +4,9 @@ import igraph as ig
 import numpy as np
 import operator
 import logging
-import argparse 
+import argparse
 
 from circulo.algorithms import overlap
-
-
-from profilehooks import profile
 
 
 # TODO:
