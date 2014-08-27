@@ -6,7 +6,7 @@ import pickle
 import argparse
 import os
 import glob
-
+import json
 
 
 def main():
@@ -54,8 +54,10 @@ def analyze_pickle(pickle_file, output_dir):
             "metrics": cover.metrics
             }
 
-        print(d)
-
+        print(os.path.splitext(pickle_file)[0])
+        with open(os.path.join(os.path.splitext(pickle_file)[0]) + ".json", 'w') as outfile:
+            print(outfile)
+            json.dump(d, outfile)
 
 
 
