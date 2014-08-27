@@ -42,7 +42,9 @@ def __prepare__(data_dir, graph_path):
 
     team_dict = {}
 
-    out = open(graph_path, "w")
+    fullpath = os.path.join(data_dir, graph_path)
+
+    out = open(fullpath, "w")
 
     G = igraph.Graph()
 
@@ -84,22 +86,22 @@ def __prepare__(data_dir, graph_path):
                 else:
                     G.add_edge(team0, team1, weight=1)
 
-    G.write_graphml(graph_path)
+    G.write_graphml(fullpath)
 
 
 def get_graph():
 
     data_dir = os.path.join(os.path.dirname(__file__), "data")
     graph_path = "nba.graphml"
+    full_path = os.path.join(data_dir, graph_path)
 
     if not os.path.exists(data_dir):
         __download__(data_dir)
 
-    if not os.path.exists(graph_path):
+    if not os.path.exists(full_path):
         __prepare__(data_dir, graph_path)
 
-    return igraph.load(graph_path)
-
+    return igraph.load(full_path)
 
 def get_ground_truth(G):
 
