@@ -29,29 +29,27 @@ def _unzip(data_dir, filename):
     zip_path = os.path.join(data_dir, filename)
 
     if zipfile.is_zipfile(zip_path):
-
         try:
             z = zipfile.ZipFile(zip_path)
         except zipfile.BadZipFile as e:
             print("ZipFile error: {}".format(e))
             sys.exit(0)
-        print("Unzipping...")
+        print("Extracting from zip...")
         z.extractall(path=data_dir)
 
     else:
-        try:
-            unzip_file = os.path.splitext(zip_path)[0]
+        unzip_file = os.path.splitext(zip_path)[0]
 
-            with gzip.open(zip_path,'rb') as infile:
+        with gzip.open(zip_path,'rb') as infile:
+            try:
                 file_content = infile.read()
+            except OSError as e:
+                print("Neither gzip nor zipfile. No extraction necessary.") 
+                return
 
-                with open(unzip_file, "wb") as f:
-                    f.write(file_content)
-
-        except Exception as e:
-            print("gzip error: {}".format(e))
-            sys.exit(0)
-
+            with open(unzip_file, "wb") as f:
+                print("Extracting from gzip...")
+                f.write(file_content)
 
 def progress(blockNum, blockSize, totSize):
     """
