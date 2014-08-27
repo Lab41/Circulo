@@ -13,6 +13,9 @@ import multiprocessing
 import traceback
 import sys
 import json
+from collections import namedtuple
+
+Worker = namedtuple('Worker', 'label algo graph output_dir iterations')
 
 OUTPUT_DIR = "outputs"
 
@@ -55,46 +58,37 @@ def create_graph_context(G):
             }
 
 
+def run_single(worker):
 
-#def run_single(algo, dataset, output_dir, iterations):
-def run_single(tup):
-
-    vc_name = tup[0]
-    algo = tup[1]
-    G = tup[2]
-    output_dir = tup[3]
-    iterations = tup[4]
-
-    #do stuff to G
-    get_largest_component(G)
-    print(vc_name)
-    cc, stochastic = getattr(community, 'comm_'+algo)(G, create_graph_context(G))
+    get_largest_component(worker.graph)
+    print(worker.label)
+    cc, stochastic = getattr(community, 'comm_'+worker.algo)(worker.graph, create_graph_context(worker.graph))
 
     vc = []
     elapsed = []
 
     try:
 
-        for i in range(iterations*stochastic + 1):
+        for i in range(worker.iterations*stochastic + 1):
             t0 = time.time()
             vc += [to_cover(cc())]
             t_diff = time.time() - t0
             elapsed = [t_diff]
 
     except Exception as e:
-        print("Exception using parameters ",tup,  e)
+        print("Exception using parameters ",worker,  e)
         traceback.print_exc(file=sys.stdout)
         return
     # Save results
     results = {}
-    results['vc_name'] = vc_name
+    results['vc_name'] = worker.label
     results['elapsed'] = elapsed
     results['vc'] = vc
 
-    with open(os.path.join(output_dir, vc_name + '.pickle'), 'wb') as f:
+    with open(os.path.join(worker.output_dir, worker.label + '.pickle'), 'wb') as f:
         pickle.dump(results, f)
 
-    print("Finished", vc_name, "in ", elapsed)
+    print("Finished", worker.label, "in ", elapsed)
 
 
 
@@ -112,14 +106,20 @@ def run(algos, datasets, output_dir, iterations):
         #load the dataset
         data_mod = importlib.import_module('data.'+dataset+'.run')
         G = data_mod.get_graph()
-        G_truth = data_mod.get_ground_truth(G)
 
-        #save the ground truth file for later
-        with open(os.path.join(output_dir, dataset+'.ground_truth'), "w") as f:
-            json.dump(G_truth.membership, f)
+        try:
+            G_truth = data_mod.get_ground_truth(G)
+
+            #save the ground truth file for later
+            with open(os.path.join(output_dir, dataset+'.ground_truth'), "w") as f:
+                json.dump(G_truth.membership, f)
+        except Exception as e:
+            print("Unable to find Ground Truth partition for ", dataset, ": ", e)
+
+
 
         for algo in algos:
-            map_inputs.append((algo + ' - ' + dataset, algo, G, output_dir, iterations))
+            map_inputs.append(Worker(algo + ' - ' + dataset, algo, G, output_dir, iterations))
 
     p = multiprocessing.Pool(10)
     p.map(run_single, map_inputs)
@@ -130,7 +130,6 @@ def main():
 
     comm_choices = [ a.replace('comm_', '') for a in dir(community) if a.startswith('comm_')]
     data_choices = ['football', 'congress_voting', 'karate', 'malaria', 'nba_schedule', 'netscience', 'flights']
-    #data_choices = ['football', 'congress_voting']
 
     # Parse user input
     parser = argparse.ArgumentParser(description='Run community detection on a dataset.')
