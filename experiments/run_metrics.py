@@ -19,6 +19,12 @@ def main():
 
     out_dir = args.output_dir[0]
 
+
+    #first get the ground truth for each of the graphs
+
+
+
+
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
@@ -45,6 +51,10 @@ def analyze_pickle(pickle_file, output_dir):
     print('Calculating cover metrics... ')
     for cover in results['vc']:
         weights = 'weight' if cover.graph.is_weighted() else None
+
+        print("Running metrics against " + results['vc_name'])
+
+        #results are currently stored within the cover object
         cover.compute_metrics(weights=weights)
 
         d = {
@@ -54,17 +64,10 @@ def analyze_pickle(pickle_file, output_dir):
             "metrics": cover.metrics
             }
 
-        print(os.path.splitext(pickle_file)[0])
-        with open(os.path.join(os.path.splitext(pickle_file)[0]) + ".json", 'w') as outfile:
-            print(outfile)
+        output_file = results['vc_name'] + ".json"
+
+        with open(os.path.join(output_dir, output_file), 'w') as outfile:
             json.dump(d, outfile)
-
-
-
-    #Output results to pickle
-    #output = open(args.cover[0], 'wb')
-    #pickle.dump(results, output)
-    #output.close()
 
 
 
