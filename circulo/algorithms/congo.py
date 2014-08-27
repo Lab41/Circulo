@@ -24,8 +24,7 @@ def CONGO(OG, h=2):
     G = OG.copy()
 
     # Just in case the original graph is disconnected
-    comm = G.components()
-    if len(comm) != 1:
+    if not G.is_connected():
         raise RuntimeError("Congo only makes sense for connected graphs.")
 
     # initializing attributes of copied graph

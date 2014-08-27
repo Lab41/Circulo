@@ -39,7 +39,7 @@ def get_largest_component(G):
     """
     components = G.components(mode=igraph.WEAK)
     if len(components) == 1:
-        return
+        return G
     print("This graph is unconnected. Using only largest component.")
     print("Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
     G = G.subgraph(max(components, key=len))
@@ -60,9 +60,10 @@ def create_graph_context(G):
 
 def run_single(worker):
 
-    get_largest_component(worker.graph)
+    G = get_largest_component(worker.graph)
     print(worker.label)
-    cc, stochastic = getattr(community, 'comm_'+worker.algo)(worker.graph, create_graph_context(worker.graph))
+    print(str(G.is_connected(igraph.WEAK)))
+    cc, stochastic = getattr(community, 'comm_'+worker.algo)(G, create_graph_context(G))
 
     vc = []
     elapsed = []
