@@ -12,6 +12,7 @@ import datetime
 import multiprocessing
 import traceback
 import sys
+import json
 
 OUTPUT_DIR = "outputs"
 
@@ -29,22 +30,46 @@ def to_cover(result):
         raise Exception("Algorithm output type not recognized")
     return cover
 
+def get_largest_component(G):
+    """
+    Given a graph, returns the subgraph containing only its largest component".
+    """
+    components = G.components(mode=igraph.WEAK)
+    if len(components) == 1:
+        return
+    print("This graph is unconnected. Using only largest component.")
+    print("Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+    G = G.subgraph(max(components, key=len))
+    print("Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+    return G
+
+def create_graph_context(G):
+    '''
+    weight: if G has edge weights the value will be 'weight', else None
+    directed: if G is directed, return True, else False
+    '''
+
+    return {
+        "weight": 'weight' if G.is_weighted() else None,
+        "directed": G.is_directed()
+            }
+
+
+
 #def run_single(algo, dataset, output_dir, iterations):
 def run_single(tup):
 
-    dataset_name = tup[0]
+    vc_name = tup[0]
     algo = tup[1]
-    dataset = tup[2]
+    G = tup[2]
     output_dir = tup[3]
     iterations = tup[4]
 
-    # Get dataset and run cd algorithm
-    data_mod = importlib.import_module('data.'+dataset+'.run')
+    #do stuff to G
+    get_largest_component(G)
+    print(vc_name)
+    cc, stochastic = getattr(community, 'comm_'+algo)(G, create_graph_context(G))
 
-    # Get community covers
-    cc, stochastic = getattr(community, 'comm_'+algo)(data_mod)
-
-    vc_name = dataset + '-' + algo
     vc = []
     elapsed = []
 
@@ -69,7 +94,7 @@ def run_single(tup):
     with open(os.path.join(output_dir, vc_name + '.pickle'), 'wb') as f:
         pickle.dump(results, f)
 
-    print("Finished", algo, "algorithm with", dataset, "dataset at", datetime.datetime.now())
+    print("Finished", vc_name, "in ", elapsed)
 
 
 
@@ -79,10 +104,22 @@ def run(algos, datasets, output_dir, iterations):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
+
     map_inputs = []
-    for algo in algos:
-        for dataset in datasets:
-            map_inputs.append((algo + ' - ' + dataset, algo, dataset, output_dir, iterations))
+
+    for dataset in datasets:
+
+        #load the dataset
+        data_mod = importlib.import_module('data.'+dataset+'.run')
+        G = data_mod.get_graph()
+        G_truth = data_mod.get_ground_truth(G)
+
+        #save the ground truth file for later
+        with open(os.path.join(output_dir, dataset+'.ground_truth'), "w") as f:
+            json.dump(G_truth.membership, f)
+
+        for algo in algos:
+            map_inputs.append((algo + ' - ' + dataset, algo, G, output_dir, iterations))
 
     p = multiprocessing.Pool(10)
     p.map(run_single, map_inputs)

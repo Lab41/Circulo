@@ -19,12 +19,6 @@ def main():
 
     out_dir = args.output_dir[0]
 
-
-    #first get the ground truth for each of the graphs
-
-
-
-
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
