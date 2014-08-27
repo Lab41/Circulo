@@ -6,8 +6,9 @@ import circulo.algorithms.radicchi
 import circulo.algorithms.conga
 
 
-def comm_infomap(data_mod) :
+def comm_infomap(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     edge_weights = 'weight' if G.is_weighted() else None
     vertex_weights = None
     rv = partial(igraph.Graph.community_infomap, G, edge_weights=edge_weights, vertex_weights=vertex_weights)
@@ -16,6 +17,7 @@ def comm_infomap(data_mod) :
 
 def comm_fastgreedy(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     if G.is_directed():
         print('Graph is directed, converting to undirected')
         G.to_undirected()
@@ -26,6 +28,7 @@ def comm_fastgreedy(data_mod):
 
 def comm_edge_betweenness(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     weight_attribute = 'weight' if G.is_weighted() else None
     rv = partial(igraph.Graph.community_edge_betweenness, G, directed=G.is_directed(), weights=weight_attribute)
     stochastic = False
@@ -33,6 +36,7 @@ def comm_edge_betweenness(data_mod):
 
 def comm_leading_eigenvector(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     weight_attribute = 'weight' if G.is_weighted() else None
     rv = partial(igraph.Graph.community_leading_eigenvector, G, weights=weight_attribute)
     stochastic = True
@@ -40,6 +44,7 @@ def comm_leading_eigenvector(data_mod):
 
 def comm_multilevel(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     if G.is_directed():
         print('Graph is directed, converting to undirected')
         G.to_undirected()
@@ -50,6 +55,7 @@ def comm_multilevel(data_mod):
 
 def comm_label_propagation(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     weight_attribute = 'weight' if G.is_weighted() else None
     rv = partial(igraph.Graph.community_label_propagation, G, weights=weight_attribute)
     stochastic = True
@@ -57,6 +63,7 @@ def comm_label_propagation(data_mod):
 
 def comm_walktrap(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     weight_attribute = 'weight' if G.is_weighted() else None
     rv = partial(igraph.Graph.community_walktrap, G, weights=weight_attribute)
     stochastic = True
@@ -64,6 +71,7 @@ def comm_walktrap(data_mod):
 
 def comm_spinglass(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     weight_attribute = 'weight' if G.is_weighted() else None
     rv = partial(igraph.Graph.community_spinglass, G, weights=weight_attribute)
     stochastic = True
@@ -71,32 +79,50 @@ def comm_spinglass(data_mod):
 
 def comm_conga(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     rv = partial(circulo.algorithms.conga.CONGA, G)
     stochastic = False
     return rv,stochastic
 
 def comm_congo(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     rv = partial(circulo.algorithms.congo.CONGO, G)
     stochastic = False
     return rv,stochastic
 
 def comm_radicchi_strong(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     rv = partial(circulo.algorithms.radicchi.radicchi,G,'strong')
     stochastic = False
     return rv,stochastic
 
 def comm_radicchi_weak(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     rv = partial(circulo.algorithms.radicchi.radicchi,G,'weak')
     stochastic = False
     return rv,stochastic
 
-
 def comm_groundtruth(data_mod):
     G = data_mod.get_graph()
+    get_largest_component(G)
     rv = partial(data_mod.get_ground_truth,G)
     stochastic = False
-    return rv,stochastic
+    return rv,stochasticxs
 
+
+
+def get_largest_component(G):
+    """
+    Given a graph, returns the subgraph containing only its largest component".
+    """
+    components = G.components(mode=igraph.WEAK)
+    if len(components) == 1:
+        return
+    print("This graph is unconnected. Using only largest component.")
+    print("Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+    G = G.subgraph(max(components, key=len))
+    print("Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+    return G

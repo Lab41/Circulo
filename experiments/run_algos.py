@@ -92,8 +92,8 @@ def run(algos, datasets, output_dir, iterations):
 def main():
 
     comm_choices = [ a.replace('comm_', '') for a in dir(community) if a.startswith('comm_')]
-    #data_choices = ['football', 'congress_voting', 'karate', 'malaria', 'nba_schedule', 'netscience', 'flights']
-    data_choices = ['football', 'congress_voting']
+    data_choices = ['football', 'congress_voting', 'karate', 'malaria', 'nba_schedule', 'netscience', 'flights']
+    #data_choices = ['football', 'congress_voting']
 
     # Parse user input
     parser = argparse.ArgumentParser(description='Run community detection on a dataset.')
