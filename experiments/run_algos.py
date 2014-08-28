@@ -15,7 +15,7 @@ import sys
 import json
 from collections import namedtuple
 
-Worker = namedtuple('Worker', 'label algo graph output_dir iterations')
+Worker = namedtuple('Worker', 'dataset algo graph output_dir iterations')
 
 OUTPUT_DIR = "outputs"
 
@@ -60,9 +60,10 @@ def create_graph_context(G):
 
 def run_single(worker):
 
+    job_name = worker.dataset+"_"+worker.algo
+    print("Job initialized: ", job_name)
+
     G = get_largest_component(worker.graph)
-    print(worker.label)
-    print(str(G.is_connected(igraph.WEAK)))
     cc, stochastic = getattr(community, 'comm_'+worker.algo)(G, create_graph_context(G))
 
     vc = []
@@ -80,16 +81,20 @@ def run_single(worker):
         print("Exception using parameters ",worker,  e)
         traceback.print_exc(file=sys.stdout)
         return
-    # Save results
+
+
+    #Save results
     results = {}
-    results['vc_name'] = worker.label
+    results['vc_name'] = job_name
+    results['dataset'] = worker.dataset
+    results['algo'] = worker.algo
     results['elapsed'] = elapsed
     results['vc'] = vc
 
-    with open(os.path.join(worker.output_dir, worker.label + '.pickle'), 'wb') as f:
+    with open(os.path.join(worker.output_dir, job_name + '.pickle'), 'wb') as f:
         pickle.dump(results, f)
 
-    print("Finished", worker.label, "in ", elapsed)
+    print("Finished", job_name, "in ", elapsed)
 
 
 
@@ -98,7 +103,6 @@ def run(algos, datasets, output_dir, iterations):
     #create output directory if it doesn't exist
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-
 
     map_inputs = []
 
@@ -110,7 +114,6 @@ def run(algos, datasets, output_dir, iterations):
 
         try:
             G_truth = data_mod.get_ground_truth(G)
-
             #save the ground truth file for later
             with open(os.path.join(output_dir, dataset+'.ground_truth'), "w") as f:
                 json.dump(G_truth.membership, f)
@@ -120,7 +123,7 @@ def run(algos, datasets, output_dir, iterations):
 
 
         for algo in algos:
-            map_inputs.append(Worker(algo + ' - ' + dataset, algo, G, output_dir, iterations))
+            map_inputs.append(Worker(dataset, algo, G, output_dir, iterations))
 
     p = multiprocessing.Pool(10)
     p.map(run_single, map_inputs)

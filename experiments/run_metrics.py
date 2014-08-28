@@ -7,7 +7,7 @@ import argparse
 import os
 import glob
 import json
-
+from igraph import VertexCover
 
 def main():
     parser = argparse.ArgumentParser(description='Compute metrics for given cover.')
@@ -32,24 +32,38 @@ def main():
             for f in glob.glob(os.path.join(path,'*.pickle')):
                 analyze_pickle(f, out_dir)
         else:
-            print("Found File")
-            continue
+            analyze_pickle(f, out_dir)
 
-
+import circulo.metrics.cover
 
 def analyze_pickle(pickle_file, output_dir):
 
     results = pickle.load(open(pickle_file, 'rb'))
+
+    #see if there is a ground truth file available
+    repo = os.path.dirname(pickle_file)
+    print("Results: ", results)
+    ground_truth = os.path.join(repo, results['dataset']+".ground_truth")
 
     # Compute cover metrics
     print('Calculating cover metrics... ')
     for cover in results['vc']:
         weights = 'weight' if cover.graph.is_weighted() else None
 
+        ground_truth_cover = None
+
+        if(os.path.exists(ground_truth)):
+            with open(ground_truth, "r") as f:
+                truth_membership = json.load(f)
+                ground_truth_cover = VertexCover(cover.graph, truth_membership)
+
+
         print("Running metrics against " + results['vc_name'])
 
         #results are currently stored within the cover object
-        cover.compute_metrics(weights=weights)
+        cover.compute_metrics(weights=weights, ground_truth_cover=ground_truth_cover )
+
+        vc = None
 
         d = {
             "name" : results['vc_name'],

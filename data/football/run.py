@@ -1,5 +1,5 @@
 import igraph
-from igraph import VertexClustering
+from igraph import VertexCover
 import os
 import sys
 import urllib.request
@@ -56,9 +56,8 @@ def get_ground_truth(G=None):
     float_membership = G.vs['value']
 
     #we need to convert that to an int
-    membership = [int(conference_id) for conference_id in float_membership]
-
-    return VertexClustering(G, membership)
+    membership = [[int(conference_id)] for conference_id in float_membership]
+    return VertexCover(G, membership)
 
 
 def main():

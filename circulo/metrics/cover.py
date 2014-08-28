@@ -3,6 +3,7 @@ from igraph import Cover, VertexCover
 from scipy import nansum, nanmax
 import uuid
 import collections
+from circulo.metrics.omega import omega_index
 
 def __get_weight_attr(G, name, weights):
     if isinstance(weights, str):
@@ -189,8 +190,16 @@ def external_edges(cover) :
 
     return array_of_sets
 
-def compute_metrics(cover, weights=None):
-   cover.metrics = {
+
+def compare_omega(cover, comparator):
+    if(cover is None or comparator is None):
+        return None
+
+    score =  omega_index(cover.membership, comparator.membership)
+    return score
+
+def compute_metrics(cover, weights=None, ground_truth_cover=None):
+    cover.metrics = {
             'Fraction over a Median Degree' : fomd(cover, weights),
             'Expansion'                     : expansion(cover, weights),
             'Cut Ratio'                     : cut_ratio(cover),
@@ -202,7 +211,7 @@ def compute_metrics(cover, weights=None):
             'Separability'                  : separability(cover, weights),
             }
 
-   for i in range(len(cover)):
+    for i in range(len(cover)):
         sg = cover.subgraph(i)
         sg.compute_metrics(refresh=False)
         for key in sg.metrics.keys():
@@ -214,11 +223,13 @@ def compute_metrics(cover, weights=None):
                 cover.metrics[key] = []
             cover.metrics[key] += [val]
 
-   cover.metrics_stats = {}
-   for key in cover.metrics:
-       from circulo.metrics.graph import __describe
-       cover.metrics_stats[key] = __describe(cover.metrics[key])
 
+    cover.metrics_stats = {}
+    for key in cover.metrics:
+        from circulo.metrics.graph import __describe
+        cover.metrics_stats[key] = __describe(cover.metrics[key])
+
+    cover.metrics['omega'] = compare_omega(cover, ground_truth_cover)
 
 def print_metrics(cover):
 
@@ -248,6 +259,7 @@ Cover.fraction_over_median_degree = fomd
 VertexCover.metrics = None
 VertexCover.metrics_stats = None
 VertexCover.print_metrics = print_metrics
+VertexCover.compare_omega = compare_omega
 VertexCover.compute_metrics = compute_metrics
 VertexCover.external_edges = external_edges
 VertexCover.expansion = expansion
