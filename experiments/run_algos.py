@@ -60,7 +60,7 @@ def create_graph_context(G):
 
 def run_single(worker):
 
-    job_name = worker.dataset+"_"+worker.algo
+    job_name = worker.dataset+"--"+worker.algo
     print("Job initialized: ", job_name)
 
     G = get_largest_component(worker.graph)
