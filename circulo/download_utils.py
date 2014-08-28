@@ -6,14 +6,17 @@ import sys
 import igraph as ig
 from collections import defaultdict
 
-def download_with_notes(url, filename, data_dir):
+def download_with_notes(url, filename, data_dir, progressbar=True):
     """
     Uses urllib to download data from URL. Saves the results in
     data_dir/FILENAME. Provides basic logging to stdout.
     """
     print("Downloading data from " + url + ".....")
     try:
-        urllib.request.urlretrieve(url, os.path.join(data_dir, filename), progress)
+        if progressbar:
+            urllib.request.urlretrieve(url, os.path.join(data_dir, filename), progress)
+        else:
+            urllib.request.urlretrieve(url, os.path.join(data_dir, filename))
     except Exception as e:
         print("Data download failed -- make sure the url is still valid, and that urllib is properly installed.\n\n")
         raise(e)
