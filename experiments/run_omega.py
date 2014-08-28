@@ -10,8 +10,12 @@ from circulo import metrics
 # output metric
 
 def run_omega(data_name,ground_name):
-    data = pickle.load(open(data_name,'rb'))
-    data_ground = pickle.load(open(ground_name,'rb'))
+    fileData=open(data_name,'rb')
+    fileGround=open(ground_name,'rb')
+    data = pickle.load(fileData)
+    data_ground = pickle.load(fileGround)
+    fileData.close()
+    fileGround.close()
 
     if len(data['vc']) < len(data_ground['vc']):
         x = data
@@ -34,5 +38,4 @@ parser.add_argument('cover_b', nargs=1,
 args = parser.parse_args()
 
 diff = run_omega(args.cover_a[0],args.cover_b[0])
-
 print(diff)
