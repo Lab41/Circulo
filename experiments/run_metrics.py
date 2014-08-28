@@ -42,7 +42,6 @@ def analyze_pickle(pickle_file, output_dir):
 
     #see if there is a ground truth file available
     repo = os.path.dirname(pickle_file)
-    print("Results: ", results)
     ground_truth = os.path.join(repo, results['dataset']+".ground_truth")
 
     # Compute cover metrics
@@ -55,7 +54,14 @@ def analyze_pickle(pickle_file, output_dir):
         if(os.path.exists(ground_truth)):
             with open(ground_truth, "r") as f:
                 truth_membership = json.load(f)
-                ground_truth_cover = VertexCover(cover.graph, truth_membership)
+                cluster_dict = {}
+                for vertex_id, cluster_id_list in enumerate(truth_membership):
+                    for cluster_id in cluster_id_list:
+                        if(cluster_id not in cluster_dict):
+                            cluster_dict[cluster_id] = []
+                        cluster_dict[cluster_id].append(vertex_id)
+
+                ground_truth_cover = VertexCover(cover.graph, [v for v in cluster_dict.values()])
 
 
         print("Running metrics against " + results['vc_name'])

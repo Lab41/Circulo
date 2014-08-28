@@ -55,9 +55,15 @@ def get_ground_truth(G=None):
     #by default conferences are identified by a float number
     float_membership = G.vs['value']
 
-    #we need to convert that to an int
-    membership = [[int(conference_id)] for conference_id in float_membership]
-    return VertexCover(G, membership)
+    conf_map = {}
+    for vertex_id, conference_id in enumerate(G.vs['value']):
+        if conference_id not in conf_map:
+            conf_map[conference_id] = []
+        conf_map[conference_id].append(vertex_id)
+
+    cluster_list = [v for k,v in conf_map.items()]
+
+    return VertexCover(G, cluster_list)
 
 
 def main():
