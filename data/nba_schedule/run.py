@@ -6,7 +6,7 @@ import glob
 from subprocess import call
 
 import igraph
-from igraph import VertexClustering
+from igraph import VertexCover
 
 git_dir = "2013-2014-nba-schedule"
 
@@ -139,9 +139,12 @@ def get_ground_truth(G):
             "sacramento-kings":5
             }
 
-    membership = [ divisions[team_name] for team_name in G.vs['name']]
+    cluster_list = [[],[],[],[],[],[]]
 
-    return VertexClustering(G, membership)
+    for vertex_id, team_name in enumerate(G.vs['name']):
+        cluster_list[divisions[team_name]].append(vertex_id)
+
+    return VertexCover(G, cluster_list)
 
 def main():
     G = get_graph()
