@@ -25,7 +25,7 @@ import operator
 import os
 import shutil
 import igraph
-from igraph import VertexClustering
+from igraph import VertexCover
 from subprocess import call
 
 def __download__(data_dir):
@@ -157,10 +157,12 @@ def __party_to_cluster__(party):
 
 def get_ground_truth(G, options=None):
 
-    membership = [__party_to_cluster__(party) for party in G.vs['party']]
+    cluster_list = [[],[],[]]
 
-    return VertexClustering(G, membership)
+    for vertex_id, party in enumerate(G.vs['party']):
+        cluster_list[__party_to_cluster__(party)].append(vertex_id)
 
+    return VertexCover(G, cluster_list)
 
 
 def main():

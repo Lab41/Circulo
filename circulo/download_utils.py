@@ -44,7 +44,7 @@ def _unzip(data_dir, filename):
             try:
                 file_content = infile.read()
             except OSError as e:
-                print("Neither gzip nor zipfile. No extraction necessary.") 
+                print("Neither gzip nor zipfile. No extraction necessary.")
                 return
 
             with open(unzip_file, "wb") as f:
@@ -75,6 +75,17 @@ def progress(blockNum, blockSize, totSize):
     sys.stdout.write("# ")
     sys.stdout.flush()
 
+
+def membership_to_clustering_list(membership):
+
+    cluster_dict = {}
+
+    for idx, cluster_id in enumerate(membership):
+        if cluster_id not in cluster_dict:
+            cluster_dict[cluster_id] = []
+        cluster_dict[cluster_id].append(idx)
+
+    return [v for v in cluster_dict.values()]
 
 def multigraph_to_weights(G):
     """

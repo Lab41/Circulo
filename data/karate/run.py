@@ -1,5 +1,5 @@
 import igraph
-from igraph import VertexClustering
+from igraph import VertexCover
 import os
 import sys
 import urllib.request
@@ -42,7 +42,7 @@ def get_graph():
 
 def get_ground_truth(G=None):
     """
-    returns a VertexClustering object of the 
+    returns a VertexClustering object of the
     ground truth of the graph G.
     """
     if G is None:
@@ -86,13 +86,17 @@ def get_ground_truth(G=None):
             "34":1,
             }
 
-    membership = [groups[str(int(karatemember))] for karatemember in G.vs['id']]
+    clusters_list = [[],[]]
 
-    return VertexClustering(G, membership)
+    for idx, k_id in enumerate(G.vs['id']):
+        str_lbl = str(int(k_id))
+        clusters_list[groups[str_lbl]].append(idx)
+
+    return VertexCover(G, clusters_list)
 
 def main():
     G = get_graph()
-#    get_ground_truth(G)
+    get_ground_truth(G)
 
 if __name__ == "__main__":
     main()
