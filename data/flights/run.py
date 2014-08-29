@@ -1,5 +1,5 @@
 import igraph
-from igraph import VertexClustering
+from igraph import VertexCover
 import os
 import sys
 import urllib.request
@@ -12,14 +12,14 @@ AIRPORTS_FILENAME = 'airports'
 
 # "name" is really airport id, but is called name because igraph automatically
 # indexes on name.
-AIRPORTS_SCHEMA = {"name": 0, "airport_name": 1, "city": 2, "country": 3, 
-                   "IATA/FAA": 4, "ICAO": 5, "latitude": 6, "longitude": 7, 
+AIRPORTS_SCHEMA = {"name": 0, "airport_name": 1, "city": 2, "country": 3,
+                   "IATA/FAA": 4, "ICAO": 5, "latitude": 6, "longitude": 7,
                    "altitude": 8, "timezone": 9, "DST": 10}
 
 ROUTES_URL = 'https://sourceforge.net/p/openflights/code/HEAD/tree/openflights/data/routes.dat?format=raw'
 ROUTES_FILENAME = 'routes'
-ROUTES_SCHEMA = {"airline": 0, "airline_id": 1, "source_airport": 2, 
-                 "source_id": 3, "dest_airport": 4, "dest_id": 5, 
+ROUTES_SCHEMA = {"airline": 0, "airline_id": 1, "source_airport": 2,
+                 "source_id": 3, "dest_airport": 4, "dest_id": 5,
                  "codeshare": 6, "stops": 7, "equipment": 8}
 
 
@@ -36,7 +36,7 @@ def __download__(data_dir):
 
 def download_with_notes(URL, FILENAME, data_dir):
     """
-    Uses urllib to download data from URL. Saves the results in 
+    Uses urllib to download data from URL. Saves the results in
     data_dir/FILENAME. Provides basic logging to stdout.
     """
     print("Downloading data from " + URL + ".....")
@@ -50,11 +50,11 @@ def download_with_notes(URL, FILENAME, data_dir):
 
 def __prepare__(data_dir):
     """
-    Takes files downloaded by __download__ and converts them into .graphml 
-    format. 
+    Takes files downloaded by __download__ and converts them into .graphml
+    format.
 
     The graph prepared is **directed**, where the vertices are the airports,
-    and there is an edge wherever there is a flight from one airport to 
+    and there is an edge wherever there is a flight from one airport to
     another. Note that an edge a->b does not imply b->a.
     """
     newFileName = os.path.join(data_dir, ROUTES_FILENAME + ".graphml")
@@ -75,9 +75,9 @@ def __prepare__(data_dir):
 
 def initialize_vertices(fileName):
     """
-    Reads a file fileName, that is assumed to conform to AIRPORTS_SCHEMA. 
+    Reads a file fileName, that is assumed to conform to AIRPORTS_SCHEMA.
     Returns a directed igraph.Graph where there is a vertex for each
-    airport, with vertex attributes described in AIRPORTS_SCHEMA.  
+    airport, with vertex attributes described in AIRPORTS_SCHEMA.
     """
     vertices = {}
     for a in AIRPORTS_SCHEMA:
@@ -98,15 +98,15 @@ def initialize_vertices(fileName):
 
 def initialize_edges(G, fileName):
     """
-    Reads a file fileName, that is assumed to conform to ROUTES_SCHEMA. 
+    Reads a file fileName, that is assumed to conform to ROUTES_SCHEMA.
     Adds edges to G such that an edge exists from a to b if there is a
-    flight from a to b. 
+    flight from a to b.
 
-    Notes: 
+    Notes:
         * This creates a multigraph. Routes from different airlines are not
     coalesced.
 
-        * Not all of the routes in routes.dat have records of both airports. 
+        * Not all of the routes in routes.dat have records of both airports.
     These records are skipped.
 
         * Remember, the graph is directed! Call .as_undirected() to pretend as
@@ -157,7 +157,7 @@ def get_graph():
     and the edges are flights. The returned graph is a multigraph, because
     routes from different airlines are not coalesced.
 
-    Note that the "name" attribute is probably not what one would expect. 
+    Note that the "name" attribute is probably not what one would expect.
     It is implemented this way because igraph indexes on "name," but no other
     attributes, and we often need to find the OpenFlights identifier.
 
@@ -166,7 +166,7 @@ def get_graph():
         airport_name: Name of airport. May or may not contain the City name.
         city: Main city served by airport.
         country: Country or territory where airport is located.
-        IATA/FAA: 3-letter FAA code, for airports located in Country "United 
+        IATA/FAA: 3-letter FAA code, for airports located in Country "United
             States of America".
             3-letter IATA code, for all other airports.
             Blank if not assigned.
@@ -179,8 +179,8 @@ def get_graph():
         altitude: In feet.
         timezone: Hours offset from UTC. Fractional hours are expressed as
             decimals, eg. India is 5.5.
-        DST: Daylight savings time. One of E (Europe), A (US/Canada), 
-            S (South America), O (Australia), Z (New Zealand), N (None) or 
+        DST: Daylight savings time. One of E (Europe), A (US/Canada),
+            S (South America), O (Australia), Z (New Zealand), N (None) or
             U (Unknown).
 
     Each edge has the following attributes:
@@ -218,29 +218,23 @@ def get_graph():
 def get_ground_truth(G=None, attr='country'):
     """
     Ground Truth is hard to define for the flight info. This Ground
-    Truth simply clusters the nodes by country. Another possibility 
-    would be DST, which is essentially continents, or timezone. Returns a 
+    Truth simply clusters the nodes by country. Another possibility
+    would be DST, which is essentially continents, or timezone. Returns a
     VertexClustering object.
     """
     if G is None:
         G = get_graph()
 
-    # initialize a dict of the form {a: none}
-    # where a is an option that appears in g.vs[attr]
-    categories = dict.fromkeys(G.vs[attr])
+    cluster_dict = {}
 
-    # Let each key of the dict refer to its own community.
-    counter = 0
-    for i in categories:
-        categories[i] = counter
-        counter += 1
+    for airport_id, airport_location in enumerate(G.vs[attr]):
+        if airport_location not in cluster_dict:
+            cluster_dict[airport_location] = []
+        cluster_dict[airport_location].append(airport_id)
 
-    # creates a membership list of vertices of the form 
-    # [x_0, x_1, x_2...] where x_i is the number of the 
-    # category that vertex i belongs to.
-    membership = [categories[v[attr]] for v in G.vs]
+    cluster_list = [v for v in cluster_dict.values()]
 
-    return VertexClustering(G, membership)
+    return VertexCover(G, cluster_list)
 
 
 
