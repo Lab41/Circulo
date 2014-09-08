@@ -8,12 +8,19 @@ from circulo.wrappers import community
 import argparse
 import os
 from circulo.algorithms.overlap import CrispOverlap
+import circulo.utils.stochastic_selector as selector
 import datetime
 import multiprocessing
 import traceback
 import sys
 import json
 from collections import namedtuple
+from scipy.cluster.hierarchy import average,fcluster
+from sklearn import metrics as skmetrics
+from scipy.spatial.distance import squareform
+from scipy.cluster.hierarchy import average,fcluster
+
+
 
 Worker = namedtuple('Worker', 'dataset algo graph output_dir iterations')
 
@@ -46,6 +53,8 @@ def get_largest_component(G):
     print("Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
     return G
 
+
+
 def create_graph_context(G):
     '''
     weight: if G has edge weights the value will be 'weight', else None
@@ -71,11 +80,11 @@ def run_single(worker):
 
     try:
 
-        for i in range(worker.iterations*stochastic + 1):
+        for i in range(worker.iterations*stochastic + (1 - stochastic)):
             t0 = time.time()
             vc += [to_cover(cc())]
             t_diff = time.time() - t0
-            elapsed = [t_diff]
+            elapsed += [t_diff]
 
     except Exception as e:
         print("Exception using parameters ",worker,  e)
@@ -83,14 +92,26 @@ def run_single(worker):
         return
 
 
+    if(stochastic > 0):
+        idx = selector.select(vc)
+        primary_vc = vc[idx]
+        primary_elapsed = elapsed[idx]
+    else:
+        primary_vc = vc[0]
+        primary_elapsed = elapsed[0]
+
     #Save results
     results = {}
     results['vc_name'] = job_name
     results['dataset'] = worker.dataset
     results['algo'] = worker.algo
-    results['elapsed'] = elapsed
-    results['vc'] = vc
+    results['elapsed'] = primary_elapsed
+    results['vc'] = primary_vc
 
+
+    #write out the pickle version
+    #TODO: Serialize to json to allow non-python clients analyze results. This would require graph serialization, which
+    #I don't want to do right now
     with open(os.path.join(worker.output_dir, job_name + '.pickle'), 'wb') as f:
         pickle.dump(results, f)
 
@@ -115,7 +136,7 @@ def run(algos, datasets, output_dir, iterations):
         try:
             G_truth = data_mod.get_ground_truth(G)
             #save the ground truth file for later
-            with open(os.path.join(output_dir, dataset+'.ground_truth'), "w") as f:
+            with open(os.path.join(output_dir, dataset+'__ground_truth.json'), "w") as f:
                 json.dump(G_truth.membership, f)
         except Exception as e:
             print("Unable to find Ground Truth partition for ", dataset, ": ", e)
@@ -132,6 +153,8 @@ def run(algos, datasets, output_dir, iterations):
 
 def main():
 
+    STOCHASTIC_REPETITIONS = 5
+
     comm_choices = [ a.replace('comm_', '') for a in dir(community) if a.startswith('comm_')]
     data_choices = ['football', 'congress_voting', 'karate', 'malaria', 'nba_schedule', 'netscience', 'flights']
 
@@ -140,7 +163,6 @@ def main():
     parser.add_argument('dataset', nargs=1,choices=['ALL']+data_choices,help='dataset name. ALL will use all datasets')
     parser.add_argument('algo', nargs=1,choices=['ALL']+comm_choices, help='Which community detection to run.')
     parser.add_argument('--output', type=str, nargs=1, default=[OUTPUT_DIR], help='Base output directory')
-    parser.add_argument('--samples', type=int, nargs=1, default=[10], help='Number of samples for stochastic algos')
 
     args = parser.parse_args()
 
@@ -148,7 +170,7 @@ def main():
     datasets = data_choices if 'ALL' in args.dataset else args.dataset
 
     overall_start_time = datetime.datetime.now()
-    run(algos, datasets, args.output[0], args.samples[0])
+    run(algos, datasets, args.output[0], STOCHASTIC_REPETITIONS)
     overall_end_time = datetime.datetime.now()
     print("Time elapsed:", (overall_end_time - overall_start_time))
 
