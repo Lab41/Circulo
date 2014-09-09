@@ -98,7 +98,7 @@ def setup(G):
         snap_home = os.environ[ENV_SNAPPATH_VAR]
     except KeyError as e:
         print("Be sure to set your snap base path in the environment variable \"{}\"".format(ENV_SNAPPATH_VAR))
-        sys.exit(0)
+        return None, None
 
     f = tempfile.mkstemp()
     filename = f[1]

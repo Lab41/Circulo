@@ -2,10 +2,6 @@ from functools import partial
 import igraph
 import circulo.algorithms
 
-import circulo.algorithms.radicchi
-import circulo.algorithms.conga
-
-
 def ensure_undirected(G, ctx):
     if ctx['directed']:
         print('Graph is directed, converting to undirected')
@@ -52,3 +48,11 @@ def comm_radicchi_strong(G, ctx):
 def comm_radicchi_weak(G, ctx):
     return partial(circulo.algorithms.radicchi.radicchi,G,'weak'), False
 
+def comm_bigclam(G, ctx):
+    return partial(circulo.algorithms.snap_bigclam.bigclam, ensure_undirected(G, ctx)), True
+
+def comm_coda(G, ctx):
+    return partial(circulo.algorithms.snap_coda.coda, G), True
+
+def comm_clauset_newman_moore(G, ctx):
+    return partial(circulo.algorithms.snap_cnm.clauset_newman_moore, G), True

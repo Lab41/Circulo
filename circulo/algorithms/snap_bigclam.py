@@ -27,7 +27,7 @@ def bigclam(G, data_prefix='snap_', node_filepath='', detect_comm=100, min_comm=
 
 
     if graph_file is None:
-        return
+        return None
 
     path_bigclam = os.path.join(snap_home, "examples", "bigclam", "bigclam")
 
