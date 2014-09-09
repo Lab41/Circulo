@@ -3,7 +3,7 @@ from igraph import VertexCover
 import os
 import sys
 import urllib.request
-from circulo.download_utils import download_with_notes
+from circulo.utils.downloader import download_with_notes
 
 
 GRAPH_NAME = 'karate'

@@ -3,7 +3,7 @@ from igraph import VertexClustering
 import os
 import sys
 import urllib.request
-from circulo.download_utils import download_with_notes
+from circulo.utils.downloader import download_with_notes
 
 
 GRAPH_NAME = 'netscience'
@@ -43,7 +43,7 @@ def get_graph():
 
 def get_ground_truth(G=None):
     """
-    Returns a VertexClustering object of the 
+    Returns a VertexClustering object of the
     ground truth of the graph G.
     """
     raise(NotImplementedError)

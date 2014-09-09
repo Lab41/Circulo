@@ -208,7 +208,7 @@ def get_graph():
     else:
         print(graph_path, "already exists. Using old file.")
 
-    from circulo.download_utils import multigraph_to_weights
+    from circulo.utils.downloader import multigraph_to_weights
     G = igraph.load(graph_path)
     multigraph_to_weights(G)
 
