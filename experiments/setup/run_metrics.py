@@ -8,81 +8,83 @@ import os
 import glob
 import json
 from igraph import VertexCover
+import importlib
+import circulo.metrics.cover
+
 
 def main():
     parser = argparse.ArgumentParser(description='Compute metrics for given cover.')
-    parser.add_argument('path', type=str, nargs=1,
-                              help='pickle file or directory containing pickles for first cover')
-    parser.add_argument('output_dir', type=str, default=['metrics_output'], nargs=1, help='Output directory for metrics')
 
+    parser.add_argument('input_path', type=str, help='file or directory containing results')
+    parser.add_argument('output_path', type=str, default='metrics_output', help='Output directory for metrics')
     args = parser.parse_args()
 
-    out_dir = args.output_dir[0]
+    if not os.path.exists(args.input_path):
+        print("Path \"{}\" does not exist".format(args.input_path))
+        return
 
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
+    if not os.path.exists(args.output_path):
+        os.makedirs(args.output_path)
 
-    for path in args.path:
-
-        if not os.path.exists(path):
-            print("Path \"{}\" does not exist".format(path))
-            continue
-
-        if os.path.isdir(path):
-            for f in glob.glob(os.path.join(path,'*.pickle')):
-                analyze_pickle(f, out_dir)
-        else:
-            analyze_pickle(f, out_dir)
-
-import circulo.metrics.cover
-
-def analyze_pickle(pickle_file, output_dir):
-
-    results = pickle.load(open(pickle_file, 'rb'))
-
-    #see if there is a ground truth file available
-    repo = os.path.dirname(pickle_file)
-    ground_truth = os.path.join(repo, results['dataset']+".ground_truth")
-
-    # Compute cover metrics
-    print('Calculating cover metrics... ')
-    for cover in results['vc']:
-        weights = 'weight' if cover.graph.is_weighted() else None
-
-        ground_truth_cover = None
-
-        if(os.path.exists(ground_truth)):
-            with open(ground_truth, "r") as f:
-                truth_membership = json.load(f)
-                cluster_dict = {}
-                for vertex_id, cluster_id_list in enumerate(truth_membership):
-                    for cluster_id in cluster_id_list:
-                        if(cluster_id not in cluster_dict):
-                            cluster_dict[cluster_id] = []
-                        cluster_dict[cluster_id].append(vertex_id)
-
-                ground_truth_cover = VertexCover(cover.graph, [v for v in cluster_dict.values()])
+    if os.path.isdir(args.input_path):
+        for f in glob.glob(os.path.join(args.input_path, '*.json')):
+            analyze_json(f, args.output_path)
+    else:
+        analyze_json(f, args.output_path)
 
 
-        print("Running metrics against " + results['vc_name'])
+def analyze_json(json_path, output_path):
 
-        #results are currently stored within the cover object
-        cover.compute_metrics(weights=weights, ground_truth_cover=ground_truth_cover )
+    data = None
 
-        vc = None
+    with open(json_path) as f:
+        data = json.load(f)
 
-        d = {
-            "name" : results['vc_name'],
-            "elapsed" :results['elapsed'],
-            "membership" : cover.membership,
-            "metrics": cover.metrics
-            }
+    if(data is None):
+        return
 
-        output_file = results['vc_name'] + ".json"
+    #load the graph and ground truth in
+    data_mod =  importlib.import_module('data.'+data['dataset']+'.run')
+    G = data_mod.get_graph()
 
-        with open(os.path.join(output_dir, output_file), 'w') as outfile:
-            json.dump(d, outfile)
+    weights = 'weight' if G.is_weighted() else None
 
+    ground_truth_cover = cover_from_membership( data_mod.get_ground_truth(G).membership, G)
+    results_cover = cover_from_membership(data['membership'], G)
+
+    print("Running metrics against " + data['job_name'])
+
+    #results are currently stored within the cover object
+    results_cover.compute_metrics(weights=weights, ground_truth_cover=ground_truth_cover )
+
+    out_dict = {
+        "name" : data['job_name'],
+        "elapsed" :data['elapsed'],
+        "membership" : data['membership'],
+        "metrics": results_cover.metrics
+        }
+
+    output_file = data['job_name'] + ".json"
+
+    with open(os.path.join(output_path, output_file), 'w') as outfile:
+        json.dump(out_dict, outfile)
+
+
+
+def cover_from_membership(membership, G):
+
+    if(membership is None):
+        return None
+
+    cluster_dict = {}
+
+    for vertex_id, cluster_id_list in enumerate(membership):
+        for cluster_id in cluster_id_list:
+            if(cluster_id not in cluster_dict):
+                cluster_dict[cluster_id] = []
+            cluster_dict[cluster_id].append(vertex_id)
+
+    return VertexCover(G, [v for v in cluster_dict.values()])
 
 
 if __name__ == "__main__":
