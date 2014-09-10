@@ -11,5 +11,6 @@ RUN CFLAGS='-Wno-error=declaration-after-statement' pip3 install numpy scipy sci
 ADD . /Circulo
 WORKDIR /Circulo
 RUN CFLAGS='-Wno-error=declaration-after-statement' pip3 install -r requirements.txt
+RUN export PYTHONPATH='/Circulo':$PYTHONPATH
 
 CMD /bin/bash
