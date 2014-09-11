@@ -5,7 +5,10 @@ import operator
 import itertools
 import argparse
 from collections import Counter
-import circulo.algorithms.overlap as overlap
+
+
+import circulo.algorithms.overlap
+
 
 # Possible optimizations and notes:
 #   * Calculating the pair betweennesses is the large bottleneck.
@@ -15,7 +18,7 @@ import circulo.algorithms.overlap as overlap
 #       * Right now, we store a lot of redundant information with a new
 #           VertexCover item for every split.
 
-def CONGA(OG, calculate_modularities=None, optimal_count=None):
+def conga(OG, calculate_modularities=None, optimal_count=None):
     """
     Defines the CONGA algorithm outlined in the Gregory 2007 paper
     (An Algorithm to Find Overlapping Community Structure in Networks)
@@ -42,7 +45,7 @@ def CONGA(OG, calculate_modularities=None, optimal_count=None):
             # short circuit stuff would go here.
             allCovers[nClusters] = cover
     if calculate_modularities is None: calculate_modularities = "lazar"
-    return overlap.CrispOverlap(OG, allCovers,
+    return circulo.algorithms.overlap.CrispOverlap(OG, allCovers,
                                     modularity_measure=calculate_modularities,
                                     optimal_count=optimal_count)
 
@@ -324,7 +327,7 @@ def run_demo():
     Lazar's measure of modularity. Finally, pretty-prints the optimal cover.
     """
     G = ig.Graph().Famous("Zachary").as_undirected()
-    result = CONGA(G, calculate_modularities="lazar")
+    result = conga(G, calculate_modularities="lazar")
     result.pretty_print_cover(result.optimal_count, label='CONGA_index')
 
 
@@ -345,13 +348,13 @@ def main():
         run_demo()
         return
     if not args.file:
-        print("CONGA.py: error: no file specified.\n")
+        print("conga.py: error: no file specified.\n")
         print(parser.parse_args('-h'.split()))
         return
 
     # only works for undirected
     G = ig.read(args.file).as_undirected()
-    result = CONGA(G, calculate_modularities=args.modularity_measure, optimal_count=args.num_clusters)
+    result = conga(G, calculate_modularities=args.modularity_measure, optimal_count=args.num_clusters)
     result.pretty_print_cover(result.optimal_count, label=args.label)
 
 

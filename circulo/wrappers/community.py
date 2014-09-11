@@ -50,10 +50,10 @@ def comm_spinglass(ctx):
     return partial(igraph.Graph.community_spinglass, ctx['graph'], weights=ctx['weight'])
 
 def comm_conga(ctx):
-    return partial(circulo.algorithms.conga.CONGA, ensure_undirected(ctx))
+    return partial(circulo.algorithms.conga.conga, ensure_undirected(ctx))
 
 def comm_congo(ctx):
-    return  partial(circulo.algorithms.congo.CONGO, ensure_undirected(ctx))
+    return  partial(circulo.algorithms.congo.congo, ensure_undirected(ctx))
 
 def comm_radicchi_strong(ctx):
     return partial(circulo.algorithms.radicchi.radicchi,ctx['graph'],'strong')

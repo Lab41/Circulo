@@ -12,7 +12,7 @@ from circulo.algorithms import overlap
 # TODO:
 #    * only call fix_betweennesses when needed
 
-def CONGO(OG, h=2):
+def congo(OG, h=2):
     """
     Provides an Implementation of the CONGO algorithm defined by Steve Gregory
     in his 2010 paper "A Fast Algorithm to Find Overlapping Communities in Networks."
@@ -437,7 +437,7 @@ def run_demo():
     Lazar's measure of modularity with h=3. Finally, pretty-prints the optimal cover.
     """
     G = ig.Graph().Famous("Zachary").as_undirected()
-    result = CONGO(G, 3)
+    result = congo(G, 3)
     result.pretty_print_cover(result.optimal_count, label='CONGA_index')
 
 
@@ -461,7 +461,7 @@ def main():
 
     # only works for undirected
     G = ig.read(args.file).as_undirected()
-    result = CONGO(G, args.height)
+    result = congo(G, args.height)
     if args.num_clusters:
         result.pretty_print_cover(args.num_clusters, label=args.label)
     else:
