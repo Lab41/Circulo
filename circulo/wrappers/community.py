@@ -38,7 +38,7 @@ def comm_leading_eigenvector(ctx):
     return partial(igraph.Graph.community_leading_eigenvector, ctx['graph'], weights=ctx['weight'])
 
 def comm_multilevel(ctx):
-    return partial(igraph.Graph.community_multilevel, ensure_undirected(ctx['graph'], ctx),  weights=ctx['weight'])
+    return partial(igraph.Graph.community_multilevel, ensure_undirected(ctx),  weights=ctx['weight'])
 
 def comm_label_propagation(ctx):
     return partial(igraph.Graph.community_label_propagation, ctx['graph'], weights=ctx['weight'])
