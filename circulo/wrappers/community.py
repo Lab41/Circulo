@@ -2,11 +2,16 @@ from functools import partial
 import igraph
 import circulo.algorithms
 
-def ensure_undirected(ctx):
+def ensure_undirected(ctx, descript):
+    '''
+        Converting a directed, and potentially multigraph, graph to an undirected graph, can result in a loss of
+        precision; therefore, you must be careful when doing conversion. For now we have to make certain assumptions about
+        how certain edge attributes are combined.  We are currently summing the weights of mulitgraphs and multiple directed edges
+    '''
     if ctx['directed']:
-        print('Graph is directed, converting to undirected')
+        print('\t[Info - ',descript,'] Converting graph to undirected (summing edge weights), since algo requires undirected')
         G_copy = ctx['graph'].copy()
-        G_copy.to_undirected()
+        G_copy.to_undirected(combine_edges={'weight':sum})
     else:
         G_copy = ctx['graph']
 
@@ -25,47 +30,47 @@ stochastic_algos = {
         "clauset_newman_moore"
         }
 
-def comm_infomap(ctx):
+def comm_infomap(ctx, descript):
     return partial(igraph.Graph.community_infomap, ctx['graph'], edge_weights=ctx['weight'], vertex_weights=None)
 
-def comm_fastgreedy(ctx):
-    return partial(igraph.Graph.community_fastgreedy, ensure_undirected(ctx), weights=ctx['weight'])
+def comm_fastgreedy(ctx, descript):
+    return partial(igraph.Graph.community_fastgreedy, ensure_undirected(ctx, descript), weights=ctx['weight'])
 
-def comm_edge_betweenness(ctx):
+def comm_edge_betweenness(ctx, descript):
     return partial(igraph.Graph.community_edge_betweenness, ctx['graph'], ctx['directed'], weights=ctx['weight'])
 
-def comm_leading_eigenvector(ctx):
+def comm_leading_eigenvector(ctx, descript):
     return partial(igraph.Graph.community_leading_eigenvector, ctx['graph'], weights=ctx['weight'])
 
-def comm_multilevel(ctx):
-    return partial(igraph.Graph.community_multilevel, ensure_undirected(ctx),  weights=ctx['weight'])
+def comm_multilevel(ctx, descript):
+    return partial(igraph.Graph.community_multilevel, ensure_undirected(ctx, descript),  weights=ctx['weight'])
 
-def comm_label_propagation(ctx):
+def comm_label_propagation(ctx, descript):
     return partial(igraph.Graph.community_label_propagation, ctx['graph'], weights=ctx['weight'])
 
-def comm_walktrap(ctx):
+def comm_walktrap(ctx, descript):
     return partial(igraph.Graph.community_walktrap, ctx['graph'], weights=ctx['weight'])
 
-def comm_spinglass(ctx):
+def comm_spinglass(ctx, descript):
     return partial(igraph.Graph.community_spinglass, ctx['graph'], weights=ctx['weight'])
 
-def comm_conga(ctx):
-    return partial(circulo.algorithms.conga.conga, ensure_undirected(ctx))
+def comm_conga(ctx, descript):
+    return partial(circulo.algorithms.conga.conga, ensure_undirected(ctx, descript))
 
-def comm_congo(ctx):
-    return  partial(circulo.algorithms.congo.congo, ensure_undirected(ctx))
+def comm_congo(ctx, descript):
+    return  partial(circulo.algorithms.congo.congo, ensure_undirected(ctx, descript))
 
-def comm_radicchi_strong(ctx):
+def comm_radicchi_strong(ctx, descript):
     return partial(circulo.algorithms.radicchi.radicchi,ctx['graph'],'strong')
 
-def comm_radicchi_weak(ctx):
+def comm_radicchi_weak(ctx, descript):
     return partial(circulo.algorithms.radicchi.radicchi,ctx['graph'],'weak')
 
-def comm_bigclam(ctx):
-    return partial(circulo.algorithms.snap_bigclam.bigclam, ensure_undirected(ctx))
+def comm_bigclam(ctx, descript):
+    return partial(circulo.algorithms.snap_bigclam.bigclam, ensure_undirected(ctx, descript))
 
-def comm_coda(ctx):
+def comm_coda(ctx, descript):
     return partial(circulo.algorithms.snap_coda.coda, ctx['graph'])
 
-def comm_clauset_newman_moore(ctx):
+def comm_clauset_newman_moore(ctx, descript):
     return partial(circulo.algorithms.snap_cnm.clauset_newman_moore, ctx['graph'])

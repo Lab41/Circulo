@@ -205,8 +205,6 @@ def get_graph():
     if not os.path.exists(graph_path):
         __download__(data_dir)
         __prepare__(data_dir)
-    else:
-        print(graph_path, "already exists. Using old file.")
 
     from circulo.utils.downloader import multigraph_to_weights
     G = igraph.load(graph_path)

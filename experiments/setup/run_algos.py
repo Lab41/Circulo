@@ -41,17 +41,17 @@ def to_cover(result):
         raise Exception("Algorithm output type not recognized")
     return cover
 
-def get_largest_component(G):
+def get_largest_component(G, descript="not specified"):
     """
     Given a graph, returns the subgraph containing only its largest component".
     """
     components = G.components(mode=igraph.WEAK)
     if len(components) == 1:
         return G
-    print("This graph is unconnected. Using only largest component.")
-    print("Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+    print("[Graph Prep -",descript,"]... Disconnected Graph Detected. Using largest component.")
+    print("[Graph Prep -",descript,"]... Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
     G = G.subgraph(max(components, key=len))
-    print("Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+    print("[Graph Prep -",descript,"]... Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
     return G
 
 
@@ -72,11 +72,11 @@ def create_graph_context(G):
 
 def run_single(worker):
 
-    print("Processing: ", worker)
+    print("#### Processing: ", worker.job_name)
 
     t0 = time.time()
 
-    func = getattr(community, 'comm_'+worker.algo)(worker.ctx)
+    func = getattr(community, 'comm_'+worker.algo)(worker.ctx, worker.job_name)
 
     try:
         r = func()
@@ -103,7 +103,7 @@ def run_single(worker):
     with open(os.path.join(worker.out_dir, "pickle",worker.job_name + '.pickle'), 'wb') as f:
         pickle.dump(results, f)
 
-    print("Finished", worker.job_name, "in ", results['elapsed'])
+    print("\t[Info - ", worker.job_name,"] Finished in ", results['elapsed'])
 
 
 
@@ -132,6 +132,8 @@ def run(algos, datasets, output_dir, iterations):
 
         #load the dataset
         data_mod = importlib.import_module('data.'+dataset+'.run')
+
+        print("[Graph Prep -",dataset,"]... Initiated")
         G = data_mod.get_graph()
 
         try:
@@ -148,16 +150,18 @@ def run(algos, datasets, output_dir, iterations):
         except Exception as e:
             print("Unable to find Ground Truth partition for ", dataset, ": ", e)
 
-        G = get_largest_component(G)
+
+        G = get_largest_component(G, dataset)
+        #keep this out of the loop just in case the operations in it take a long time. The graph context should rarely change
         ctx = create_graph_context(G)
 
         for algo in algos:
 
             iterations = 1 if algo not in stochastic_algos else iterations
 
-
             for i in range(iterations):
-                map_inputs.append(Worker(dataset+"--"+algo+"--"+str(i), algo, dataset, output_dir, i, ctx))
+                job_name = dataset+"--"+algo+"--"+str(i)
+                map_inputs.append(Worker(job_name, algo, dataset, output_dir, i, ctx))
 
     p = multiprocessing.Pool(10)
     p.map(run_single, map_inputs)
@@ -166,7 +170,7 @@ def run(algos, datasets, output_dir, iterations):
 
 def main():
 
-    STOCHASTIC_REPETITIONS = 5
+    DEFAULT_STOCHASTIC_REPETITIONS = 1
 
     comm_choices = [ a.replace('comm_', '') for a in dir(community) if a.startswith('comm_')]
     data_choices = ['football', 'flights', 'congress_voting', 'karate', 'malaria', 'nba_schedule', 'netscience']
@@ -176,7 +180,7 @@ def main():
     parser.add_argument('dataset', nargs=1,choices=['ALL']+data_choices,help='dataset name. ALL will use all datasets')
     parser.add_argument('algo', nargs=1,choices=['ALL']+comm_choices, help='Which community detection to run.')
     parser.add_argument('--output', type=str, nargs=1, default=[OUTPUT_DIR], help='Base output directory')
-    parser.add_argument('--samples', type=int, default=STOCHASTIC_REPETITIONS, help='Number of times to run stochastic algos')
+    parser.add_argument('--samples', type=int, default=DEFAULT_STOCHASTIC_REPETITIONS, help='Number of times to run stochastic algos')
     args = parser.parse_args()
 
     algos = comm_choices if 'ALL' in args.algo else args.algo
