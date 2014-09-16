@@ -5,7 +5,7 @@ import gzip
 import pickle
 import shutil
 import sys
-from circulo.download_utils import download_with_notes, _unzip
+from circulo.utils.downloader import download_with_notes, _unzip
 
 ## First pass at downloading SNAP data.
 # 1. SNAP uses gzip for compression

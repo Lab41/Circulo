@@ -4,7 +4,7 @@ import os
 import sys
 import urllib.request
 import csv
-from circulo.download_utils import download_with_notes
+from circulo.utils.downloader import download_with_notes
 
 DATA_DOWNLOAD_URL = 'http://jhfowler.ucsd.edu/data/judicial.csv'
 VERTEX_DATA_FILE = 'SCOTUS_DATA.csv'
@@ -72,7 +72,7 @@ def get_graph():
 
 def get_ground_truth(G=None):
     """
-    TEMPLATE COMMENT: returns a VertexClustering object of the 
+    TEMPLATE COMMENT: returns a VertexClustering object of the
     ground truth of the graph G.
     """
     raise(NotImplementedError)

@@ -1,7 +1,7 @@
 import networkx as nx
 from subprocess import call
 import igraph
-from igraph import VertexClustering
+from igraph import VertexCover
 import os
 import sys
 import glob
@@ -72,18 +72,24 @@ def get_ground_truth(G=None):
         G = get_graph()
 
 
+
     class_list = G.vs['classname']
+
     class_dict = dict.fromkeys(class_list)
 
     #set the indices for lookup purposes. These will be the cluster ids
     for idx, k in enumerate(class_dict):
-        class_dict[k] = idx
+        class_dict[k] = []
 
+    for student_number, class_id in enumerate(class_list):
+        class_dict[class_id].append(student_number)
 
-    membership = [ class_dict[student]  for student in class_list]
+    cluster_list = []
 
-    return VertexClustering(G, membership)
+    for cluster in class_dict.values():
+        cluster_list.append(cluster)
 
+    return VertexCover(G, cluster_list)
 
 
 def main():

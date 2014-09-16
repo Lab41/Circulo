@@ -66,7 +66,8 @@ def create_graph_context(G):
     return {
             "graph" : G,
             "weight": 'weight' if G.is_weighted() else None,
-            "directed": G.is_directed()
+            "directed": G.is_directed(),
+            "simple":G.is_simple()
             }
 
 
@@ -107,7 +108,7 @@ def run_single(worker):
 
 
 
-def run(algos, datasets, output_dir, iterations):
+def run(algos, datasets, output_dir, iterations, workers, timeout):
 
     #create output directory if it doesn't exist
     if not os.path.exists(output_dir):
@@ -163,17 +164,23 @@ def run(algos, datasets, output_dir, iterations):
                 job_name = dataset+"--"+algo+"--"+str(i)
                 map_inputs.append(Worker(job_name, algo, dataset, output_dir, i, ctx))
 
-    p = multiprocessing.Pool(10)
-    p.map(run_single, map_inputs)
-    p.close()
-    p.join()
+
+    with multiprocessing.Pool(processes=workers) as pool:
+        for w in map_inputs:
+            res = pool.apply_async(run_single,[w])
+            try:
+                res.get(timeout=timeout)
+            except multiprocessing.context.TimeoutError as e:
+                print("[IMPORTANT - ", w.job_name, "] Stopping execution due to timeout of ", timeout)
 
 def main():
 
     DEFAULT_STOCHASTIC_REPETITIONS = 1
+    DEFAULT_NUM_WORKERS = 10
+    DEFAULT_TIMEOUT=3600
 
     comm_choices = [ a.replace('comm_', '') for a in dir(community) if a.startswith('comm_')]
-    data_choices = ['football', 'flights', 'congress_voting', 'karate', 'malaria', 'nba_schedule', 'netscience']
+    data_choices = ['scotus', 'school', 'revolution', 'pgp', 'amazon', 'football', 'flights', 'congress_voting', 'karate', 'malaria', 'nba_schedule', 'netscience']
 
     # Parse user input
     parser = argparse.ArgumentParser(description='Run community detection on a dataset.')
@@ -181,13 +188,15 @@ def main():
     parser.add_argument('algo', nargs=1,choices=['ALL']+comm_choices, help='Which community detection to run.')
     parser.add_argument('--output', type=str, nargs=1, default=[OUTPUT_DIR], help='Base output directory')
     parser.add_argument('--samples', type=int, default=DEFAULT_STOCHASTIC_REPETITIONS, help='Number of times to run stochastic algos')
+    parser.add_argument('--workers', type=int, default=DEFAULT_NUM_WORKERS, help='Number of workers to process')
+    parser.add_argument('--timeout', type=int, default=DEFAULT_TIMEOUT, help='Timeout applied to algo execution on a dataset')
     args = parser.parse_args()
 
     algos = comm_choices if 'ALL' in args.algo else args.algo
     datasets = data_choices if 'ALL' in args.dataset else args.dataset
 
     overall_start_time = datetime.datetime.now()
-    run(algos, datasets, args.output[0], args.samples)
+    run(algos, datasets, args.output[0], args.samples, args.workers, args.timeout)
     overall_end_time = datetime.datetime.now()
     print("Time elapsed:", (overall_end_time - overall_start_time))
 
