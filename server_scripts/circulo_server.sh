@@ -35,7 +35,7 @@ echo "created circulo folder"
 
 # set up virtualenv. Requires virtualenvwrapper
 cd circulo
-export WORKON_HOME='/home/.venvs'
+export WORKON_HOME='~/.venvs'
 source '/usr/local/bin/virtualenvwrapper.sh'
 mkvirtualenv --python=`which python3` circulo
 deactivate
@@ -65,6 +65,8 @@ If you need to add new packages to the virtualenv, pip3 should work\
 
 # get circulo!
 git clone $CIRCULO_GIT_LOC
+git clone https://github.com/snap-stanford/snap.git
+pushd snap
 
 # start using the circulo virtualenv
 source setup
@@ -76,16 +78,19 @@ add2virtualenv /home/circulo/ /home/circulo/Circulo/ /home/circulo/Circulo/circu
 # (you may have to add more, depending on your machine
 sudo apt-get install gfortran libopenblas-dev liblapack-dev # for scipy
 sudo apt-get install libpng12-dev libfreetype6-dev # for matplotlib
+sudo apt-get install libxml2-dev libz-dev python3-dev  #for igraph
+
 
 # install igraph
 pip3 install python-igraph
+pip3 install networkx
 
 # install circulo's dependencies
 pip3 install numpy
 pip3 install scipy
 pip3 install matplotlib
 pip3 install scikit-learn
-
+pip3 install ipython
 
 # finally, to use circulo, just cd into /home/circulo and run
 #     source setup

@@ -49,7 +49,14 @@ def analyze_json(json_path, output_path):
 
     weights = 'weight' if G.is_weighted() else None
 
-    ground_truth_cover = cover_from_membership( data_mod.get_ground_truth(G).membership, G)
+    #some datasets might not have ground truth
+    try:
+        vc = data_mod.get_ground_truth(G)
+        ground_truth_cover = cover_from_membership( vc.membership, G)
+    except Exception as e:
+        print(data['dataset'], " does not have ground truth so unable to produce scoring for that")
+        ground_truth_cover = None
+
     results_cover = cover_from_membership(data['membership'], G)
 
     print("Running metrics against " + data['job_name'])

@@ -23,7 +23,7 @@ from scipy.cluster.hierarchy import average,fcluster
 import shutil
 
 
-Worker = namedtuple('Worker', 'job_name algo dataset out_dir iteration ctx')
+Worker = namedtuple('Worker', 'job_name algo dataset out_dir iteration timeout ctx')
 
 OUTPUT_DIR = "outputs"
 
@@ -71,10 +71,25 @@ def create_graph_context(G):
             }
 
 
+
+class TimeoutError(Exception):
+    pass
+
+
+
+def __handle_timeout(signum, frame):
+    raise TimeoutError(os.strerror(errno.ETIME))
+
+import signal
+import os
+import errno
+
 def run_single(worker):
 
     print("#### Processing: ", worker.job_name)
 
+    signal.signal(signal.SIGALRM, __handle_timeout)
+    signal.setitimer(signal.ITIMER_REAL, worker.timeout)
     t0 = time.time()
 
     func = getattr(community, 'comm_'+worker.algo)(worker.ctx, worker.job_name)
@@ -82,6 +97,11 @@ def run_single(worker):
     try:
         r = func()
         vc = to_cover(r)
+    except TimeoutError as t:
+
+        print("[ERROR TIMEOUT ", worker.algo, "-",worker.dataset, "] total time: ", time.time() - t0)
+        #signal.alarm(0)
+        return
     except Exception as e:
         print("Exception using parameters ",worker,  e)
         traceback.print_exc(file=sys.stdout)
@@ -159,19 +179,22 @@ def run(algos, datasets, output_dir, iterations, workers, timeout):
         for algo in algos:
 
             iterations = 1 if algo not in stochastic_algos else iterations
-
             for i in range(iterations):
                 job_name = dataset+"--"+algo+"--"+str(i)
-                map_inputs.append(Worker(job_name, algo, dataset, output_dir, i, ctx))
+                map_inputs.append(Worker(job_name, algo, dataset, output_dir, i, timeout, ctx))
 
 
-    with multiprocessing.Pool(processes=workers) as pool:
-        for w in map_inputs:
-            res = pool.apply_async(run_single,[w])
-            try:
-                res.get(timeout=timeout)
-            except multiprocessing.context.TimeoutError as e:
-                print("[IMPORTANT - ", w.job_name, "] Stopping execution due to timeout of ", timeout)
+    pool = multiprocessing.Pool(processes=workers)
+    pool.map_async(run_single, map_inputs)
+    pool.close()
+    pool.join()
+
+
+    #NOTE: cannot timeout becaue it blocks. leaving code here just to show that I tried
+    #try:
+    #    res.get(timeout=timeout)
+    #except multiprocessing.context.TimeoutError as e:
+    #    print("[IMPORTANT - ", w.job_name, "] Stopping execution due to timeout of ", timeout)
 
 def main():
 
