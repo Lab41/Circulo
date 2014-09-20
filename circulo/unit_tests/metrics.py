@@ -27,7 +27,7 @@ class TestMetrics(unittest.TestCase):
     def test_internaldensity(self):
         #doesn't apply to weighted graphs
         truth = [.4181818, .6, .22875817]
-        
+
         #Density is an igraph ``metric''
         test  = [ s.density() for s in self.cover.subgraphs() ]
         self.assertListAlmostEquals(truth, test, 2)
@@ -87,7 +87,7 @@ class TestMetrics(unittest.TestCase):
 
     def test_wexpansion(self):
         truth = [2.181818, 1.2, 1]
- 
+
         test  = self.cover.expansion(weights='weight')
         self.assertListAlmostEquals(truth, test, 2)
 
@@ -130,15 +130,15 @@ class TestMetrics(unittest.TestCase):
 
     def test_wnormalizedcut(self):
         truth = [0.125586854, 0.081300813, 0.085430866]
-        
+
         test  = self.cover.normalized_cut(weights='weight')
         self.assertListAlmostEquals(truth, test, 2)
-    
+
     def test_TPR(self):
         #same for weighted and unweighted graphs
         truth = [0.9091,0.6, 0.9444444]
 
-        test  = [ s.triangle_participation_ratio() 
+        test  = [ s.triangle_participation_ratio()
                   for s in self.cover.subgraphs() ]
         self.assertListAlmostEquals(truth, test, 2)
 
@@ -158,7 +158,7 @@ class TestMetrics(unittest.TestCase):
 
     def test_WMaxODF(self):
         truth = [0.222222222, 0.153846154, 0.2]
-    
+
         test  = self.cover.maximum_out_degree_fraction(weights='weight')
         self.assertListAlmostEquals(truth, test, 2)
 
@@ -187,7 +187,7 @@ class TestMetrics(unittest.TestCase):
         if self.comm_metrics:
           test  = [a.odf_dict['flake'] for a in self.comm_metrics]
           self.assertListAlmostEquals(truth, test, 2)
-    
+
     def test_WFLakeODF(self):
         truth = [0,0,0]
 
@@ -233,7 +233,7 @@ class TestMetrics(unittest.TestCase):
         self.assertListAlmostEquals(truth, test, 2)
 
     def assertListAlmostEquals(self, a, b, places=None, msg=None):
-        self.assertEquals(np.round(a,places).tolist(), 
+        self.assertEquals(np.round(a,places).tolist(),
                           np.round(b,places).tolist(), msg=msg)
 
 

@@ -3,6 +3,7 @@ from igraph import Cover, VertexCover
 from scipy import nansum, nanmax
 import uuid
 import collections
+import time
 from circulo.metrics.omega import omega_index
 
 def __get_weight_attr(G, name, weights):
@@ -87,7 +88,6 @@ def separability(cover, weights=None):
     Separability is the ratio between the (weighted) number of internal edges in a cluster and its (weighted) number of external (boundary) edges.
     '''
     w_attr, remove = __get_weight_attr(cover.graph, 'separability', weights)
-
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
@@ -172,6 +172,7 @@ def out_degree_fraction(cover, weights=None):
     __remove_weight_attr(cover.graph, w_attr, remove)
     return rv
 
+
 def external_edges(cover) :
     '''
     @param cover a VertexCover object.
@@ -180,13 +181,12 @@ def external_edges(cover) :
     array_of_sets = [ [] for v in cover ]
     #Iterate over crossing edges
     for edge in [ a[1] for a in zip(cover.crossing(), cover.graph.es()) if a[0]]:
-        membership = [cover.membership[edge.source]]
+        membership = cover.membership[edge.source]
         if not cover.graph.is_directed():
-            membership += [cover.membership[edge.target]]
+            membership += cover.membership[edge.target]
 
-        for node_membership in membership:
-            for cluster_id in node_membership:
-                array_of_sets[cluster_id] += [edge]
+        for cluster_id in membership:
+            array_of_sets[cluster_id].append(edge)
 
     return array_of_sets
 
@@ -199,6 +199,8 @@ def compare_omega(cover, comparator):
     return score
 
 def compute_metrics(cover, weights=None, ground_truth_cover=None):
+    t0 = time.time()
+
     cover.metrics = {
             'Fraction over a Median Degree' : fomd(cover, weights),
             'Expansion'                     : expansion(cover, weights),
@@ -214,15 +216,20 @@ def compute_metrics(cover, weights=None, ground_truth_cover=None):
     for i in range(len(cover)):
         sg = cover.subgraph(i)
         sg.compute_metrics(refresh=False)
-        for key in sg.metrics.keys():
-            val = sg.metrics[key]
-            if isinstance(sg.metrics[key], collections.Iterable) and 'Arithmetic Mean' in sg.metrics[key]:
+
+        #we want to add the metrics from the subgraph calculations to the current cover. The cover and
+        #subgraph are essentially the same thing, however because we use the igraph graph functions we
+        #can't natively call these call a cover...  hence the need to transfer over the results
+        for key, val in sg.metrics.items():
+
+            #some igraph graph functions return iterables. right now we only are paying attention to the
+            #mean key, value, however we could add more later if we want
+            if isinstance(val, collections.Iterable) and 'Arithmetic Mean' in val:
                 val = sg.metrics[key]['Arithmetic Mean']
                 key = key + ' (Arithmetic Mean)'
             if key not in cover.metrics:
                 cover.metrics[key] = []
             cover.metrics[key] += [val]
-
 
     cover.metrics_stats = {}
     for key in cover.metrics:
@@ -230,6 +237,8 @@ def compute_metrics(cover, weights=None, ground_truth_cover=None):
         cover.metrics_stats[key] = __describe(cover.metrics[key])
 
     cover.metrics['omega'] = compare_omega(cover, ground_truth_cover)
+    cover.metrics['metrics_total_time'] = time.time() - t0
+
 
 def print_metrics(cover):
 

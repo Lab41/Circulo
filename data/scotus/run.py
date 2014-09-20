@@ -65,7 +65,7 @@ def get_graph():
         __download__(data_dir)
         __prepare__(data_dir)
     else:
-        print(graph_path, "already exists. Using old file.")
+        print("\t+",graph_path, "already exists. Using old file.")
 
     return igraph.load(graph_path)
 
