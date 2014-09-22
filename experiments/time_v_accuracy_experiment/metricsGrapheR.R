@@ -39,7 +39,7 @@ getMetrics <- function(datapath='/home/lab41/workspace/circulo_output/metrics') 
 
 # Plot Metrics
 plotMetrics <- function(metrics,toPDF=FALSE) {
-    bubblebplot <- ggplot(metrics, aes(x=Datasets, y=Algorithms))+
+    bubbleplot <- ggplot(metrics, aes(x=Datasets, y=Algorithms))+
           geom_point(aes(size=OmegaAccuracy, colour=ComputationTime), alpha=0.75)+
           scale_size_continuous( range =c(5, 25))+
           scale_colour_gradient2(low="dark green",mid="yellow", high="red", trans='log')+
