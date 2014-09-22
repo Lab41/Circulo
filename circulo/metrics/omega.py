@@ -35,7 +35,7 @@ def __get_matrix(vc, sparse):
             each pair of nodes shares
     '''
     n = len(vc) # number of nodes
-    nc = max([max(i) for i in vc]) + 1 # number of clusters
+    nc = max([max(i) for i in vc if i]) + 1 # number of clusters
 
     create_zero_matrix = sp.csr_matrix if sparse else np.zeros
     A = create_zero_matrix((n,n), dtype='int')
