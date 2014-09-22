@@ -51,21 +51,48 @@ def cohesiveness(G, weights=None):
         val, vc = G.min_conductance(weights=weights)
     return val
 
+def __helper_m(key_prefix, describe_dict):
+    dict0 = {}
+
+    for k, v in describe_dict.items():
+        if k == "(min,max)":
+            min_key = key_prefix + " (min)"
+            max_key = key_prefix = " (max)"
+
+            dict0[min_key] = v[0]
+            dict0[max_key] = v[1]
+
+            pass
+        else:
+            new_key = key_prefix + " (" + k + ")"
+            dict0[new_key] = v
+
 def compute_metrics(G, refresh = True):
+
     if refresh or G.metrics == None:
         G.metrics = {
                 'Internal Number Nodes'         : G.vcount(),
                 'Internal Number Edges'         : G.ecount(),
                 'Density'                       : G.density(),
-                'Degree Statistics'             : __describe(G.degree()),
+                #'Degree Statistics'             : __describe(G.degree()),
                 'Diameter'                      : G.diameter(),
                 'Cohesiveness'                  : G.cohesiveness(),
                 'Triangle Participation Ratio'  : G.triangle_participation_ratio(),
                 'Transitivity Undirected (Global Clustering Coefficient)'
-                                                : G.transitivity_undirected(),
-                'Transitivity Local Undirected (Local Clustering Coefficient)'
-                                                : __describe(G.transitivity_local_undirected(mode='zero'))
-        }
+                                                : G.transitivity_undirected()
+                #'Transitivity Local Undirected (Local Clustering Coefficient)'
+                #                                : __describe(G.transitivity_local_undirected(mode='zero'))
+
+                }
+        #Transitivity Local Undirected(Local Clustering Coefficient)
+        combined = G.metrics + __helper_m('TLU--Local Clustering Coefficient', __describe(G.transitivity_local_undirected(mode='zero'))
+        #Degree statistics
+        #G.metrics += __helper_m('Degree Statistics', __describe(G.degree())
+
+        import sys
+        sys.exit(0)
+
+
 
 Graph.metrics = None
 Graph.compute_metrics = compute_metrics

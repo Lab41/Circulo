@@ -239,12 +239,20 @@ def compute_metrics(cover, weights=None, ground_truth_cover=None):
 
             #some igraph graph functions return iterables. right now we only are paying attention to the
             #mean key, value, however we could add more later if we want
-            if isinstance(val, collections.Iterable) and 'Arithmetic Mean' in val:
-                val = sg.metrics[key]['Arithmetic Mean']
-                key = key + ' (Arithmetic Mean)'
-            if key not in cover.metrics:
-                cover.metrics[key] = []
-            cover.metrics[key] += [val]
+            if isinstance(val, collections.Iterable): # and 'Arithmetic Mean' in val:
+                #val = sg.metrics[key]['Arithmetic Mean']
+                #key = key + ' (Arithmetic Mean)'
+                print(val)
+                for k, v in val:
+                    k_name = key + " " + k
+                    if k_name not in cover.metrics:
+                        cover.metrics[k_name] = []
+                    cover.metrics[k_name] += [v]
+                quit()
+            else:
+                if key not in cover.metrics:
+                    cover.metrics[key] = []
+                cover.metrics[key] += [val]
 
     #cover.metrics_stats = {}
     #for key in cover.metrics:
