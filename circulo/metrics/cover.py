@@ -198,19 +198,34 @@ def compare_omega(cover, comparator):
     score =  omega_index(cover.membership, comparator.membership)
     return score
 
+from circulo.utils.general import aggregate
+
 def compute_metrics(cover, weights=None, ground_truth_cover=None):
     t0 = time.time()
 
+    fomd_results = fomd(cover, weights)
+    expansion_results = expansion(cover, weights)
+    cut_ratio_results = cut_ratio(cover)
+    conductance_results = conductance(cover, weights)
+    n_cut_results = normalized_cut(cover, weights)
+    max_out_results = maximum_out_degree_fraction(cover, weights)
+    avg_out_results = average_out_degree_fraction(cover, weights)
+    flake_odf_results = flake_out_degree_fraction(cover, weights)
+    sep_results = separability(cover,weights)
+
+    results_key = "results"
+    agg_key = "aggegations"
+
     cover.metrics = {
-            'Fraction over a Median Degree' : fomd(cover, weights),
-            'Expansion'                     : expansion(cover, weights),
-            'Cut Ratio'                     : cut_ratio(cover),
-            'Conductance'                   : conductance(cover, weights),
-            'Normalized Cut'                : normalized_cut(cover, weights),
-            'Maximum Out Degree Fraction'   : maximum_out_degree_fraction(cover, weights),
-            'Average Out Degree Fraction'   : average_out_degree_fraction(cover, weights),
-            'Flake Out Degree Fraction'     : flake_out_degree_fraction(cover, weights),
-            'Separability'                  : separability(cover, weights),
+            'Fraction over a Median Degree' : {results_key:fomd_results, agg_key:aggregate(fomd_results)},
+            'Expansion'                     : {results_key:expansion_results, agg_key:aggregate(expansion_results)},
+            'Cut Ratio'                     : {results_key:cut_ratio_results, agg_key:aggregate(cut_ratio_results)},
+            'Conductance'                   : {results_key:conductance_results, agg_key:aggregate(conductance_results)},
+            'Normalized Cut'                : {results_key:n_cut_results, agg_key:aggregate(n_cut_results)},
+            'Maximum Out Degree Fraction'   : {results_key:max_out_results, agg_key:aggregate(max_out_results)},
+            'Average Out Degree Fraction'   : {results_key:avg_out_results, agg_key:aggregate(avg_out_results)},
+            'Flake Out Degree Fraction'     : {results_key:flake_odf_results, agg_key:aggregate(flake_odf_results)},
+            'Separability'                  : {results_key:sep_results, agg_key:aggregate(sep_results)},
             }
 
     for i in range(len(cover)):
@@ -231,10 +246,10 @@ def compute_metrics(cover, weights=None, ground_truth_cover=None):
                 cover.metrics[key] = []
             cover.metrics[key] += [val]
 
-    cover.metrics_stats = {}
-    for key in cover.metrics:
-        from circulo.metrics.graph import __describe
-        cover.metrics_stats[key] = __describe(cover.metrics[key])
+    #cover.metrics_stats = {}
+    #for key in cover.metrics:
+    #    from circulo.metrics.graph import __describe
+    #    cover.metrics_stats[key] = __describe(cover.metrics[key])
 
     cover.metrics['omega'] = compare_omega(cover, ground_truth_cover)
     cover.metrics['metrics_total_time'] = time.time() - t0

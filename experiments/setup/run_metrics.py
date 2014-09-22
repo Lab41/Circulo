@@ -20,7 +20,6 @@ def main():
     DEFAULT_NUM_WORKERS = 5
     parser = argparse.ArgumentParser(description='Compute metrics for given cover.')
     parser.add_argument('input_path', type=str, help='file or directory containing results')
-    parser.add_argument('output_path', type=str, default='metrics_output', help='Output directory for metrics')
     parser.add_argument('--workers', type=int, default=DEFAULT_NUM_WORKERS, help='Number of workers to process')
     args = parser.parse_args()
 
@@ -28,10 +27,8 @@ def main():
         print("Path \"{}\" does not exist".format(args.input_path))
         return
 
-    if not os.path.exists(args.output_path):
-        os.makedirs(args.output_path)
-
-    output_dir = args.output_path
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     file_q = []
 
