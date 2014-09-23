@@ -128,7 +128,7 @@ def initialize_edges(G, fileName):
             except ValueError:
                 badRoute = source_id + " ==> " + dest_id
                 print("Skipping " + badRoute + " (Insufficient information to create edge.)")
-            edges.append((source, dest, weight=1))
+            edges.append((source, dest))
             for a in ROUTES_SCHEMA:
                 attr = line[ROUTES_SCHEMA[a]]
                 if attr == "\\N":
