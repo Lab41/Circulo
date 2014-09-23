@@ -6,6 +6,8 @@
 # Sample Usage:
 #   metrics <- getMetrics(datapath)
 #   plotMetrics(metrics)
+#   plotHist(metrics,'omega')
+#   plotHist(metrics,'time')
 
 library(ggplot2)
 library(jsonlite)
@@ -60,5 +62,28 @@ plotMetrics <- function(metrics,toPDF=FALSE) {
         cat(sprintf('printed to %s \n', pdffile))
     } else {
         print(bubbleplot)
+    }
+}
+
+# Plots histogram of specified metric (omega or computation time right now)
+plotHist <- function(metrics,col='omega',toPDF=FALSE) {
+
+    omega_hist <-  ggplot(data=metrics,aes(x=OmegaAccuracy,fill=Datasets)) + geom_histogram(colour="black",binwidth=0.1) + scale_x_continuous(limits=c(0,1)) + facet_grid(Algorithms ~ Datasets) + theme_bw() + theme(legend.position="none") + ggtitle(Sys.time())
+    
+    time_hist <-  ggplot(data=metrics,aes(x=ComputationTime,fill=Datasets)) + geom_histogram(colour="black") + facet_grid(Algorithms ~ Datasets) + theme_bw() + theme(legend.position="none") + ggtitle(Sys.time())
+  
+    if (col=='omega') { p <- omega_hist}
+    else if (col=='time') { p <- time_hist}
+    else {p <- NULL}
+
+
+    if (toPDF) {
+        pdffile <- paste(Sys.time(),"metricsGraph.pdf", sep='')
+        pdf(pdffile,height=10,width=12)
+        print(p)
+        dev.off()
+        cat(sprintf('printed to %s \n', pdffile))
+    } else {
+        print(p)
     }
 }
