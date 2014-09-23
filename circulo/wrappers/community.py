@@ -2,7 +2,7 @@ from functools import partial
 import igraph
 import circulo.algorithms
 
-def edge_cleanup(ctx, descript):
+def edge_cleanup(ctx, descript, prune=False):
     '''
         Converting a directed, and potentially multigraph, graph to an undirected graph, can result in a loss of
         precision; therefore, you must be careful when doing conversion. For now we have to make certain assumptions about
@@ -21,6 +21,13 @@ def edge_cleanup(ctx, descript):
         G_copy.simplify(combine_edges={'weight':sum})
     else:
         G_copy = ctx['graph']
+
+
+    if(G_copy.is_weighted() and prune == True):
+        weights = G_copy.es()['weight']
+        threshold = .75 * max(weights)
+        #edges = G_copy.es.select.(_weight_lt=threshold)
+        #G_copy.delete_edges(edges)
 
     return G_copy
 

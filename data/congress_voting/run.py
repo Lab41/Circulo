@@ -111,7 +111,7 @@ def __prepare__(data_dir, graph_path, options):
                         missing_ids.add(congress_id1)
                         continue
 
-                   G.add_edge(v0, v1)
+                    G.add_edge(v0, v1)
 
     print("Ids not found: {}".format(missing_ids))
 
