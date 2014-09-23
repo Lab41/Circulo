@@ -13,7 +13,7 @@ def pruner(G, descript):
     G.delete_edges(edges)
     print("\t[Info - ", descript,"] Pruned ", len(edges)," edges less than ", WEIGHT_PRUNE_THRESHOLD, "%")
 
-def edge_cleanup(ctx, descript, prune=False):
+def edge_cleanup(ctx, descript, prune=True):
     '''
         Converting a directed, and potentially multigraph, graph to an undirected graph, can result in a loss of
         precision; therefore, you must be careful when doing conversion. For now we have to make certain assumptions about
