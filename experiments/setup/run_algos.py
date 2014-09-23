@@ -156,6 +156,7 @@ def run(algos, datasets, output_dir, iterations, workers, timeout):
 
         print("[Graph Prep -",dataset,"]... Initiated")
         G = data_mod.get_graph()
+        G = get_largest_component(G, dataset)
 
         try:
             G.write_graphml(os.path.join(output_dir, "graphs", dataset+".graphml"))
@@ -189,7 +190,6 @@ def run(algos, datasets, output_dir, iterations, workers, timeout):
             print("Unable to find Ground Truth partition for ", dataset, ": ", e)
 
 
-        G = get_largest_component(G, dataset)
         #keep this out of the loop just in case the operations in it take a long time. The graph context should rarely change
         ctx = create_graph_context(G)
 
