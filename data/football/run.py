@@ -35,8 +35,7 @@ def get_graph():
         __download__(data_dir)
         __prepare__(data_dir)
 
-    G = igraph.load(graph_path)
-    return G
+    return igraph.load(graph_path)
 
 def get_ground_truth(G=None):
     """

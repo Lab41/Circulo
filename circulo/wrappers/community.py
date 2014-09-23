@@ -2,6 +2,17 @@ from functools import partial
 import igraph
 import circulo.algorithms
 
+WEIGHT_PRUNE_THRESHOLD=.75
+
+def pruner(G, descript):
+    '''
+    '''
+    weights = G.es()['weight']
+    threshold =  WEIGHT_PRUNE_THRESHOLD * max(weights)
+    edges = G.es.select(weight_lt=threshold)
+    G.delete_edges(edges)
+    print("\t[Info - ", descript,"] Pruned ", len(edges)," edges less than ", WEIGHT_PRUNE_THRESHOLD, "%")
+
 def edge_cleanup(ctx, descript, prune=False):
     '''
         Converting a directed, and potentially multigraph, graph to an undirected graph, can result in a loss of
@@ -9,25 +20,35 @@ def edge_cleanup(ctx, descript, prune=False):
         how certain edge attributes are combined.  We are currently summing the weights of mulitgraphs and multiple directed edges
     '''
 
-    #this will collapse multiedges and go to undirected
-    if ctx['directed']:
-        print('\t[Info - ',descript,'] Converting graph to undirected (summing edge weights), since algo requires undirected')
-        G_copy = ctx['graph'].copy()
-        G_copy.to_undirected(combine_edges={'weight':sum})
-    #this will just collapse multiedges
-    elif not ctx['simple']:
-        print('\t[Info - ',descript,'] Collapsed multigraph edges since algo requires it')
-        G_copy = ctx['graph'].copy()
-        G_copy.simplify(combine_edges={'weight':sum})
-    else:
-        G_copy = ctx['graph']
+    try:
+        #this will collapse multiedges and go to undirected
+        if ctx['directed']:
+            print('\t[Info - ',descript,'] Converting graph to undirected (summing edge weights), since algo requires undirected')
+            G_copy = ctx['graph'].copy()
+            if G_copy.is_weighted() is False:
+                G_copy.es()['weight']=1
+            G_copy.to_undirected(combine_edges={'weight':sum})
 
+            if prune == True:
+                pruner(G_copy, descript)
 
-    if(G_copy.is_weighted() and prune == True):
-        weights = G_copy.es()['weight']
-        threshold = .75 * max(weights)
-        #edges = G_copy.es.select.(_weight_lt=threshold)
-        #G_copy.delete_edges(edges)
+        #this will just collapse multiedges
+        elif not ctx['simple']:
+            print('\t[Info - ',descript,'] Collapsed multigraph edges since algo requires it')
+            G_copy = ctx['graph'].copy()
+
+            if G_copy.is_weighted() is False:
+                G_copy.es()['weight']=1
+
+            G_copy.simplify(combine_edges={'weight':sum})
+
+            if prune == True:
+                pruner(G_copy, descript)
+        else:
+            G_copy = ctx['graph']
+
+    except Exception as e:
+        print("Error in Edge Cleanup: ", e)
 
     return G_copy
 
@@ -45,10 +66,10 @@ stochastic_algos = {
         }
 
 def comm_infomap(ctx, descript):
-    return partial(igraph.Graph.community_infomap, ctx['graph'], edge_weights=ctx['weight'], vertex_weights=None)
+    return partial(igraph.Graph.community_infomap, edge_cleanup(ctx, descript, prune=True), edge_weights=ctx['weight'], vertex_weights=None)
 
 def comm_fastgreedy(ctx, descript):
-    return partial(igraph.Graph.community_fastgreedy, edge_cleanup(ctx, descript), weights=ctx['weight'])
+    return partial(igraph.Graph.community_fastgreedy, edge_cleanup(ctx, descript,prune=True), weights=ctx['weight'])
 
 def comm_edge_betweenness(ctx, descript):
     return partial(igraph.Graph.community_edge_betweenness, ctx['graph'], ctx['directed'], weights=ctx['weight'])

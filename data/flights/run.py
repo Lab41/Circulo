@@ -128,7 +128,7 @@ def initialize_edges(G, fileName):
             except ValueError:
                 badRoute = source_id + " ==> " + dest_id
                 print("Skipping " + badRoute + " (Insufficient information to create edge.)")
-            edges.append((source, dest))
+            edges.append((source, dest, weight=1))
             for a in ROUTES_SCHEMA:
                 attr = line[ROUTES_SCHEMA[a]]
                 if attr == "\\N":
@@ -206,12 +206,7 @@ def get_graph():
         __download__(data_dir)
         __prepare__(data_dir)
 
-    from circulo.utils.downloader import multigraph_to_weights
-    G = igraph.load(graph_path)
-    multigraph_to_weights(G)
-
-    return G
-
+    return igraph.load(graph_path)
 
 def get_ground_truth(G=None, attr='country'):
     """
