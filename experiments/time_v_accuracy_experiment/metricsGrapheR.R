@@ -31,15 +31,21 @@ getMetrics <- function(datapath='/home/lab41/workspace/circulo_output/metrics') 
     #fussy R data type formatting
     metrics <- cbind(Algorithms,Datasets,ComputationTime,OmegaAccuracy)
     ind <- which(metrics[,"OmegaAccuracy"] != "NULL")
-    metrics <-data.frame(metrics[ind,])
-    metrics <- data.frame(lapply(metrics, unlist))
+    metrics <-data.frame(metrics[ind,],stringsAsFactors=FALSE)
+    metrics <- data.frame(lapply(metrics, unlist),stringsAsFactors=FALSE)
+    metrics$ComputationTime <- as.numeric(metrics$ComputationTime)
+    metrics$OmegaAccuracy <- as.numeric(metrics$OmegaAccuracy)
 
    return(metrics)
 }
 
 # Plot Metrics
 plotMetrics <- function(metrics,toPDF=FALSE) {
-    bubbleplot <- ggplot(metrics, aes(x=Datasets, y=Algorithms))+
+    # Group metrics by Dataset and Algorithm, then summarize
+    data <- aggregate(metrics[,c('ComputationTime','OmegaAccuracy')],list(metrics$Datasets,metrics$Algorithms),mean)
+    colnames(data)[1:2] <- c("Datasets","Algorithms")
+
+    bubbleplot <- ggplot(data, aes(x=Datasets, y=Algorithms))+
           geom_point(aes(size=OmegaAccuracy, colour=ComputationTime), alpha=0.75)+
           scale_size_continuous( range =c(5, 25))+
           scale_colour_gradient2(low="dark green",mid="yellow", high="red", trans='log')+
