@@ -5,6 +5,7 @@ import uuid
 import collections
 import time
 from circulo.metrics.omega import omega_index
+from circulo.utils.general import aggregate
 
 def __get_weight_attr(G, name, weights):
     if isinstance(weights, str):
@@ -198,7 +199,6 @@ def compare_omega(cover, comparator):
     score =  omega_index(cover.membership, comparator.membership)
     return score
 
-from circulo.utils.general import aggregate
 
 def compute_metrics(cover, weights=None, ground_truth_cover=None):
     t0 = time.time()
@@ -236,32 +236,16 @@ def compute_metrics(cover, weights=None, ground_truth_cover=None):
         #subgraph are essentially the same thing, however because we use the igraph graph functions we
         #can't natively call these call a cover...  hence the need to transfer over the results
         for key, val in sg.metrics.items():
+            if key not in cover.metrics:
+                cover.metrics[key] = {results_key:[], agg_key:None}
+            cover.metrics[key][results_key] += [val]
 
-            #some igraph graph functions return iterables. right now we only are paying attention to the
-            #mean key, value, however we could add more later if we want
-            if isinstance(val, collections.Iterable): # and 'Arithmetic Mean' in val:
-                #val = sg.metrics[key]['Arithmetic Mean']
-                #key = key + ' (Arithmetic Mean)'
-                print(val)
-                for k, v in val:
-                    k_name = key + " " + k
-                    if k_name not in cover.metrics:
-                        cover.metrics[k_name] = []
-                    cover.metrics[k_name] += [v]
-                quit()
-            else:
-                if key not in cover.metrics:
-                    cover.metrics[key] = []
-                cover.metrics[key] += [val]
-
-    #cover.metrics_stats = {}
-    #for key in cover.metrics:
-    #    from circulo.metrics.graph import __describe
-    #    cover.metrics_stats[key] = __describe(cover.metrics[key])
+    #aggregate just the results from the subgraph metrics
+    for k  in sg.metrics.keys():
+        cover.metrics[k][agg_key] = aggregate(cover.metrics[k][results_key])
 
     cover.metrics['omega'] = compare_omega(cover, ground_truth_cover)
     cover.metrics['metrics_total_time'] = time.time() - t0
-
 
 def print_metrics(cover):
 

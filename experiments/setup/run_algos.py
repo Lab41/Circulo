@@ -121,8 +121,8 @@ def run_single(worker):
         json.dump(results, f)
 
     #write to a pickle
-    with open(os.path.join(worker.out_dir, "pickle",worker.job_name + '.pickle'), 'wb') as f:
-        pickle.dump(results, f)
+    #with open(os.path.join(worker.out_dir, "pickle",worker.job_name + '.pickle'), 'wb') as f:
+    #    pickle.dump(results, f)
 
     print("\t[Info - ", worker.job_name,"] Finished in ", results['elapsed'])
 
@@ -138,7 +138,7 @@ def run(algos, datasets, output_dir, iterations, workers, timeout):
 
     graph_dir = os.path.join(output_dir, "graphs")
     json_dir = os.path.join(output_dir, "json")
-    pickle_dir = os.path.join(output_dir, "pickle")
+    #pickle_dir = os.path.join(output_dir, "pickle")
 
     if not os.path.exists(graph_dir):
         os.mkdir(graph_dir)
@@ -146,8 +146,8 @@ def run(algos, datasets, output_dir, iterations, workers, timeout):
     if not os.path.exists(json_dir):
         os.mkdir(json_dir)
 
-    if not os.path.exists(pickle_dir):
-        os.mkdir(pickle_dir)
+    #if not os.path.exists(pickle_dir):
+    #    os.mkdir(pickle_dir)
 
     for dataset in datasets:
 
@@ -168,6 +168,23 @@ def run(algos, datasets, output_dir, iterations, workers, timeout):
 
             with open(os.path.join(output_dir, "graphs", dataset+'__ground_truth.json'), "w") as f:
                 json.dump( data_mod.get_ground_truth(G).membership, f)
+
+            job_name = dataset + "--groundtruth--0"
+
+            results = {
+                'job_name': job_name,
+                'elapsed' : 0,
+                'membership' : data_mod.get_ground_truth(G).membership,
+                'algo' : "groundtruth",
+                'dataset' : dataset,
+                'iteration' : 0
+            }
+
+            #write to json
+            with open(os.path.join(output_dir, "json", job_name+".json"), "w") as f:
+                json.dump(results, f)
+
+
         except Exception as e:
             print("Unable to find Ground Truth partition for ", dataset, ": ", e)
 

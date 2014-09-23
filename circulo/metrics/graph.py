@@ -2,14 +2,8 @@
 # Goal is to annotate a vertex cover with dictionary representing various cluster metrics
 
 from igraph import Graph
+from circulo.utils.general import aggregate
 
-def __describe(array, axis=0):
-  from scipy.stats import describe
-  from scipy import median
-  stats = describe(array, axis)
-  stats = stats + (median(array, axis),)
-
-  return dict(zip(['Size', '(min,max)', 'Arithmetic Mean', 'Unbiased Variance', 'Biased Skewness', 'Biased Kurtosis', 'Median'], stats))
 
 def triangle_participation(G):
     '''
@@ -55,43 +49,30 @@ def __helper_m(key_prefix, describe_dict):
     dict0 = {}
 
     for k, v in describe_dict.items():
-        if k == "(min,max)":
-            min_key = key_prefix + " (min)"
-            max_key = key_prefix = " (max)"
+        new_key = key_prefix + " (" + k + ")"
+        dict0[new_key] = v
 
-            dict0[min_key] = v[0]
-            dict0[max_key] = v[1]
-
-            pass
-        else:
-            new_key = key_prefix + " (" + k + ")"
-            dict0[new_key] = v
+    return dict0
 
 def compute_metrics(G, refresh = True):
+
+    descriptTLU = 'TLU--Local Clustering Coefficient'
+    descriptDegree = 'Degree Statistics'
 
     if refresh or G.metrics == None:
         G.metrics = {
                 'Internal Number Nodes'         : G.vcount(),
                 'Internal Number Edges'         : G.ecount(),
                 'Density'                       : G.density(),
-                #'Degree Statistics'             : __describe(G.degree()),
                 'Diameter'                      : G.diameter(),
                 'Cohesiveness'                  : G.cohesiveness(),
                 'Triangle Participation Ratio'  : G.triangle_participation_ratio(),
                 'Transitivity Undirected (Global Clustering Coefficient)'
                                                 : G.transitivity_undirected()
-                #'Transitivity Local Undirected (Local Clustering Coefficient)'
-                #                                : __describe(G.transitivity_local_undirected(mode='zero'))
+                                                }
 
-                }
-        #Transitivity Local Undirected(Local Clustering Coefficient)
-        combined = G.metrics + __helper_m('TLU--Local Clustering Coefficient', __describe(G.transitivity_local_undirected(mode='zero'))
-        #Degree statistics
-        #G.metrics += __helper_m('Degree Statistics', __describe(G.degree())
-
-        import sys
-        sys.exit(0)
-
+        G.metrics.update(aggregate(G.transitivity_local_undirected(mode='zero'), prefix=descriptTLU))
+        G.metrics.update(aggregate(G.degree(), prefix=descriptDegree))
 
 
 Graph.metrics = None
