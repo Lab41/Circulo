@@ -111,12 +111,7 @@ def __prepare__(data_dir, graph_path, options):
                         missing_ids.add(congress_id1)
                         continue
 
-                    e = G.get_eid(v0.index, v1.index, directed=False, error=False)
-
-                    if e>=0:
-                        G.es[e]['weight'] += 1
-                    else:
-                        G.add_edge(v0, v1, weight=1)
+                   G.add_edge(v0, v1)
 
     print("Ids not found: {}".format(missing_ids))
 

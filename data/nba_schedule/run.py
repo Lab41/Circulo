@@ -78,13 +78,7 @@ def __prepare__(data_dir, graph_path):
                     raise("Vertex not found for input team name")
                     sys.exit(1)
 
-                #check if the pair already exists
-
-                e = G.get_eid(team0.index, team1.index, directed=False, error=False)
-                if e >= 0:
-                    G.es[e]['weight'] += 1
-                else:
-                    G.add_edge(team0, team1, weight=1)
+                G.add_edge(team0, team1)
 
     G.write_graphml(fullpath)
 

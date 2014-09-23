@@ -3,7 +3,7 @@ from igraph import VertexCover
 import os
 import sys
 import urllib.request
-from circulo.utils.downloader import download_with_notes, multigraph_to_weights
+from circulo.utils.downloader import download_with_notes
 
 GRAPH_NAME = "football"
 DOWNLOAD_URL = "http://www-personal.umich.edu/~mejn/netdata/football.zip"
@@ -36,7 +36,6 @@ def get_graph():
         __prepare__(data_dir)
 
     G = igraph.load(graph_path)
-    multigraph_to_weights(G)
     return G
 
 def get_ground_truth(G=None):
