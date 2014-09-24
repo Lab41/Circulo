@@ -6,6 +6,7 @@ import pickle
 import shutil
 import sys
 from circulo.utils.downloader import download_with_notes, _unzip
+import csv
 
 ## First pass at downloading SNAP data.
 # 1. SNAP uses gzip for compression
@@ -38,7 +39,7 @@ def _download(data_dir):
     #download ground truth
     download_with_notes(DOWNLOAD_URL_GROUNDTRUTH, GROUNDTRUTH_ZIP_NAME, data_dir)
 
-def _prepare(data_dir):
+def _prepare(data_dir, graph_path):
 
     data_path_old = os.path.join(data_dir, DATA_NAME + ".old")
     data_path = os.path.join(data_dir, DATA_NAME)
@@ -52,38 +53,31 @@ def _prepare(data_dir):
                 if(line.startswith('#') == False):
                     out.write(line)
 
-    datapath = os.path.join(data_dir,DATA_NAME)
-    groundtruthpath = os.path.join(data_dir,GROUNDTRUTH_NAME)
-    graphpath = os.path.join(data_dir,GRAPH_NAME)
-    picklepath = os.path.join(data_dir,PICKLE_NAME)
+    groundtruth_path = os.path.join(data_dir,GROUNDTRUTH_NAME)
 
     print('Creating graphml file')
     # Read in Edgelist. Note that igraph creates extra nodes
     # with no edges for ids missing in sequential order
     # from the graph. We will delete these isolates later
-    g = ig.Graph.Read_Edgelist(datapath,directed=False)
+    g = ig.Graph.Read_Edgelist(data_path,directed=False)
 
     # Assign communities as node attributes
-    import csv
-    with open(groundtruthpath,'r') as gtp:
+    with open(groundtruth_path,'r') as gtp:
             csvreader = csv.reader(gtp,delimiter='\t')
             # note that converting to graphml, attributes cannot be lists
             # only boolean,int,long,float,double,or string
             #
             # storing groundtruth communities as both arrays and strings
             # so that graphml file can retain attribute
-            g.vs.set_attribute_values('groundtruth',[[]])
-            g.vs.set_attribute_values('groundtruth_str',[''])
+            g.vs()['groundtruth_str'] = ''
 
             count = 0
             for line in csvreader:
                 for v in line:
                     v = int(v)
-                    if g.vs[v]['groundtruth']:
-                            g.vs[v]['groundtruth'] += [count]
+                    if g.vs[v]['groundtruth_str']:
                             g.vs[v]['groundtruth_str'] += ',' + str(count)
                     else:
-                        g.vs[v]['groundtruth'] = [count]
                         g.vs[v]['groundtruth_str'] = str(count)
                 count += 1
                 max_clusters = count
@@ -92,41 +86,40 @@ def _prepare(data_dir):
     g.delete_vertices(g.vs.select(_degree=0))
 
     # Write out graphml file
-    g.write_graphml(graphpath)
+    g.write_graphml(graph_path)
 
-    # Write out groundTruth VertexCover as pickle
-    print('Saving graph pickle')
-    clusters = [[] for i in range(max_clusters)]
-    for v in g.vs:
-        for c in v['groundtruth']:
-            clusters[c].append(v.index) #have to re-do this since id's were likely changed by removing isolates
-    groundtruth_vc = ig.VertexCover(g,clusters)
-
-    # save groundtruth cover as class variable
-    setattr(g,'groundtruth',groundtruth_vc)
-    with open(picklepath,'wb') as savefile:
-        pickle.dump(g,savefile)
 
 def get_graph():
     data_dir = os.path.join(os.path.dirname(__file__),'data')
-    pickle_path = os.path.join(data_dir,PICKLE_NAME)
+    graph_path = os.path.join(os.path.dirname(__file__), "..", "GRAPHS", GRAPH_NAME)
+
 
     #make sure the serialized graph exists
-    if not os.path.isfile(pickle_path):
+    if not os.path.exists(data_dir):
         _download(data_dir)
-        _prepare(data_dir)
-    else:
-        print(pickle_path,'already exists. Using old file')
 
-    with open(pickle_path,'rb') as loadfile:
-        return pickle.load(loadfile)
+    if not os.path.exists(graph_path):
+        _prepare(data_dir, graph_path)
+
+    return ig.load(graph_path)
 
 def get_ground_truth(G=None):
 
     if G is None:
         G = get_graph()
 
-    return G.groundtruth
+    cluster_dict = {}
+
+    for idx, cluster_str in enumerate(G.vs()['groundtruth_str']):
+        for c in  cluster_str.split():
+            if c not in cluster_dict:
+                cluster_dict[c] = []
+
+            #have to re-do this since id's likely changed by removing isolates
+            cluster_dict[c].append(idx)
+
+    return  ig.VertexCover(G,[v for v in cluster_dict.values()])
+
 
 def main():
     g = get_graph()
