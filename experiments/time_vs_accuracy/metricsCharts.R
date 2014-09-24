@@ -38,6 +38,7 @@ getMetrics <- function(datapath='/home/lab41/workspace/circulo_output/metrics') 
     metrics$ComputationTime <- as.numeric(metrics$ComputationTime)
     metrics$OmegaAccuracy <- as.numeric(metrics$OmegaAccuracy)
 
+    
    return(metrics)
 }
 
@@ -46,10 +47,13 @@ plotMetrics <- function(metrics,toPDF=FALSE) {
     # Group metrics by Dataset and Algorithm, then summarize
     data <- aggregate(metrics[,c('ComputationTime','OmegaAccuracy')],list(metrics$Datasets,metrics$Algorithms),mean)
     colnames(data)[1:2] <- c("Datasets","Algorithms")
-
+    
+    keep <- which(data$Algorithms != 'groundtruth')
+    data <- data[keep,]
+    
     bubbleplot <- ggplot(data, aes(x=Datasets, y=Algorithms))+
           geom_point(aes(size=OmegaAccuracy, colour=ComputationTime), alpha=0.75)+
-          scale_size_continuous( range =c(5, 25))+
+          scale_size_continuous(limits=c(0,1),range =c(5, 25))+
           scale_colour_gradient2(low="dark green",mid="yellow", high="red", trans='log')+
           theme_bw()+
           ggtitle(Sys.time())
@@ -66,16 +70,20 @@ plotMetrics <- function(metrics,toPDF=FALSE) {
 }
 
 # Plots histogram of specified metric (omega or computation time right now)
-plotHist <- function(metrics,col='omega',toPDF=FALSE) {
+plotHist <- function(metrics,col='ComputationTime',toPDF=FALSE) {
 
-    omega_hist <-  ggplot(data=metrics,aes(x=OmegaAccuracy,fill=Datasets)) + geom_histogram(colour="black",binwidth=0.1) + scale_x_continuous(limits=c(0,1)) + facet_grid(Algorithms ~ Datasets) + theme_bw() + theme(legend.position="none") + ggtitle(Sys.time())
-    
-    time_hist <-  ggplot(data=metrics,aes(x=ComputationTime,fill=Datasets)) + geom_histogram(colour="black") + facet_grid(Algorithms ~ Datasets) + theme_bw() + theme(legend.position="none") + ggtitle(Sys.time())
+    data <- metrics[c('Algorithms','Datasets',col)]
+    colnames(data)[3] <- "value"
+
+    p <- ggplot(data,aes(x=value,fill=Algorithms)) +
+    facet_grid(. ~ Datasets) +
+    geom_density(alpha=0.5) +
+    #geom_histogram(alpha=0.5,position='identity')
+    xlab(col) + 
+    ylab('Probability Density') + 
+    theme_bw() +
+    ggtitle(Sys.time())
   
-    if (col=='omega') { p <- omega_hist}
-    else if (col=='time') { p <- time_hist}
-    else {p <- NULL}
-
 
     if (toPDF) {
         pdffile <- paste(Sys.time(),"metricsGraph.pdf", sep='')
