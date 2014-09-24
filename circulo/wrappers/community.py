@@ -4,53 +4,53 @@ import circulo.algorithms
 
 WEIGHT_PRUNE_THRESHOLD=.75
 
-def pruner(G, descript):
-    '''
-    '''
-    weights = G.es()['weight']
-    threshold =  WEIGHT_PRUNE_THRESHOLD * max(weights)
-    edges = G.es.select(weight_lt=threshold)
-    G.delete_edges(edges)
-    print("\t[Info - ", descript,"] Pruned ", len(edges)," edges less than ", WEIGHT_PRUNE_THRESHOLD, "%")
 
-def edge_cleanup(ctx, descript, prune=True):
-    '''
-        Converting a directed, and potentially multigraph, graph to an undirected graph, can result in a loss of
-        precision; therefore, you must be careful when doing conversion. For now we have to make certain assumptions about
-        how certain edge attributes are combined.  We are currently summing the weights of mulitgraphs and multiple directed edges
-    '''
+def cleanup(ctx, descript, algo_directed, algo_simple):
 
-    try:
-        #this will collapse multiedges and go to undirected
-        if ctx['directed']:
-            print('\t[Info - ',descript,'] Converting graph to undirected (summing edge weights), since algo requires undirected')
-            G_copy = ctx['graph'].copy()
-            if G_copy.is_weighted() is False:
-                G_copy.es()['weight']=1
-            G_copy.to_undirected(combine_edges={'weight':sum})
+    if ctx['directed'] == algo_directed and ctx['simple'] == algo_simple:
+        print("\t[Info - ", descript, "] - No graph cleaning required")
+        return ctx['graph'], ctx['weight'], ctx['directed']
 
-            if prune == True:
-                pruner(G_copy, descript)
 
-        #this will just collapse multiedges
-        elif not ctx['simple']:
-            print('\t[Info - ',descript,'] Collapsed multigraph edges since algo requires it')
-            G_copy = ctx['graph'].copy()
+    collapsed = False
+    directed_graph = ctx['directed']
 
-            if G_copy.is_weighted() is False:
-                G_copy.es()['weight']=1
+    if algo_directed is True and directed_graph is False:
+        print("\t[Info - ", descript, "] - Warning: Passing undirected graph to directed algo")
 
-            G_copy.simplify(combine_edges={'weight':sum})
+    #otherwise we need to make some mods to the graph, so we will copy it then make the mods
+    G_copy = ctx['graph'].copy()
 
-            if prune == True:
-                pruner(G_copy, descript)
-        else:
-            G_copy = ctx['graph']
+    #if the graph is directed and algo is not directed
+    if ctx['directed'] and not algo_directed:
+        #can't collapse on weight without first making sure the edges are weighted
+        if G_copy.is_weighted():
+            G_copy.es()['weight'] = 1
+        G_copy.to_undirected(combine_edges={'weight':sum})
+        print('\t[Info - ',descript,'] Converting graph to undirected (summing edge weights)')
+        collapsed = True
 
-    except Exception as e:
-        print("Error in Edge Cleanup: ", e)
+    #if the algo is simple but the data is not, then we have to make the data simple
+    if algo_simple and not ctx['simple']:
+        #can't collapse on weight without first making sure the edges are weighted
+        if G_copy.is_weighted():
+            G_copy.es()['weight'] = 1
+        G_copy.simplify(combine_edges={'weight':sum})
+        print('\t[Info - ',descript,'] Collapsed multigraph edges (summing edge weights)')
+        collapsed = True
 
-    return G_copy
+    if collapsed == True:
+        weights = G_copy.es()['weight']
+        threshold =  WEIGHT_PRUNE_THRESHOLD * max(weights)
+        edges = G_copy.es.select(weight_lt=threshold)
+        G_copy.delete_edges(edges)
+        print("\t[Info - ", descript,"] Pruned ", len(edges)," edges less than ", WEIGHT_PRUNE_THRESHOLD, "%")
+        #if the graph is collapsed, I think it becomes undirected
+        directed_g = False
+
+    weights = "weight" if G_copy.is_weighted() else None
+
+    return G_copy, weights, directed_graph
 
 
 stochastic_algos = {
@@ -66,46 +66,61 @@ stochastic_algos = {
         }
 
 def comm_infomap(ctx, descript):
-    return partial(igraph.Graph.community_infomap, edge_cleanup(ctx, descript, prune=True), edge_weights=ctx['weight'], vertex_weights=None)
+    G, weights,_  = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(igraph.Graph.community_infomap, G, edge_weights=weights, vertex_weights=None)
 
 def comm_fastgreedy(ctx, descript):
-    return partial(igraph.Graph.community_fastgreedy, edge_cleanup(ctx, descript,prune=True), weights=ctx['weight'])
+    G, weights,_ = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(igraph.Graph.community_fastgreedy, G, weights=weights)
 
 def comm_edge_betweenness(ctx, descript):
-    return partial(igraph.Graph.community_edge_betweenness, ctx['graph'], ctx['directed'], weights=ctx['weight'])
+    G, weights, directed = cleanup(ctx, descript, algo_directed=True, algo_simple=True)
+    return partial(igraph.Graph.community_edge_betweenness, G, directed, weights)
 
 def comm_leading_eigenvector(ctx, descript):
-    return partial(igraph.Graph.community_leading_eigenvector, ctx['graph'], weights=ctx['weight'])
+    G, weights, _ = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(igraph.Graph.community_leading_eigenvector, G, weights=weights)
 
 def comm_multilevel(ctx, descript):
-    return partial(igraph.Graph.community_multilevel, edge_cleanup(ctx, descript),  weights=ctx['weight'])
+    G, weights, _ = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(igraph.Graph.community_multilevel, G,  weights=weights)
 
 def comm_label_propagation(ctx, descript):
-    return partial(igraph.Graph.community_label_propagation, ctx['graph'], weights=ctx['weight'])
+    G, weights, directed = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(igraph.Graph.community_label_propagation, G, weights=weights)
 
 def comm_walktrap(ctx, descript):
-    return partial(igraph.Graph.community_walktrap, ctx['graph'], weights=ctx['weight'])
+    G, weights, directed = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(igraph.Graph.community_walktrap, G, weights=weights)
 
 def comm_spinglass(ctx, descript):
-    return partial(igraph.Graph.community_spinglass, ctx['graph'], weights=ctx['weight'])
+    G, weights, directed = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(igraph.Graph.community_spinglass, G, weights=weights)
 
 def comm_conga(ctx, descript):
-    return partial(circulo.algorithms.conga.conga, edge_cleanup(ctx, descript))
+    G, weights, directed = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(circulo.algorithms.conga.conga, G)
 
 def comm_congo(ctx, descript):
-    return  partial(circulo.algorithms.congo.congo, edge_cleanup(ctx, descript))
+    G, weights, directed = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return  partial(circulo.algorithms.congo.congo, G)
 
 def comm_radicchi_strong(ctx, descript):
-    return partial(circulo.algorithms.radicchi.radicchi,ctx['graph'],'strong')
+    G, weights, directed = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(circulo.algorithms.radicchi.radicchi,G,'strong')
 
 def comm_radicchi_weak(ctx, descript):
-    return partial(circulo.algorithms.radicchi.radicchi,ctx['graph'],'weak')
+    G, weights, directed = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(circulo.algorithms.radicchi.radicchi,G,'weak')
 
 def comm_bigclam(ctx, descript):
-    return partial(circulo.algorithms.snap_bigclam.bigclam, edge_cleanup(ctx, descript))
+    G, weights, directed = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(circulo.algorithms.snap_bigclam.bigclam, G)
 
 def comm_coda(ctx, descript):
-    return partial(circulo.algorithms.snap_coda.coda, ctx['graph'])
+    G, weights, directed = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(circulo.algorithms.snap_coda.coda, G)
 
 def comm_clauset_newman_moore(ctx, descript):
-    return partial(circulo.algorithms.snap_cnm.clauset_newman_moore, ctx['graph'])
+    G, weights, directed = cleanup(ctx, descript, algo_directed=False, algo_simple=True)
+    return partial(circulo.algorithms.snap_cnm.clauset_newman_moore, G)

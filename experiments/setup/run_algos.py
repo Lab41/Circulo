@@ -102,6 +102,7 @@ def run_single(worker):
             'iteration' : worker.iteration
             }
 
+
     #write to json
     with open(os.path.join(worker.out_dir, "json", worker.job_name+'.json'), "w") as f:
         json.dump(results, f)
@@ -191,7 +192,9 @@ def run(algos, datasets, output_dir, iterations, workers, timeout):
 
 
     pool = multiprocessing.Pool(processes=workers)
-    pool.map_async(run_single, map_inputs)
+    r = pool.map_async(run_single, map_inputs)
+    #need the "get" call to be able to retrieve exceptions in the child processes
+    r.get()
     pool.close()
     pool.join()
 

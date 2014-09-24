@@ -90,7 +90,7 @@ def __prepare__(data_dir, graph_path, options):
     for fname in glob.glob(src_files):
         with open(fname,'r') as inputfile:
             data = json.load(inputfile)
-            print("Processing: {}".format(fname))
+            #print("Processing: {}".format(fname))
             for vt in data['votes']:
                 #print(vt)
                 congress_ids = [n['id'] for n in data['votes'][vt]]
@@ -111,9 +111,30 @@ def __prepare__(data_dir, graph_path, options):
                         missing_ids.add(congress_id1)
                         continue
 
-                    G.add_edge(v0, v1)
+                    e = G.get_eid(v0.index, v1.index, directed=False, error=False)
+
+                    if e>=0:
+                        G.es[e]['weight'] += 1
+                    else:
+                        G.add_edge(v0, v1, weight=1)
 
     print("Ids not found: {}".format(missing_ids))
+
+    #prune the graph
+    weights = G.es()['weight']
+    threshold =  .65 * max(weights)
+    edges = G.es.select(weight_lt=threshold)
+    G.delete_edges(edges)
+
+    #make sure that the graph is not disconnected. if so take larger component
+    components = G.components(mode=igraph.WEAK)
+    if len(components) > 1:
+        print("[Graph Prep - Congress]... Disconnected Graph Detected. Using largest component.")
+        print("[Graph Prep - Congress]... Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+        G = G.subgraph(max(components, key=len))
+        print("[Graph Prep - Congress]... Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+
+
 
     G.write_graphml(graph_path)
 
