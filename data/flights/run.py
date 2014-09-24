@@ -3,7 +3,7 @@ from igraph import VertexCover
 import os
 import sys
 import urllib.request
-
+from circulo.utils.general import get_largest_component
 
 # Data from from http://openflights.org/data.html
 
@@ -69,6 +69,16 @@ def __prepare__(data_dir):
     # Delete all vertices with degree 0
     delete_empty_airports(G)
     print("Writing to " + newFileName + "...")
+
+
+    #make sure that the graph is not disconnected. if so take larger component
+    components = G.components(mode=igraph.WEAK)
+    if len(components) > 1:
+        print("[Graph Prep - Flights]... Disconnected Graph Detected. Using largest component.")
+        print("[Graph Prep - Flights]... Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+        G = G.subgraph(max(components, key=len))
+        print("[Graph Prep - Flights]... Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+
     G.write_graphml(newFileName)
     print("Data is now available in " + newFileName)
 

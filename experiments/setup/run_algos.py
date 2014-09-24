@@ -41,20 +41,6 @@ def to_cover(result):
         raise Exception("Algorithm output type not recognized")
     return cover
 
-def get_largest_component(G, descript="not specified"):
-    """
-    Given a graph, returns the subgraph containing only its largest component".
-    """
-    components = G.components(mode=igraph.WEAK)
-    if len(components) == 1:
-        return G
-    print("[Graph Prep -",descript,"]... Disconnected Graph Detected. Using largest component.")
-    print("[Graph Prep -",descript,"]... Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
-    G = G.subgraph(max(components, key=len))
-    print("[Graph Prep -",descript,"]... Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
-    return G
-
-
 
 def create_graph_context(G):
     '''
@@ -156,7 +142,10 @@ def run(algos, datasets, output_dir, iterations, workers, timeout):
 
         print("[Graph Prep -",dataset,"]... Initiated")
         G = data_mod.get_graph()
-        G = get_largest_component(G, dataset)
+
+        if len(G.components(mode=igraph.WEAK)) is not 1:
+            print("Error: ", dataset, " is disconnect. Clean data before proceeding")
+            continue
 
         try:
             G.write_graphml(os.path.join(output_dir, "graphs", dataset+".graphml"))

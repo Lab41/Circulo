@@ -12,34 +12,45 @@ import importlib
 import circulo.metrics.cover
 import multiprocessing
 import time
+import signal
+import os
+import errno
+import traceback
+import sys
+from collections import namedtuple
 
-output_dir = "metrics"
+Worker = namedtuple('Worker', 'json_path output_path timeout')
 
 def main():
 
-    DEFAULT_NUM_WORKERS = 5
     parser = argparse.ArgumentParser(description='Compute metrics for given cover.')
     parser.add_argument('input_path', type=str, help='file or directory containing results')
-    parser.add_argument('--workers', type=int, default=DEFAULT_NUM_WORKERS, help='Number of workers to process')
+    parser.add_argument('output_path', type=str, help='output directory to write metric files')
+    parser.add_argument('--workers', type=int, default=None, help='Number of workers to process (DEFAULT: number of processors)')
+    parser.add_argument('--timeout', type=int, default=3600, help="timeout for a work item in seconds (DEFAULT: 3600)")
     args = parser.parse_args()
 
     if not os.path.exists(args.input_path):
         print("Path \"{}\" does not exist".format(args.input_path))
         return
 
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    if not os.path.exists(args.output_path):
+        os.makedirs(args.output_path)
 
-    file_q = []
+    workers = []
 
     if os.path.isdir(args.input_path):
         for f in glob.glob(os.path.join(args.input_path, '*.json')):
-            file_q.append(f)
+            workers.append(Worker(f, args.output_path, args.timeout))
     else:
-        file_q.append(args.input_path)
+        workers.append(Worker(args.input_path, args.output_path, args.timeout))
 
-    pool = multiprocessing.Pool(processes = args.workers)
-    pool.map_async(analyze_json, file_q)
+    if args.workers is not None:
+        pool = multiprocessing.Pool(processes = args.workers)
+    else:
+        pool = multiprocessing.Pool()
+
+    pool.map_async(analyze_json, workers)
     pool.close()
     pool.join()
 
@@ -49,23 +60,16 @@ class TimeoutError(Exception):
 def __handle_timeout(signum, frame):
     raise TimeoutError(os.strerror(errno.ETIME))
 
-import signal
-import os
-import errno
-import traceback
-import sys
-TIMEOUT = 3600
-
-def analyze_json(json_path):
+def analyze_json(worker):
 
     signal.signal(signal.SIGALRM, __handle_timeout)
-    signal.setitimer(signal.ITIMER_REAL, TIMEOUT)
+    signal.setitimer(signal.ITIMER_REAL, worker.timeout)
     t0 = time.time()
 
 
     data = None
 
-    with open(json_path) as f:
+    with open(worker.json_path) as f:
         data = json.load(f)
 
     if(data is None):
