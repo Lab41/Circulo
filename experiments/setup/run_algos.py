@@ -212,7 +212,7 @@ def main():
     DEFAULT_TIMEOUT=3600
 
     comm_choices = [ a.replace('comm_', '') for a in dir(community) if a.startswith('comm_')]
-    data_choices = ['scotus', 'school', 'revolution', 'pgp', 'amazon', 'football', 'flights', 'congress_voting', 'karate', 'malaria', 'nba_schedule', 'netscience']
+    data_choices = ['scotus', 'school', 'revolution', 'pgp', 'amazon', 'football', 'flights', 'senate_voting','house_voting', 'karate', 'malaria', 'nba_schedule', 'netscience']
 
     # Parse user input
     parser = argparse.ArgumentParser(description='Run community detection on a dataset.')
