@@ -145,9 +145,9 @@ def get_graph(options={"congress_type":"house"}):
 
     if options is None or options["congress_type"] == "senate":
         options = {"congress_type":"senate"}
-        graph_path = os.path.join(os.path.dirname(__file__), "senate.graphml")
+        graph_path = os.path.join(os.path.dirname(__file__), "..", "GRAPHS", "senate.graphml")
     elif options["congress_type"] == "house":
-        graph_path = os.path.join(os.path.dirname(__file__),"house.graphml")
+        graph_path = os.path.join(os.path.dirname(__file__),"..", "GRAPHS", "house.graphml")
     else:
         raise("congress type must be either \"house\" or \"senate\"")
 

@@ -24,7 +24,7 @@ def cleanup(ctx, descript, algo_directed, algo_simple):
     #if the graph is directed and algo is not directed
     if ctx['directed'] and not algo_directed:
         #can't collapse on weight without first making sure the edges are weighted
-        if G_copy.is_weighted():
+        if not G_copy.is_weighted():
             G_copy.es()['weight'] = 1
         G_copy.to_undirected(combine_edges={'weight':sum})
         print('\t[Info - ',descript,'] Converting graph to undirected (summing edge weights)')
@@ -33,7 +33,7 @@ def cleanup(ctx, descript, algo_directed, algo_simple):
     #if the algo is simple but the data is not, then we have to make the data simple
     if algo_simple and not ctx['simple']:
         #can't collapse on weight without first making sure the edges are weighted
-        if G_copy.is_weighted():
+        if not G_copy.is_weighted():
             G_copy.es()['weight'] = 1
         G_copy.simplify(combine_edges={'weight':sum})
         print('\t[Info - ',descript,'] Collapsed multigraph edges (summing edge weights)')

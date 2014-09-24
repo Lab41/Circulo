@@ -4,7 +4,7 @@ import os
 import sys
 import urllib.request
 from circulo.utils.downloader import download_with_notes
-
+import shutil
 
 GRAPH_NAME = 'karate'
 DOWNLOAD_URL = 'http://www-personal.umich.edu/~mejn/netdata/karate.zip'
@@ -19,9 +19,10 @@ def __download__(data_dir):
     download_with_notes(DOWNLOAD_URL, GRAPH_NAME, data_dir)
 
 
-def __prepare__(data_dir):
+def __prepare__(data_dir, graph_path):
     """
     """
+    shutil.copy(os.path.join(data_dir, GRAPH_NAME + GRAPH_TYPE), graph_path)
 
 
 def get_graph():
@@ -29,13 +30,12 @@ def get_graph():
     Downloads and prepares a graph
     """
     data_dir = os.path.join(os.path.dirname(__file__), "data")
-    graph_path = os.path.join(data_dir, GRAPH_NAME + GRAPH_TYPE)
+    graph_path = os.path.join(os.path.dirname(__file__), "..", "GRAPHS", GRAPH_NAME + GRAPH_TYPE)
 
-    if not os.path.exists(graph_path):
+    if not os.path.exists(data_dir):
         __download__(data_dir)
-        __prepare__(data_dir)
-    else:
-        print(graph_path, "already exists. Using old file.")
+    if not os.path.exists(graph_path):
+        __prepare__(data_dir, graph_path)
 
     return igraph.load(graph_path)
 

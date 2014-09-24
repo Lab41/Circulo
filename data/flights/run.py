@@ -48,7 +48,7 @@ def download_with_notes(URL, FILENAME, data_dir):
     print("Download complete.")
 
 
-def __prepare__(data_dir):
+def __prepare__(data_dir, graph_path):
     """
     Takes files downloaded by __download__ and converts them into .graphml
     format.
@@ -57,7 +57,6 @@ def __prepare__(data_dir):
     and there is an edge wherever there is a flight from one airport to
     another. Note that an edge a->b does not imply b->a.
     """
-    newFileName = os.path.join(data_dir, ROUTES_FILENAME + ".graphml")
     print("Parsing airport data...")
     # Create G with airports as vertices
     G = initialize_vertices(os.path.join(data_dir, AIRPORTS_FILENAME + ".dat"))
@@ -68,7 +67,7 @@ def __prepare__(data_dir):
     print("Deleting airports with no flights...")
     # Delete all vertices with degree 0
     delete_empty_airports(G)
-    print("Writing to " + newFileName + "...")
+    print("Writing to " + graph_path + "...")
 
 
     #make sure that the graph is not disconnected. if so take larger component
@@ -79,8 +78,7 @@ def __prepare__(data_dir):
         G = G.subgraph(max(components, key=len))
         print("[Graph Prep - Flights]... Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
 
-    G.write_graphml(newFileName)
-    print("Data is now available in " + newFileName)
+    G.write_graphml(graph_path)
 
 
 def initialize_vertices(fileName):
@@ -210,11 +208,12 @@ def get_graph():
             flight, separated by spaces
     """
     data_dir = os.path.join(os.path.dirname(__file__), "data")
-    graph_path = os.path.join(data_dir, ROUTES_FILENAME + ".graphml")
+    graph_path = os.path.join(os.path.dirname(__file__), "..", "GRAPHS", ROUTES_FILENAME + ".graphml")
 
-    if not os.path.exists(graph_path):
+    if not os.path.exists(data_dir):
         __download__(data_dir)
-        __prepare__(data_dir)
+    if not os.path.exists(graph_path):
+        __prepare__(data_dir, graph_path)
 
     return igraph.load(graph_path)
 
