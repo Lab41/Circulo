@@ -13,7 +13,7 @@ library(ggplot2)
 library(jsonlite)
 
 # Read metrics from json
-getMetrics <- function(datapath='/home/lab41/workspace/circulo_output/metrics') {
+getMetrics <- function(datapath='/Users/paulm/Desktop/metrics') {
 
     #Get file names and load the json files
     filenames <- list.files(datapath, pattern="*.json", full.names=TRUE)

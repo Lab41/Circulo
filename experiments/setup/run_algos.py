@@ -208,7 +208,7 @@ def run(algos, datasets, output_dir, iterations, workers, timeout):
 def main():
 
     DEFAULT_STOCHASTIC_REPETITIONS = 1
-    DEFAULT_NUM_WORKERS = 10
+    DEFAULT_NUM_WORKERS = multiprocessing.cpu_count()
     DEFAULT_TIMEOUT=3600
 
     comm_choices = [ a.replace('comm_', '') for a in dir(community) if a.startswith('comm_')]
@@ -220,8 +220,8 @@ def main():
     parser.add_argument('algo', nargs=1,choices=['ALL']+comm_choices, help='Which community detection to run.')
     parser.add_argument('--output', type=str, nargs=1, default=[OUTPUT_DIR], help='Base output directory')
     parser.add_argument('--samples', type=int, default=DEFAULT_STOCHASTIC_REPETITIONS, help='Number of times to run stochastic algos')
-    parser.add_argument('--workers', type=int, default=DEFAULT_NUM_WORKERS, help='Number of workers to process')
-    parser.add_argument('--timeout', type=int, default=DEFAULT_TIMEOUT, help='Timeout applied to algo execution on a dataset')
+    parser.add_argument('--workers', type=int, default=DEFAULT_NUM_WORKERS, help='Number of workers to process (DEFAUT: num processors)')
+    parser.add_argument('--timeout', type=int, default=DEFAULT_TIMEOUT, help='Timeout in seconds applied to algo execution on a dataset (DEFAULT: 3600)')
     args = parser.parse_args()
 
     algos = comm_choices if 'ALL' in args.algo else args.algo
