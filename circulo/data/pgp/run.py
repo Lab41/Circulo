@@ -1,57 +1,33 @@
 import igraph
-from igraph import VertexClustering
 import os
-import sys
 import urllib.request
-from circulo.utils.downloader import download_with_notes
+
+from circulo.data.databot import CirculoData
 
 
-GRAPH_NAME = 'PGPgiantcompo'
+
+GRAPH_NAME = 'PGPgiantcompo.net'
 DOWNLOAD_URL = 'http://deim.urv.cat/~aarenas/data/xarxes/PGP.zip'
-GRAPH_TYPE = '.net'
-
-def __download__(data_dir):
-    """
-    Downloads the graph from DOWNLOAD_URL into data_dir/GRAPH_NAME
-    """
-    if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
-    download_with_notes(DOWNLOAD_URL, GRAPH_NAME, data_dir)
 
 
-def __prepare__(data_dir):
-    """
-    """
-    pass
+class PGPData(CirculoData):
 
+    def __download__(self):
+        self.download_with_notes(DOWNLOAD_URL)
 
-def get_graph():
-    """
-    TEMPLATE COMMENT: Downloads and prepares a graph
-    """
-    data_dir = os.path.join(os.path.dirname(__file__), "data")
-    graph_path = os.path.join(data_dir, GRAPH_NAME + GRAPH_TYPE)
+    def __prepare__(self):
 
-    if not os.path.exists(graph_path):
-        __download__(data_dir)
-        __prepare__(data_dir)
-    else:
-        print(graph_path, "already exists. Using old file.")
+        data_path = os.path.join(self.raw_data_path, GRAPH_NAME)
+        G = igraph.load(data_path)
+        del G.vs['id'] #graphml uses the id field
+        G.write_graphml(self.graph_path)
 
-    return igraph.load(graph_path)
-
-
-def get_ground_truth(G=None):
-    """
-    returns a VertexClustering object of the
-    ground truth of the graph G.
-    """
-    raise(NotImplementedError)
+    def get_ground_truth(self):
+        raise(NotImplementedError)
 
 
 def main():
-    G = get_graph()
-#    get_ground_truth(G)
+    PGPData("pgp").get_graph()
 
 if __name__ == "__main__":
     main()
