@@ -22,9 +22,7 @@ To write an etl script for a new dataset, follow these steps. We'll pretend our 
 ## Progress
 | Dataset | Description | `run.py` implemented? | README written? | Ground Truth implemented?
 | ------- | ------------|:---------------------:|:---------------:|:----:|
-| citi | New York bike trip histories recorded by [citibike](http://www.citibikenyc.com/system-data) | **No** | **In Progress** | **No** |
 | congress_voting | Historical congress voting data | Yes | Yes | Yes |
-| federal_contrib | Contribution records to political entities | **In progress** | **No** | **No** |
 | flights | Flights data from <http://openflights.org/data.html> | Yes | Yes | Yes |
 | football | NCAA D1A games played in the Fall 2000 season | Yes | Yes | Yes |
 | karate | Famous data set of Zachary's karate club | Yes | Yes | **No** |

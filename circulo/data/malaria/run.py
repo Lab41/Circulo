@@ -1,60 +1,50 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2014 In-Q-Tel, Inc/Lab41, All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import igraph
-from igraph import VertexClustering
 import os
-import sys
-import urllib.request
-from circulo.utils.downloader import download_with_notes
 
+from circulo.data.databot import CirculoData
 
-GRAPH_NAME = 'malaria'
 DOWNLOAD_URL = 'http://danlarremore.com/bipartiteSBM/malariaData.zip'
-GRAPH_TYPE = '.edgelist'
 
-def __download__(data_dir):
-    """
-    downloads the graph from DOWNLOAD_URL into data_dir/GRAPH_NAME
-    """
-    if not os.path.exists(data_dir):
-        os.mkdir(data_dir)
-    download_with_notes(DOWNLOAD_URL, GRAPH_NAME, data_dir)
+class MalariaData(CirculoData):
+
+    def __download__(self):
+        self.download_with_notes(DOWNLOAD_URL)
 
 
-def __prepare__(data_dir):
-    with open(os.path.join(data_dir, "malariaData", GRAPH_NAME + GRAPH_TYPE), 'r') as f:
-        with open(os.path.join(data_dir, GRAPH_NAME + GRAPH_TYPE), 'w') as new:
-            for line in f:
-                new.write(line[:-2] + '\n')
+    def __prepare__(self):
 
+        data = os.path.join(self.raw_data_path, "MalariaData", "malaria.edgelist")
+        mod_data = os.path.join(self.raw_data_path, "MalariaData", "mod_malaria.edgelist")
 
-def get_graph():
-    """
-    Downloads and prepares a graph
-    """
-    data_dir = os.path.join(os.path.dirname(__file__), "data")
-    graph_path = os.path.join(data_dir, GRAPH_NAME + GRAPH_TYPE)
+        #we just need to remove the third column which has 1's in it
+        #so igraph can read it as an edgelist
+        with open(data, 'r') as f:
+            with open(mod_data, 'w') as new:
+                for line in f:
+                    new.write(line[:-2] + '\n')
 
-    if not os.path.exists(graph_path):
-        __download__(data_dir)
-        __prepare__(data_dir)
-    else:
-        print(graph_path, "already exists. Using old file.")
-
-    return igraph.load(graph_path)
-
-
-def get_ground_truth(G=None):
-    """
-    returns a VertexClustering object of the
-    ground truth of the graph G.
-    """
-    if G is None:
-        G = get_graph()
-
-    raise(Exception(NotImplementedError))
+        G = igraph.load(mod_data)
+        G.write_graphml(self.graph_path)
 
 def main():
-    G = get_graph()
-#    get_ground_truth(G)
+    databot = MalariaData("malaria")
+    databot.get_graph()
 
 if __name__ == "__main__":
     main()

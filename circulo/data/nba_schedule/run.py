@@ -1,3 +1,20 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2014 In-Q-Tel, Inc/Lab41, All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import csv
 import re
 import sys
@@ -8,141 +25,120 @@ from subprocess import call
 import igraph
 from igraph import VertexCover
 
-git_dir = "2013-2014-nba-schedule"
-
-def __download__(data_dir):
-    """
-    clones the data from the git repo to the raw data dir
-    """
-
-    os.mkdir(data_dir)
-
-    try:
-        call(["git", "clone", "https://github.com/davewalk/2013-2014-nba-schedule", os.path.join(data_dir, git_dir)])
-    except Exception as e:
-        print("Git Clone Failed to retrieve data")
-        raise(e)
+from circulo.data.databot import CirculoData
 
 
-def convert(string):
-    '''
-    Puts the team names into a consistent format since the naming is inconsistent throughout
-    the datasets
-    '''
-    string = string.lower()
-    string = re.sub('_',"-", string)
-    string = re.sub(' ',"-", string)
-    return string
+class NBAData(CirculoData):
 
 
-def __prepare__(data_dir, graph_path):
-    '''
-    Takes the raw data and converts it into a graphml file
-    '''
+    def __download__(self):
 
-    team_dict = {}
-
-    fullpath = os.path.join(data_dir, graph_path)
-
-    out = open(fullpath, "w")
-
-    G = igraph.Graph()
-
-    for filename in glob.glob(os.path.join(data_dir, git_dir,"data","csv",'*.csv')):
-        std_team_name = re.sub('.csv',"",os.path.basename(filename))
-        std_team_name = re.sub('_',"-",std_team_name)
-        G.add_vertex(std_team_name)
+        try:
+            call(["git", "clone", "https://github.com/davewalk/2013-2014-nba-schedule", self.raw_data_path])
+        except Exception as e:
+            print("Git Clone Failed to retrieve data")
+            raise(e)
 
 
-    #each file represents a team
-    for filename in glob.glob(os.path.join(data_dir,git_dir,"data","csv",'*.csv')):
+    def convert(self, string):
+        '''
+        Puts the team names into a consistent format since the naming is inconsistent throughout
+        the datasets
+        '''
+        string = string.lower()
+        string = re.sub('_',"-", string)
+        string = re.sub(' ',"-", string)
+        return string
 
-        with open(filename, "r") as data:
 
-            reader = csv.reader(data)
+    def __prepare__(self):
 
+        team_dict = {}
+
+        G = igraph.Graph()
+
+        data_regex = os.path.join(self.raw_data_path,"data","csv",'*.csv')
+
+        #adds the vertices strictly based on the names of the files
+        for filename in glob.glob(data_regex):
             std_team_name = re.sub('.csv',"",os.path.basename(filename))
-            std_team_name = re.sub('_',"-", std_team_name)
+            std_team_name = re.sub('_',"-",std_team_name)
+            G.add_vertex(std_team_name)
 
-            team0 = G.vs.find(name=std_team_name)
+        #each file represents a team
+        for filename in glob.glob(data_regex):
 
-            #skip first row of header info
-            next(reader,None)
+            with open(filename, "r") as data:
 
-            for row in reader:
+                reader = csv.reader(data)
+                std_team_name = re.sub('.csv',"",os.path.basename(filename))
+                std_team_name = re.sub('_',"-", std_team_name)
 
-                std_opponent = convert(row[2])
-                team1 = G.vs.find(name=std_opponent)
+                team0 = G.vs.find(name=std_team_name)
 
-                if team0 is None or team1 is None:
-                    raise("Vertex not found for input team name")
-                    sys.exit(1)
+                #skip first row of header info
+                next(reader,None)
 
-                G.add_edge(team0, team1)
+                for row in reader:
 
-    G.write_graphml(fullpath)
+                    std_opponent = self.convert(row[2])
+                    team1 = G.vs.find(name=std_opponent)
+
+                    if team0 is None or team1 is None:
+                        raise("Vertex not found for input team name")
+                        sys.exit(1)
+
+                    G.add_edge(team0, team1)
+
+        G.write_graphml(self.graph_path)
 
 
-def get_graph():
+    def get_ground_truth(self, G):
 
-    data_dir = os.path.join(os.path.dirname(__file__), "data")
-    graph_path = "nba.graphml"
-    full_path = os.path.join(data_dir, graph_path)
+        #ground truth table
+        divisions = {
+                "boston-celtics":0,
+                "brooklyn-nets":0,
+                "new-york-knicks":0,
+                "philadelphia-76ers":0,
+                "toronto-raptors":0,
+                "chicago-bulls":1,
+                "cleveland-cavaliers":1,
+                "detroit-pistons":1,
+                "indiana-pacers":1,
+                "milwaukee-bucks":1,
+                "atlanta-hawks":2,
+                "charlotte-bobcats":2,
+                "miami-heat":2,
+                "orlando-magic":2,
+                "washington-wizards":2,
+                "dallas-mavericks":3,
+                "houston-rockets":3,
+                "memphis-grizzlies":3,
+                "new-orleans-pelicans":3,
+                "san-antonio-spurs":3,
+                "denver-nuggets":4,
+                "minnesota-timberwolves":4,
+                "oklahoma-city-thunder":4,
+                "portland-trail-blazers":4,
+                "utah-jazz":4,
+                "golden-state-warriors":5,
+                "los-angeles-clippers":5,
+                "los-angeles-lakers":5,
+                "phoenix-suns":5,
+                "sacramento-kings":5
+                }
 
-    if not os.path.exists(data_dir):
-        __download__(data_dir)
+        cluster_list = [[],[],[],[],[],[]]
 
-    if not os.path.exists(full_path):
-        __prepare__(data_dir, graph_path)
+        for vertex_id, team_name in enumerate(G.vs['name']):
+            cluster_list[divisions[team_name]].append(vertex_id)
 
-    return igraph.load(full_path)
-
-def get_ground_truth(G):
-
-    #ground truth table
-    divisions = {
-            "boston-celtics":0,
-            "brooklyn-nets":0,
-            "new-york-knicks":0,
-            "philadelphia-76ers":0,
-            "toronto-raptors":0,
-            "chicago-bulls":1,
-            "cleveland-cavaliers":1,
-            "detroit-pistons":1,
-            "indiana-pacers":1,
-            "milwaukee-bucks":1,
-            "atlanta-hawks":2,
-            "charlotte-bobcats":2,
-            "miami-heat":2,
-            "orlando-magic":2,
-            "washington-wizards":2,
-            "dallas-mavericks":3,
-            "houston-rockets":3,
-            "memphis-grizzlies":3,
-            "new-orleans-pelicans":3,
-            "san-antonio-spurs":3,
-            "denver-nuggets":4,
-            "minnesota-timberwolves":4,
-            "oklahoma-city-thunder":4,
-            "portland-trail-blazers":4,
-            "utah-jazz":4,
-            "golden-state-warriors":5,
-            "los-angeles-clippers":5,
-            "los-angeles-lakers":5,
-            "phoenix-suns":5,
-            "sacramento-kings":5
-            }
-
-    cluster_list = [[],[],[],[],[],[]]
-
-    for vertex_id, team_name in enumerate(G.vs['name']):
-        cluster_list[divisions[team_name]].append(vertex_id)
-
-    return VertexCover(G, cluster_list)
+        return VertexCover(G, cluster_list)
 
 def main():
-    G = get_graph()
-    clustering = get_ground_truth(G)
+    databot = NBAData("nba_schedule")
+    databot.get_ground_truth(databot.get_graph())
 
 if __name__ == "__main__":
     main()
