@@ -70,6 +70,8 @@ import signal
 import os
 import errno
 
+circulo_data_list = list()
+
 def run_single(worker):
 
     print("#### Processing: ", worker.job_name)
@@ -114,8 +116,11 @@ def run_single(worker):
     print("\t[Info - ", worker.job_name,"] Finished in ", results['elapsed'])
 
 
+import inspect
+from circulo.data.databot import CirculoData
 
-def run(algos, datasets, output_dir, iterations, workers, timeout):
+def run(algos, dataset_names, output_dir, iterations, workers, timeout):
+
 
     #create output directory if it doesn't exist
     if not os.path.exists(output_dir):
@@ -123,49 +128,45 @@ def run(algos, datasets, output_dir, iterations, workers, timeout):
 
     map_inputs = []
 
-    graph_dir = os.path.join(output_dir, "graphs")
     json_dir = os.path.join(output_dir, "json")
-    #pickle_dir = os.path.join(output_dir, "pickle")
-
-    if not os.path.exists(graph_dir):
-        os.mkdir(graph_dir)
 
     if not os.path.exists(json_dir):
         os.mkdir(json_dir)
 
-    #if not os.path.exists(pickle_dir):
-    #    os.mkdir(pickle_dir)
+    databots = list()
 
-    for dataset in datasets:
+    for dataset in dataset_names:
+        #we are going dynamically load instances of each of the CirculoData subclasses
+        data_mod = importlib.import_module('circulo.data.'+dataset+'.run')
+        for name,cls in inspect.getmembers(data_mod):
+            if inspect.isclass(cls) and issubclass(cls, CirculoData) and name != "CirculoData":
+                instance = cls(dataset)
+                databots.append(instance)
 
-        #load the dataset
-        data_mod = importlib.import_module('data.'+dataset+'.run')
 
-        print("[Graph Prep -",dataset,"]... Initiated")
-        G = data_mod.get_graph()
+    for databot in databots:
 
+        print("[Graph Prep -",databot.dataset_name,"]... Initiated")
+        G = databot.get_graph()
+
+        #put in a check for disconnected components. Our framework requires that all graph are connected
         if len(G.components(mode=igraph.WEAK)) is not 1:
             print("Error: ", dataset, " is disconnect. Clean data before proceeding")
             continue
 
         try:
-            G.write_graphml(os.path.join(output_dir, "graphs", dataset+".graphml"))
-        except Exception as e:
-            print("Unable to serialize graph for dataset ", dataset)
-            continue
 
-        #save both the ground truth and the graph
-        try:
+            ground_truth_membership =  databot.get_ground_truth(G).membership
 
-            with open(os.path.join(output_dir, "graphs", dataset+'__ground_truth.json'), "w") as f:
-                json.dump( data_mod.get_ground_truth(G).membership, f)
+            #with open(os.path.join(output_dir, "graphs", databot.dataset_name+'__ground_truth.json'), "w") as f:
+            #    json.dump(ground_truth_membership, f)
 
-            job_name = dataset + "--groundtruth--0"
+            job_name = databot.dataset_name + "--groundtruth--0"
 
             results = {
                 'job_name': job_name,
                 'elapsed' : 0,
-                'membership' : data_mod.get_ground_truth(G).membership,
+                'membership' : ground_truth_membership,
                 'algo' : "groundtruth",
                 'dataset' : dataset,
                 'iteration' : 0
@@ -177,7 +178,7 @@ def run(algos, datasets, output_dir, iterations, workers, timeout):
 
 
         except Exception as e:
-            print("Unable to find Ground Truth partition for ", dataset, ": ", e)
+            print("Unable to find Ground Truth partition for ", databot.dataset_name, ": ", e)
 
 
         #keep this out of the loop just in case the operations in it take a long time. The graph context should rarely change
@@ -187,8 +188,8 @@ def run(algos, datasets, output_dir, iterations, workers, timeout):
 
             iterations = 1 if algo not in stochastic_algos else iterations
             for i in range(iterations):
-                job_name = dataset+"--"+algo+"--"+str(i)
-                map_inputs.append(Worker(job_name, algo, dataset, output_dir, i, timeout, ctx))
+                job_name = databot.dataset_name+"--"+algo+"--"+str(i)
+                map_inputs.append(Worker(job_name, algo, databot.dataset_name, output_dir, i, timeout, ctx))
 
 
     pool = multiprocessing.Pool(processes=workers)
@@ -212,7 +213,7 @@ def main():
     DEFAULT_TIMEOUT=3600
 
     comm_choices = [ a.replace('comm_', '') for a in dir(community) if a.startswith('comm_')]
-    data_choices = ['scotus', 'school', 'revolution', 'pgp', 'amazon', 'football', 'flights', 'senate_voting','house_voting', 'karate', 'malaria', 'nba_schedule', 'netscience']
+    data_choices = ['amazon', 'flights', 'football', 'house_voting', 'karate', 'malaria', 'nba_schedule', 'netscience', 'pgp', 'revolution', 'school', 'scotus', 'senate_voting', 'southernwomen']
 
     # Parse user input
     parser = argparse.ArgumentParser(description='Run community detection on a dataset.')
@@ -224,6 +225,7 @@ def main():
     parser.add_argument('--timeout', type=int, default=DEFAULT_TIMEOUT, help='Timeout in seconds applied to algo execution on a dataset (DEFAULT: 3600)')
     args = parser.parse_args()
 
+    #if ALL is specified for either choice, then use the entire respective array
     algos = comm_choices if 'ALL' in args.algo else args.algo
     datasets = data_choices if 'ALL' in args.dataset else args.dataset
 
