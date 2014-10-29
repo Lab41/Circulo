@@ -119,6 +119,11 @@ def run_single(worker):
 import inspect
 from circulo.data.databot import CirculoData
 
+
+def data_fetcher(databot):
+    print("\t[info- data prep for ", databot.dataset_name, "]")
+    databot.get_graph()
+
 def run(algos, dataset_names, output_dir, iterations, workers, timeout):
 
 
@@ -143,6 +148,14 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
                 instance = cls(dataset)
                 databots.append(instance)
 
+
+    #run through each databot in parallel to make sure that the graph exists
+    pool = multiprocessing.Pool(processes=workers)
+    r = pool.map_async(data_fetcher, databots)
+    #need the "get" call to be able to retrieve exceptions in the child processes
+    r.get()
+    pool.close()
+    pool.join()
 
     for databot in databots:
 
