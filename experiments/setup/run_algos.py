@@ -84,6 +84,7 @@ def run_single(worker):
 
     try:
         r = func()
+        #this is where we actuall run the algo against the data
         vc = to_cover(r)
     except TimeoutError as t:
 
@@ -121,7 +122,7 @@ from circulo.data.databot import CirculoData
 
 
 def data_fetcher(databot):
-    print("\t[info- data prep for ", databot.dataset_name, "]")
+    print("[Graph Generation ETL for ", databot.dataset_name, "]")
     databot.get_graph()
 
 def run(algos, dataset_names, output_dir, iterations, workers, timeout):
@@ -159,7 +160,7 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
 
     for databot in databots:
 
-        print("[Graph Prep -",databot.dataset_name,"]... Initiated")
+        print("[INFO - Algorithm Execution for -",databot.dataset_name,"]... Initiated")
         G = databot.get_graph()
 
         #put in a check for disconnected components. Our framework requires that all graph are connected
@@ -167,14 +168,12 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
             print("Error: ", dataset, " is disconnect. Clean data before proceeding")
             continue
 
+        #write out the ground truth if available. NOTE: sometimes ground truth is not available
         try:
 
             ground_truth_membership =  databot.get_ground_truth(G).membership
 
-            #with open(os.path.join(output_dir, "graphs", databot.dataset_name+'__ground_truth.json'), "w") as f:
-            #    json.dump(ground_truth_membership, f)
-
-            job_name = databot.dataset_name + "--groundtruth--0"
+            job_name = databot.dataset_name + "--groundtruth"
 
             results = {
                 'job_name': job_name,

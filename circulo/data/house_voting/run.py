@@ -32,7 +32,7 @@ class HouseData(CirculoData):
         try:
             call(["bash", os.path.join(os.path.dirname(__file__), "download.sh"), self.raw_data_path])
         except Exception as e:
-            print("rsync failed to retrieve data")
+            #print("rsync failed to retrieve data")
             raise(e)
 
     def __prepare__(self):
@@ -79,7 +79,7 @@ class HouseData(CirculoData):
         for fname in glob.glob(src_files):
             with open(fname,'r') as inputfile:
                 data = json.load(inputfile)
-                print("Processing: {}".format(fname))
+                #print("Processing: {}".format(fname))
                 for vt in data['votes']:
                     #print(vt)
                     congress_ids = [n['id'] for n in data['votes'][vt]]
@@ -107,7 +107,7 @@ class HouseData(CirculoData):
                         else:
                             G.add_edge(v0, v1, weight=1)
 
-        print("Ids not found: {}".format(missing_ids))
+        #print("Ids not found: {}".format(missing_ids))
 
         #prune the graph
         weights = G.es()['weight']
@@ -118,10 +118,10 @@ class HouseData(CirculoData):
         #make sure that the graph is not disconnected. if so take larger component
         components = G.components(mode=igraph.WEAK)
         if len(components) > 1:
-            print("[Graph Prep - Congress]... Disconnected Graph Detected. Using largest component.")
-            print("[Graph Prep - Congress]... Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+            #print("[Graph Prep - Congress]... Disconnected Graph Detected. Using largest component.")
+            #print("[Graph Prep - Congress]... Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
             G = G.subgraph(max(components, key=len))
-            print("[Graph Prep - Congress]... Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+            #print("[Graph Prep - Congress]... Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
 
 
 

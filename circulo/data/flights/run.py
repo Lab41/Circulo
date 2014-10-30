@@ -86,26 +86,26 @@ class FlightData(CirculoData):
         and there is an edge wherever there is a flight from one airport to
         another. Note that an edge a->b does not imply b->a.
         """
-        print("Parsing airport data...")
+        #print("Parsing airport data...")
         # Create G with airports as vertices
         G = FlightData.initialize_vertices(os.path.join(self.raw_data_path, FLIGHTS_DATA))
-        print("Parsing route data...")
+        #print("Parsing route data...")
         # Add all edges to G
         FlightData.initialize_edges(G, os.path.join(self.raw_data_path, ROUTES_DATA))
-        print("Graph successfully created.")
-        print("Deleting airports with no flights...")
+        #print("Graph successfully created.")
+        #print("Deleting airports with no flights...")
         # Delete all vertices with degree 0
         FlightData.delete_empty_airports(G)
-        print("Writing to " + self.graph_path + "...")
+        #print("Writing to " + self.graph_path + "...")
 
 
         #make sure that the graph is not disconnected. if so take larger component
         components = G.components(mode=igraph.WEAK)
         if len(components) > 1:
-            print("[Graph Prep - Flights]... Disconnected Graph Detected. Using largest component.")
-            print("[Graph Prep - Flights]... Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+            #print("[Graph Prep - Flights]... Disconnected Graph Detected. Using largest component.")
+            #print("[Graph Prep - Flights]... Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
             G = G.subgraph(max(components, key=len))
-            print("[Graph Prep - Flights]... Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
+            #print("[Graph Prep - Flights]... Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
 
         G.write_graphml(self.graph_path)
 
@@ -129,7 +129,7 @@ class FlightData(CirculoData):
                         attr = None
                     vertices[a].append(attr)
         numVertices = len(vertices[a])
-        print("Adding vertices to graph...")
+        #print("Adding vertices to graph...")
         return igraph.Graph(n=numVertices, directed=True, vertex_attrs=vertices)
 
 
@@ -164,14 +164,14 @@ class FlightData(CirculoData):
                     dest = G.vs.find(dest_id).index
                 except ValueError:
                     badRoute = source_id + " ==> " + dest_id
-                    print("Skipping " + badRoute + " (Insufficient information to create edge.)")
+                    #print("Skipping " + badRoute + " (Insufficient information to create edge.)")
                 edges.append((source, dest))
                 for a in ROUTES_SCHEMA:
                     attr = line[ROUTES_SCHEMA[a]]
                     if attr == "\\N":
                         attr = None
                     attrs[a].append(attr)
-        print("Adding edges to graph...")
+        #print("Adding edges to graph...")
         G.add_edges(edges)
         for a in ROUTES_SCHEMA:
             G.es[a] = attrs[a]
@@ -189,8 +189,6 @@ class FlightData(CirculoData):
 
 
     def get_ground_truth(self, G=None):
-
-    #def get_ground_truth(G=None, attr='country'):
         """
         Ground Truth is hard to define for the flight info. This Ground
         Truth simply clusters the nodes by country. Another possibility
@@ -201,10 +199,10 @@ class FlightData(CirculoData):
             G = self.get_graph()
 
         if G is None:
-            print("Error: Unable to retrieve graph")
+            #print("Error: Unable to retrieve graph")
             return
 
-        print(G)
+        #print(G)
         cluster_dict = {}
 
         for airport_id, airport_location in enumerate(G.vs['country']):

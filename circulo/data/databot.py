@@ -56,7 +56,7 @@ class CirculoData:
         raise NotImplementedError("function must be overridden")
 
 
-    def get_ground_truth(self, G=None):
+    def get_ground_truth(self, G):
         '''
         Returns a VertexCover representing the ground truth for the given graph
         '''
@@ -101,7 +101,7 @@ class CirculoData:
         except Exception as e:
             print(PRINT_PREFIX, "Data download failed -- make sure the url is still valid, and that urllib is properly installed.\n\n")
             raise(e)
-        print(PRINT_PREFIX, "Download complete.")
+        print("Download complete.")
 
         _unzip(download_path)
 

@@ -11,8 +11,8 @@ if [ ! -d "$1" ]; then
     exit 0
 fi
 
-rsync -avz --delete --delete-excluded --exclude **/text-versions/ govtrack.us::govtrackdata/congress/113/votes/2014 $1
+rsync -avz --delete --delete-excluded --exclude **/text-versions/ govtrack.us::govtrackdata/congress/113/votes/2014 $1 > /dev/null 2>&1
 	
-rsync -avz --delete --delete-excluded --exclude **/text-versions/ govtrack.us::govtrackdata/congress-legislators/legislators-current.csv $1
+rsync -avz --delete --delete-excluded --exclude **/text-versions/ govtrack.us::govtrackdata/congress-legislators/legislators-current.csv $1 > /dev/null 2>&1
 
 

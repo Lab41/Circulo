@@ -6,7 +6,13 @@ WEIGHT_PRUNE_THRESHOLD=.75
 
 
 def cleanup(ctx, descript, algo_directed, algo_simple):
+    '''
+    GRAPH Cleaning: Sometimes the graphs need to be cleaned for certain type of algorithms.
+    The idea here is that we are trying to best match the data to what the algorithm can do.
+    We start with specific matches and work our way to more general.
+    '''
 
+    #first we check if the algo can take BOTH a directed and SIMPLE graph.
     if ctx['directed'] == algo_directed and ctx['simple'] == algo_simple:
         print("\t[Info - ", descript, "] - No graph cleaning required")
         return ctx['graph'], ctx['weight'], ctx['directed']
@@ -14,6 +20,7 @@ def cleanup(ctx, descript, algo_directed, algo_simple):
 
     collapsed = False
     directed_graph = ctx['directed']
+
 
     if algo_directed is True and directed_graph is False:
         print("\t[Info - ", descript, "] - Warning: Passing undirected graph to directed algo")
@@ -24,8 +31,10 @@ def cleanup(ctx, descript, algo_directed, algo_simple):
     #if the graph is directed and algo is not directed
     if ctx['directed'] and not algo_directed:
         #can't collapse on weight without first making sure the edges are weighted
+        #In this case, we just give each edge a weight of 1
         if not G_copy.is_weighted():
             G_copy.es()['weight'] = 1
+        #here we make the actual conversion
         G_copy.to_undirected(combine_edges={'weight':sum})
         print('\t[Info - ',descript,'] Converting graph to undirected (summing edge weights)')
         collapsed = True
