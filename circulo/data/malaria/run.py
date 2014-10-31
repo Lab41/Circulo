@@ -20,6 +20,7 @@ import os
 from circulo.data.databot import CirculoData
 
 DOWNLOAD_URL = 'http://danlarremore.com/bipartiteSBM/malariaData.zip'
+DATA_DIR = "malariaData"
 
 class MalariaData(CirculoData):
 
@@ -29,8 +30,8 @@ class MalariaData(CirculoData):
 
     def __prepare__(self):
 
-        data = os.path.join(self.raw_data_path, "MalariaData", "malaria.edgelist")
-        mod_data = os.path.join(self.raw_data_path, "MalariaData", "mod_malaria.edgelist")
+        data = os.path.join(self.raw_data_path, DATA_DIR, "malaria.edgelist")
+        mod_data = os.path.join(self.raw_data_path, DATA_DIR, "mod_malaria.edgelist")
 
         #we just need to remove the third column which has 1's in it
         #so igraph can read it as an edgelist
