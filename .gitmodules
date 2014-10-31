@@ -1,0 +1,3 @@
+[submodule "lib/snap"]
+	path = lib/snap
+	url = https://github.com/snap-stanford/snap.git

@@ -26,6 +26,7 @@ Other frameworks which could be used include GraphLab, SNAP, NetworkX.
 ###Setup
 #####Requirements
 
+-  git
 -  python 3
 -  igraph
 -  matplotlib
@@ -35,13 +36,16 @@ Other frameworks which could be used include GraphLab, SNAP, NetworkX.
   
 
 
-#####Circulo 
+#####Circulo Installation
 Below are instructions for using Circulo
 
 	#clone Circulo repository
 	git clone https://github.com/Lab41/circulo.git
 	#set PYTHONPATH env variable
 	export PYTHONPATH=/path/to/Circulo
+    
+
+
 
 #####iGraph
 For Ubuntu
