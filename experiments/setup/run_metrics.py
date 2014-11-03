@@ -18,6 +18,9 @@ import errno
 import traceback
 import sys
 from collections import namedtuple
+import inspect
+from circulo.data.databot import CirculoData
+
 
 Worker = namedtuple('Worker', 'json_path output_path timeout')
 
@@ -50,7 +53,8 @@ def main():
     else:
         pool = multiprocessing.Pool()
 
-    pool.map_async(analyze_json, workers)
+    r = pool.map_async(analyze_json, workers)
+    r.get() #must call in order to get error from inside the child processes
     pool.close()
     pool.join()
 
@@ -73,18 +77,29 @@ def analyze_json(worker):
         data = json.load(f)
 
     if(data is None):
+        print("No data found for ", worker.json_path)
         return
 
     print("###### Running metrics against " + data['job_name'])
     #load the graph and ground truth in
-    data_mod =  importlib.import_module('data.'+data['dataset']+'.run')
-    G = data_mod.get_graph()
+    data_mod =  importlib.import_module('circulo.data.'+data['dataset']+'.run')
+
+    instance = None
+
+    for name,cls in inspect.getmembers(data_mod):
+        if inspect.isclass(cls) and issubclass(cls, CirculoData) and name != "CirculoData":
+            instance = cls(data['dataset'])
+
+    if instance == None:
+        print("Unable to find data module for ", data['dataset'])
+        return
+
+    G = instance.get_graph()
 
     weights = 'weight' if G.is_weighted() else None
-
     #some datasets might not have ground truth
     try:
-        vc = data_mod.get_ground_truth(G)
+        vc = instance.get_ground_truth(G)
         ground_truth_cover = cover_from_membership( vc.membership, G)
     except Exception as e:
         print("\t++NOTE for ", data['dataset'], ": Ground Truth Not Available")
@@ -110,13 +125,15 @@ def analyze_json(worker):
         "metrics": results_cover.metrics
         }
 
+
     try:
-        full_path = os.path.join(output_dir,data['job_name'] + ".json")
+
+        full_path = os.path.join(worker.output_path,data['job_name'] + ".json")
         with open(full_path, 'w') as outfile:
             json.dump(out_dict, outfile)
     except Exception as e:
+        traceback.print_exc(file=sys.stdout)
         print(e)
-
 
 def cover_from_membership(membership, G):
 

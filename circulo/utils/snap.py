@@ -6,6 +6,9 @@ import igraph
 from  igraph.clustering import VertexCover
 from collections import OrderedDict
 
+import circulo
+
+
 __author__="""Paul M"""
 
 __all__ = []
@@ -94,11 +97,10 @@ def divisive(G, algo_id, output):
 
 def setup(G):
 
-    try:
-        snap_home = os.environ[ENV_SNAPPATH_VAR]
-    except KeyError as e:
-        print("Be sure to set your snap base path in the environment variable \"{}\"".format(ENV_SNAPPATH_VAR))
-        return None, None
+    snap_home = os.path.join(os.path.dirname(circulo.__file__), "..", "lib","snap")
+
+    if not os.path.exists(os.path.join(snap_home,"examples","bigclam","bigclam")):
+        raise Exception("SNAP must be downloaded and built prior to using the snap algorithms")
 
     f = tempfile.mkstemp()
     filename = f[1]

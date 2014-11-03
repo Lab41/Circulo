@@ -22,7 +22,7 @@ class PGPData(CirculoData):
         del G.vs['id'] #graphml uses the id field
         G.write_graphml(self.graph_path)
 
-    def get_ground_truth(self):
+    def get_ground_truth(self, G):
         raise(NotImplementedError)
 
 

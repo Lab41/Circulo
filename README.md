@@ -23,43 +23,40 @@ Since we did not want to reimplement the notion of a graph, we decided to pick a
 Other frameworks which could be used include GraphLab, SNAP, NetworkX.
 
 
-###Setup
-#####Requirements
+###Installation and Setup
+#####Package Requirements
 
 -  git
--  python 3
--  igraph
+-  python3
+-  igraph (Refer to Appendix A for further instructions)
 -  matplotlib
 -  cairo
 -  scipy
 -  scikit.learn
   
 
-
 #####Circulo Installation
 Below are instructions for using Circulo
 
-	#clone Circulo repository
-	git clone https://github.com/Lab41/circulo.git
+	#clone Circulo repository (note: this also clone SNAP)
+	git clone --recursive https://github.com/Lab41/circulo.git
 	#set PYTHONPATH env variable
 	export PYTHONPATH=/path/to/Circulo
+    #make the snap code base
+    pushd lib/snap; make; popd
+
+
+###Appendix A: iGraph Installation
+#####Ubuntu
+
+    sudo apt-get install igraph
+    sudo apt-get install libxml2-dev libz-dev python-dev
+
+#####OS X
+	
+	#using brew install igraph dylibs
+	brew install homebrew/science/igraph
     
-
-
-
-#####iGraph
-For Ubuntu
-
-```
- sudo apt-get install igraph
- sudo apt-get install libxml2-dev libz-dev python-dev
-```
-
-For OS X, do the following. (NOTE: iGraph homepage is a good resource)
-	
-	#using brew install igraph
-	brew install igraph
-	
 	#install Cairo
 	#installs the core libraries for cairo
 	brew install cairo 
@@ -67,3 +64,7 @@ For OS X, do the following. (NOTE: iGraph homepage is a good resource)
 	#installs the python site-packages. NOTE: pip does not work for pycairo. 
 	#If you want to use pip, create sym links to the site packages in brew
 	brew install py3cairo
+
+    #install python igraph
+    pip3 install python-igraph
+
