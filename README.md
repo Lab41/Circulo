@@ -39,8 +39,8 @@ Other frameworks which could be used include GraphLab, SNAP, NetworkX.
 #####Circulo Installation
 Below are instructions for using Circulo
 
-	#clone Circulo repository
-	git clone https://github.com/Lab41/circulo.git
+	#clone Circulo repository (note: this also clone SNAP)
+	git clone --recursive https://github.com/Lab41/circulo.git
 	#set PYTHONPATH env variable
 	export PYTHONPATH=/path/to/Circulo
     

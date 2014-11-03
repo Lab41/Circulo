@@ -107,7 +107,7 @@ def run_single(worker):
 
 
     #write to json
-    with open(os.path.join(worker.out_dir, "json", worker.job_name+'.json'), "w") as f:
+    with open(os.path.join(worker.out_dir, worker.job_name+'.json'), "w") as f:
         json.dump(results, f)
 
     #write to a pickle
@@ -134,10 +134,12 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
 
     map_inputs = []
 
-    json_dir = os.path.join(output_dir, "json")
+    json_dir = os.path.join(output_dir, "results")
+    ground_truth_dir = os.path.join(output_dir,"ground_truth")
 
     if not os.path.exists(json_dir):
         os.mkdir(json_dir)
+        os.mkdir(ground_truth_dir)
 
     databots = list()
 
@@ -185,7 +187,7 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
             }
 
             #write to json
-            with open(os.path.join(output_dir, "json", job_name+".json"), "w") as f:
+            with open(os.path.join(ground_truth_dir, job_name+".json"), "w") as f:
                 json.dump(results, f)
 
 
@@ -201,7 +203,7 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
             iterations = 1 if algo not in stochastic_algos else iterations
             for i in range(iterations):
                 job_name = databot.dataset_name+"--"+algo+"--"+str(i)
-                map_inputs.append(Worker(job_name, algo, databot.dataset_name, output_dir, i, timeout, ctx))
+                map_inputs.append(Worker(job_name, algo, databot.dataset_name, json_dir, i, timeout, ctx))
 
 
     pool = multiprocessing.Pool(processes=workers)
