@@ -1,6 +1,7 @@
 from functools import partial
 import igraph
 import circulo.algorithms
+import statistics
 
 WEIGHT_PRUNE_THRESHOLD=.75
 
@@ -12,9 +13,9 @@ def cleanup(ctx, descript, algo_directed, algo_simple):
     We start with specific matches and work our way to more general.
     '''
 
-    #first we check if the algo can take BOTH a directed and SIMPLE graph.
+    #first we check if algo and data have same directedness and type.
     if ctx['directed'] == algo_directed and ctx['simple'] == algo_simple:
-        print("\t[Info - ", descript, "] - No graph cleaning required")
+        print("\t[Info - ", descript, "] - No graph cleaning required directed: ", algo_directed, " simple: ", algo_simple)
         return ctx['graph'], ctx['weight'], ctx['directed']
 
 
@@ -50,14 +51,18 @@ def cleanup(ctx, descript, algo_directed, algo_simple):
 
     if collapsed == True:
         weights = G_copy.es()['weight']
-        threshold =  WEIGHT_PRUNE_THRESHOLD * max(weights)
+
+        #print("MEDIAN: ", statistics.median(weights), " MAX: ", max(weights))
+        threshold = statistics.median(weights)
+        orig_edge_len = G_copy.ecount()
         edges = G_copy.es.select(weight_lt=threshold)
         G_copy.delete_edges(edges)
-        print("\t[Info - ", descript,"] Pruned ", len(edges)," edges less than ", WEIGHT_PRUNE_THRESHOLD, "%")
+        print("\t[Info - ", descript,"] Pruned ", len(edges)," of ",orig_edge_len," edges less than weight of ", threshold)
         #if the graph is collapsed, I think it becomes undirected
         directed_g = False
 
     weights = "weight" if G_copy.is_weighted() else None
+
 
     return G_copy, weights, directed_graph
 

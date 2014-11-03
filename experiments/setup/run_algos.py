@@ -197,7 +197,7 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
 
         #keep this out of the loop just in case the operations in it take a long time. The graph context should rarely change
         ctx = create_graph_context(G)
-
+        print(ctx)
         for algo in algos:
 
             iterations = 1 if algo not in stochastic_algos else iterations
