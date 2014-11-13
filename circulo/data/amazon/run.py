@@ -21,8 +21,10 @@ DOWNLOAD_URL = 'http://snap.stanford.edu/data/bigdata/communities/com-amazon.ung
 DATA_NAME = 'com-amazon.ungraph.txt'
 GRAPH_NAME = 'amazon.graphml'
 
-DOWNLOAD_URL_GROUNDTRUTH = 'http://snap.stanford.edu/data/bigdata/communities/com-amazon.all.cmty.txt.gz'
-GROUNDTRUTH_NAME = 'com-amazon.all.cmty.txt'
+#ground truth of the top 5000 copurchasing items
+DOWNLOAD_URL_GROUNDTRUTH = 'http://snap.stanford.edu/data/bigdata/communities/com-amazon.top5000.cmty.txt.gz'
+#DOWNLOAD_URL_GROUNDTRUTH = 'http://snap.stanford.edu/data/bigdata/communities/com-amazon.all.cmty.txt.gz'
+GROUNDTRUTH_NAME = 'com-amazon.top5000.cmty.txt'
 
 PICKLE_NAME = 'amazon-graph.pickle'
 
@@ -88,10 +90,7 @@ class AmazonData(CirculoData):
         g.write_graphml(self.graph_path)
 
 
-    def get_ground_truth(self, G=None):
-
-        if G is None:
-            G = self.get_graph()
+    def get_ground_truth(self, G):
 
         cluster_dict = {}
 
@@ -107,7 +106,8 @@ class AmazonData(CirculoData):
 
 
 def main():
-    AmazonData("amazon").get_ground_truth()
+    databot = AmazonData("amazon")
+    databot.get_ground_truth(databot.get_graph())
 
 if __name__ == '__main__':
     main()
