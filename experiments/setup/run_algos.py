@@ -144,7 +144,7 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
     databots = list()
 
     for dataset in dataset_names:
-        #we are going dynamically load instances of each of the CirculoData subclasses
+        #we are going to dynamically load instances of each of the CirculoData subclasses
         data_mod = importlib.import_module('circulo.data.'+dataset+'.run')
         for name,cls in inspect.getmembers(data_mod):
             if inspect.isclass(cls) and issubclass(cls, CirculoData) and name != "CirculoData":
@@ -182,7 +182,7 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
                 'elapsed' : 0,
                 'membership' : ground_truth_membership,
                 'algo' : "groundtruth",
-                'dataset' : dataset,
+                'dataset' : databot.dataset_name,
                 'iteration' : 0
             }
 
