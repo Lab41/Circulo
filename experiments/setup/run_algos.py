@@ -23,7 +23,7 @@ from scipy.cluster.hierarchy import average,fcluster
 import shutil
 
 
-Worker = namedtuple('Worker', 'job_name algo dataset out_dir iteration timeout ctx')
+Worker = namedtuple('Worker', 'job_name algo dataset out_dir iteration timeout graph ctx')
 
 OUTPUT_DIR = "outputs"
 
@@ -42,19 +42,19 @@ def to_cover(result):
     return cover
 
 
-def create_graph_context(G):
-    '''
-    graph: Graph
-    weight: if G has edge weights the value will be 'weight', else None
-    directed: if G is directed, return True, else False
-    '''
+#def create_graph_context(G):
+#    '''
+#    graph: Graph
+#    weight: if G has edge weights the value will be 'weight', else None
+#    directed: if G is directed, return True, else False
+#    '''
 
-    return {
-            "graph" : G,
-            "weight": 'weight' if G.is_weighted() else None,
-            "directed": G.is_directed(),
-            "simple":G.is_simple()
-            }
+#    return {
+#            "graph" : G,
+#            "weight": 'weight' if G.is_weighted() else None,
+#            "directed": G.is_directed(),
+#            "simple":G.is_simple()
+#            }
 
 
 
@@ -80,7 +80,7 @@ def run_single(worker):
     signal.setitimer(signal.ITIMER_REAL, worker.timeout)
     t0 = time.time()
 
-    func = getattr(community, 'comm_'+worker.algo)(worker.ctx, worker.job_name)
+    func = getattr(community, 'comm_'+worker.algo)(worker.graph, worker.ctx, worker.job_name)
 
     try:
         r = func()
@@ -194,15 +194,14 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
         except Exception as e:
             print("Unable to find Ground Truth partition for ", databot.dataset_name, ": ", e)
 
+        ctx = databot.get_context()
 
-        #keep this out of the loop just in case the operations in it take a long time. The graph context should rarely change
-        ctx = create_graph_context(G)
         for algo in algos:
 
             iterations = 1 if algo not in stochastic_algos else iterations
             for i in range(iterations):
                 job_name = databot.dataset_name+"--"+algo+"--"+str(i)
-                map_inputs.append(Worker(job_name, algo, databot.dataset_name, json_dir, i, timeout, ctx))
+                map_inputs.append(Worker(job_name, algo, databot.dataset_name, json_dir, i, timeout, G, ctx))
 
 
     pool = multiprocessing.Pool(processes=workers)

@@ -90,6 +90,12 @@ class AmazonData(CirculoData):
         g.write_graphml(self.graph_path)
 
 
+
+    def get_context(self):
+        return  {
+            CirculoData.CONTEXT_OPTIMAL_PARTITIONS:5000
+            }
+
     def get_ground_truth(self, G):
 
         cluster_dict = {}

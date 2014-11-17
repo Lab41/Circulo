@@ -26,6 +26,10 @@ PRINT_PREFIX="[===DATA===]"
 
 class CirculoData:
 
+    #class variable
+    CONTEXT_OPTIMAL_PARTITIONS = "optimal_partitions"
+
+
     def __init__(self, dataset_name):
         data_dir = os.path.dirname(__file__)
         graph_dir = os.path.join(data_dir, "GRAPHS")
@@ -55,6 +59,14 @@ class CirculoData:
         '''
         raise NotImplementedError("function must be overridden")
 
+
+    def get_context():
+        '''
+        returns a dictionary of recommended optimizatios when running this data against certain algorithms.
+        By default, returns an empty dictionary.
+        '''
+
+        return dict()
 
     def get_ground_truth(self, G):
         '''

@@ -7,11 +7,24 @@ import time
 from circulo.metrics.omega import omega_index
 from circulo.utils.general import aggregate
 
-def __get_weight_attr(G, name, weights):
+def __get_weight_attr(G, metric_name, weights):
+    '''
+    :G graph
+    :metric_name the name of the metric calling this function
+    :weights
+
+    return (weight_attr, remove) where weight_attr is the weight attribute name, and "remove" is a boolean
+        as to wether to get rid of the weight attribute. This happens if we create the weight attribute for
+        the purpose of the metric
+
+    '''
+
+    #if the weights parameter is a string then the graph utilizes weights
     if isinstance(weights, str):
       return (weights, False)
+    #if the weights is being used for something else, then we
     elif weights is not None:
-      attr_name = uuid.uuid5(uuid.NAMESPACE_DNS, '{}.circulo.lab41'.format(name))
+      attr_name = uuid.uuid5(uuid.NAMESPACE_DNS, '{}.circulo.lab41'.format(metric_name))
       G.es[attr_name] = weights
       return (attr_name, True)
     return (None, False)
@@ -42,9 +55,10 @@ def fomd(cover, weights=None):
 def expansion(cover, weights=None):
     '''
     Expansion is the ratio between the (weighted) number of external (boundary) edges in a cluster and the number of nodes in the cluster.
+
+    :return list of expansion values, one for each community
     '''
     w_attr, remove = __get_weight_attr(cover.graph, 'expansion', weights)
-
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
@@ -157,13 +171,16 @@ def out_degree_fraction(cover, weights=None):
     '''
     w_attr, remove = __get_weight_attr(cover.graph, 'out_degree_fraction', weights)
 
+    #do this outside the loop because it is computationally expensive
+    membership = cover.membership
+
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
         ext_edge_per_node = [0]*cover.graph.vcount()
         degree_per_node = cover.graph.strength(weights=w_attr)
         for edge in external_edges[i]:
-            node_index = edge.source if i in cover.membership[edge.source] else edge.target
+            node_index = edge.source if i in membership[edge.source] else edge.target
             ext_edge_per_node[node_index] += 1.0 if weights is None else edge[w_attr]
         ratios = []
         for pair in zip(ext_edge_per_node, degree_per_node):
@@ -181,12 +198,18 @@ def external_edges(cover) :
     '''
     array_of_sets = [ [] for v in cover ]
     #Iterate over crossing edges
-    for edge in [ a[1] for a in zip(cover.crossing(), cover.graph.es()) if a[0]]:
-        membership = cover.membership[edge.source]
-        if not cover.graph.is_directed():
-            membership += cover.membership[edge.target]
 
-        for cluster_id in membership:
+    #it is important to get the membership vector here because it is computationally expensive to get it from the cover
+    # You do not want to get the vector each time you do a lookup
+    membership_arr = cover.membership
+
+    for edge in [ a[1] for a in zip(cover.crossing(), cover.graph.es()) if a[0]]:
+        cluster_ids = membership_arr[edge.source]
+
+        if not cover.graph.is_directed():
+            cluster_ids += membership_arr[edge.target]
+
+        for cluster_id in cluster_ids:
             array_of_sets[cluster_id].append(edge)
 
     return array_of_sets
@@ -212,9 +235,9 @@ def compute_metrics(cover, weights=None, ground_truth_cover=None):
     avg_out_results = average_out_degree_fraction(cover, weights)
     flake_odf_results = flake_out_degree_fraction(cover, weights)
     sep_results = separability(cover,weights)
-
     results_key = "results"
     agg_key = "aggegations"
+
 
     cover.metrics = {
             'Fraction over a Median Degree' : {results_key:fomd_results, agg_key:aggregate(fomd_results)},
@@ -231,7 +254,6 @@ def compute_metrics(cover, weights=None, ground_truth_cover=None):
     for i in range(len(cover)):
         sg = cover.subgraph(i)
         sg.compute_metrics(refresh=False)
-
         #we want to add the metrics from the subgraph calculations to the current cover. The cover and
         #subgraph are essentially the same thing, however because we use the igraph graph functions we
         #can't natively call these call a cover...  hence the need to transfer over the results
@@ -239,7 +261,6 @@ def compute_metrics(cover, weights=None, ground_truth_cover=None):
             if key not in cover.metrics:
                 cover.metrics[key] = {results_key:[], agg_key:None}
             cover.metrics[key][results_key] += [val]
-
     #aggregate just the results from the subgraph metrics
     for k  in sg.metrics.keys():
         cover.metrics[k][agg_key] = aggregate(cover.metrics[k][results_key])
