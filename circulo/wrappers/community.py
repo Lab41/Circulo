@@ -89,7 +89,7 @@ def comm_fastgreedy(G, ctx, descript):
 
 def comm_edge_betweenness(G, ctx, descript):
     G, weights  = cleanup(G, descript, algo_directed=True, algo_simple=True)
-    return partial(igraph.Graph.community_edge_betweenness, G, directed, weights)
+    return partial(igraph.Graph.community_edge_betweenness, G, G.is_directed(), weights)
 
 def comm_leading_eigenvector(G, ctx, descript):
     G, weights = cleanup(G, descript, algo_directed=False, algo_simple=True)

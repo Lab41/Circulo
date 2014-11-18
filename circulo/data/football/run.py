@@ -26,19 +26,12 @@ class FootballData(CirculoData):
         G.write_graphml(self.graph_path)
 
 
-    def get_ground_truth(self, G=None):
+    def get_ground_truth(self, G):
         """
         Returns a VertexClustering object of the
         ground truth of the graph G. The ground truth for this
         football data is the conference to which each team belongs.
         """
-
-        if G is None:
-            G = get_graph()
-
-        if G is None:
-            print("Unable to get graph")
-            sys.exit(0)
 
         #by default conferences are identified by a float number
         float_membership = G.vs['value']

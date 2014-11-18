@@ -60,7 +60,7 @@ class CirculoData:
         raise NotImplementedError("function must be overridden")
 
 
-    def get_context():
+    def get_context(self):
         '''
         returns a dictionary of recommended optimizatios when running this data against certain algorithms.
         By default, returns an empty dictionary.

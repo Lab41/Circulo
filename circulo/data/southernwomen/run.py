@@ -14,7 +14,7 @@ class SouthernWomenData(CirculoData):
     def __prepare__(self):
         shutil.copyfile(os.path.join(self.raw_data_path, DOWNLOAD_FILE), self.graph_path)
 
-    def get_ground_truth(G=None):
+    def get_ground_truth(self, G):
         print("Ground truth is not available for this dataset")
         raise(NotImplementedError)
 
