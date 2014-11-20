@@ -195,7 +195,7 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
     #now we should have all the data ETL'd
     for databot in databots:
 
-        job_name = databot.dataset_name + "--groundtruth"
+        job_name = databot.dataset_name + "--groundtruth--0"
 
         print("[INFO - Algorithm Execution for -",databot.dataset_name,"]... Initiated")
         G = databot.get_graph()
@@ -219,10 +219,10 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
                 'iteration' : 0
             }
 
-            #write to json
-            with open(os.path.join(output_dir, job_name+".json"), "w") as f:
-                json.dump(results, f)
 
+            #write to json
+            with open(os.path.join(output_dir, databot.dataset_name+"--groundtruth--0.json"), "w") as f:
+                json.dump(results, f)
 
         except Exception as e:
             print("Unable to find Ground Truth partition for ", databot.dataset_name, ": ", e)

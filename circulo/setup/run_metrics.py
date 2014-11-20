@@ -64,6 +64,7 @@ class TimeoutError(Exception):
 def __handle_timeout(signum, frame):
     raise TimeoutError(os.strerror(errno.ETIME))
 
+
 def analyze_json(worker):
 
     signal.signal(signal.SIGALRM, __handle_timeout)
@@ -108,6 +109,7 @@ def analyze_json(worker):
     results_cover = cover_from_membership(data['membership'], G)
 
     try:
+        t0 = time.time()
         #results are currently stored within the cover object
         results_cover.compute_metrics(weights=weights, ground_truth_cover=ground_truth_cover )
     except TimeoutError as t:
@@ -122,7 +124,9 @@ def analyze_json(worker):
         "name" : data['job_name'],
         "elapsed" :data['elapsed'],
         "membership" : data['membership'],
-        "metrics": results_cover.metrics
+        "omega": results_cover.compare_omega(ground_truth_cover),
+        "metrics": results_cover.metrics,
+        "metrics_elapsed": (time.time() - t0)
         }
 
 

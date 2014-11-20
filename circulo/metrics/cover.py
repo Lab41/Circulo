@@ -68,17 +68,22 @@ def expansion(cover, weights=None):
     __remove_weight_attr(cover.graph, w_attr, remove)
     return rv
 
-def cut_ratio(cover):
+def cut_ratio(cover, allow_nan=False):
     '''
     Cut ratio is the ratio between the number of external (boundary) edges in a cluster and the cluster's maximum possible number of external edges
+
+    Args:
+        allow_nan:
     '''
+
+    mode = "nan" if allow_nan == True else 0
     rv = []
     external_edges = cover.external_edges()
     size_g = cover.graph.vcount()
     for i in range(len(cover)):
         size_i = cover.size(i)
         denominator = (size_i*(size_g-size_i))
-        rv += [1.0*len(external_edges[i])/denominator if denominator > 0 else float('nan')]
+        rv += [1.0*len(external_edges[i])/denominator if denominator > 0 else float(mode)]
     return rv
 
 def conductance(cover, weights=None):
@@ -264,9 +269,6 @@ def compute_metrics(cover, weights=None, ground_truth_cover=None):
     #aggregate just the results from the subgraph metrics
     for k  in sg.metrics.keys():
         cover.metrics[k][agg_key] = aggregate(cover.metrics[k][results_key])
-
-    cover.metrics['omega'] = compare_omega(cover, ground_truth_cover)
-    cover.metrics['metrics_total_time'] = time.time() - t0
 
 def print_metrics(cover):
 

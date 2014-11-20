@@ -68,7 +68,7 @@ def compute_metrics(G, refresh = True):
                 'Cohesiveness'                  : G.cohesiveness(),
                 'Triangle Participation Ratio'  : G.triangle_participation_ratio(),
                 'Transitivity Undirected (Global Clustering Coefficient)'
-                                                : G.transitivity_undirected()
+                                                : G.transitivity_undirected(mode='zero')
                                                 }
 
         G.metrics.update(aggregate(G.transitivity_local_undirected(mode='zero'), prefix=descriptTLU))
