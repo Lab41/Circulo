@@ -51,7 +51,7 @@ def read_communities_by_node(f_name, G):
     '''
 
     #dict with keys as community_id and values are a list of nodes
-    node_dict = dict()
+    community_dict = dict()
 
     with open(f_name, 'r') as community_file:
         for line in community_file:
@@ -60,14 +60,12 @@ def read_communities_by_node(f_name, G):
 
             node_id, community_id = (int(x) for x in line.split())
 
-            if node_id not in node_dict:
-                node_dict[node_id] = set()
+            if community_id not in community_dict:
+                community_dict[community_id] = []
 
-            node_dict[node_id].add(community_id)
+            community_dict[community_id].append(node_id)
 
-    sorted_list=sorted(node_dict.items(), key=lambda x: x[0])
-
-    return VertexCover(G,  [list(v) for k,v in sorted_list])
+    return VertexCover(G,  [v for v in community_dict.values()])
 
 
 
