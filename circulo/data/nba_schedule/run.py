@@ -20,6 +20,8 @@ import re
 import sys
 import os
 import glob
+import statistics
+
 from subprocess import call
 
 import igraph
@@ -92,6 +94,11 @@ class NBAData(CirculoData):
 
         G.write_graphml(self.graph_path)
 
+    def get_context(self):
+        return  {
+            CirculoData.CONTEXT_OPTIMAL_PARTITIONS:6
+            }
+
 
     def get_ground_truth(self, G):
 
@@ -135,6 +142,36 @@ class NBAData(CirculoData):
             cluster_list[divisions[team_name]].append(vertex_id)
 
         return VertexCover(G, cluster_list)
+
+    def prune(self,G):
+        '''
+        Sometimes when an algorithm runs against a graph, the algorithm needs to collapse the edges
+        of that Graph either because it does not support directed or multigraph Graphs. In this
+        case, the Graph may become nearly "complete" and therefore pruning is necessary.  The
+        pruning function is called when the Graph has been collapsed and the result at least 80%
+        the number of edges of a complete Graph. The default prune function removes all edges
+        with edge weight less than the median
+
+        Args:
+            G_copy : A copy of the original graph
+        '''
+
+        if G.is_weighted() is False:
+            return G
+
+        weights = G.es()['weight']
+
+        threshold = statistics.median(weights) + .0001
+
+        orig_edge_count = G.ecount()
+        edges = G.es.select(weight_lt=threshold)
+        G.delete_edges(edges)
+
+        #this is a special case because this pruning will create a disconnected component, so let's add back in one edge
+        v0 = G.vs.find(name="washington-wizards")
+        v1 = G.vs.find(name="san-antonio-spurs")
+        G.add_edge(v0, v1, weight=1)
+
 
 def main():
     databot = NBAData("nba_schedule")

@@ -21,6 +21,7 @@ from igraph import VertexCover
 import urllib.request
 import zipfile
 import gzip
+import statistics
 
 PRINT_PREFIX="[===DATA===]"
 
@@ -67,6 +68,34 @@ class CirculoData:
         '''
 
         return dict()
+
+
+    def prune(self,G):
+        '''
+        Sometimes when an algorithm runs against a graph, the algorithm needs to collapse the edges
+        of that Graph either because it does not support directed or multigraph Graphs. In this
+        case, the Graph may become nearly "complete" and therefore pruning is necessary.  The
+        pruning function is called when the Graph has been collapsed and the result at least 80%
+        the number of edges of a complete Graph. The default prune function removes all edges
+        with edge weight less than the median
+
+        Args:
+            G_copy : A copy of the original graph
+        '''
+
+        if G.is_weighted() is False:
+            print("Error: Unable to prune a graph without edge weights")
+            return G
+
+        weights = G.es()['weight']
+
+        threshold = statistics.median(weights) + .0001
+
+        orig_edge_count = G.ecount()
+        edges = G.es.select(weight_lt=threshold)
+        G.delete_edges(edges)
+
+
 
     def get_ground_truth(self, G):
         '''

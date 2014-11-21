@@ -26,8 +26,9 @@ def coda(G, data_prefix='snap_', node_filepath='', graph_type=0, detect_comm=100
     path_coda = os.path.join(snap_home, "examples", "coda", "coda")
 
     try:
+        FNULL = open(os.devnull, 'w')
 
-        out = subprocess.Popen([path_coda,"-o:"+data_prefix,"-i:"+graph_file,"-l:"+node_filepath,"-g:"+str(graph_type),"-c:"+str(detect_comm), "-mc:"+str(min_comm), "xc:"+str(max_comm), "-nc:"+str(trials), "-nt:"+str(threads), "-sa:"+str(alpha), "-sb:"+str(beta)]).wait()
+        out = subprocess.Popen([path_coda,"-o:"+data_prefix,"-i:"+graph_file,"-l:"+node_filepath,"-g:"+str(graph_type),"-c:"+str(detect_comm), "-mc:"+str(min_comm), "xc:"+str(max_comm), "-nc:"+str(trials), "-nt:"+str(threads), "-sa:"+str(alpha), "-sb:"+str(beta)], stdout=FNULL).wait()
 
     except TypeError as e:
         print("Error occurred: {}".format(e))

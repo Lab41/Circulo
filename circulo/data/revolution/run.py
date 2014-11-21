@@ -46,7 +46,7 @@ class RevolutionData(CirculoData):
 
         g.write_graphml(self.graph_path)
 
-    def get_ground_truth(self):
+    def get_ground_truth(self, G):
         raise(NotImplementedError)
 
 

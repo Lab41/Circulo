@@ -48,7 +48,7 @@ from circulo.algorithms.overlap import CrispOverlap
 
 
 #Named tuple used for passing data into the child processes of the multiprocessing pool
-Worker = namedtuple('Worker', 'job_name algo dataset out_dir iteration timeout graph ctx')
+Worker = namedtuple('Worker', 'job_name algo databot out_dir iteration timeout graph')
 
 def to_cover(result):
     '''
@@ -102,7 +102,7 @@ def run_single(worker):
     t0 = time.time()
 
     #fetch the algorithm from the community module
-    func = getattr(community, 'comm_'+worker.algo)(worker.graph, worker.ctx, worker.job_name)
+    func = getattr(community, 'comm_'+worker.algo)(worker.graph, worker.databot, worker.job_name)
 
     try:
         #run the algorithm
@@ -111,7 +111,7 @@ def run_single(worker):
         vc = to_cover(algo_result)
 
     except TimeoutError as t:
-        print("[ERROR TIMEOUT ", worker.algo, "-",worker.dataset, "] total time: ", time.time() - t0)
+        print("[ERROR TIMEOUT ",worker.job_name,"] total time: ", time.time() - t0)
         return
     except Exception as e:
         print("Exception using parameters ",worker,  e)
@@ -123,7 +123,7 @@ def run_single(worker):
             'elapsed' : time.time() - t0,
             'membership' : vc.membership,
             'algo' : worker.algo,
-            'dataset' : worker.dataset,
+            'dataset' : worker.databot.dataset_name,
             'iteration' : worker.iteration
             }
 
@@ -202,7 +202,7 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
 
         #put in a check for disconnected components. Our framework requires that all graph are connected
         if len(G.components(mode=igraph.WEAK)) is not 1:
-            print("Error: ", dataset, " is disconnected. Skipping ", job_name)
+            print("Error: ", dataset, " is disconnected. Skipping datset --> ", databot.dataset_name)
             continue
 
         #write out the ground truth if available. NOTE: sometimes ground truth is not available
@@ -227,15 +227,13 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
         except Exception as e:
             print("Unable to find Ground Truth partition for ", databot.dataset_name, ": ", e)
 
-        ctx = databot.get_context()
-
         #prepare the inputs for the multiprocessing pool
-        for algo in algos:
+        for algo_name in algos:
 
-            iterations = 1 if algo not in stochastic_algos else iterations
+            iterations = 1 if algo_name not in stochastic_algos else iterations
             for i in range(iterations):
-                job_name = databot.dataset_name+"--"+algo+"--"+str(i)
-                map_inputs.append(Worker(job_name, algo, databot.dataset_name, output_dir, i, timeout, G, ctx))
+                job_name = databot.dataset_name+"--"+algo_name+"--"+str(i)
+                map_inputs.append(Worker(job_name, algo_name, databot, output_dir, i, timeout, G))
 
 
     pool = multiprocessing.Pool(processes=workers)
