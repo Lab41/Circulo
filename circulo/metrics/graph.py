@@ -60,20 +60,22 @@ def compute_metrics(G, refresh = True):
     descriptDegree = 'Degree Statistics'
 
     if refresh or G.metrics == None:
+
+        #we treat a single node graph to have a density of 1
+        density = G.density() if G.vcount() > 1 else 1.0
+
         G.metrics = {
                 'Internal Number Nodes'         : G.vcount(),
                 'Internal Number Edges'         : G.ecount(),
-                'Density'                       : G.density(),
+                'Density'                       : density,
                 'Diameter'                      : G.diameter(),
                 'Cohesiveness'                  : G.cohesiveness(),
                 'Triangle Participation Ratio'  : G.triangle_participation_ratio(),
                 'Transitivity Undirected (Global Clustering Coefficient)'
                                                 : G.transitivity_undirected(mode='zero')
                                                 }
-
         G.metrics.update(aggregate(G.transitivity_local_undirected(mode='zero'), prefix=descriptTLU))
         G.metrics.update(aggregate(G.degree(), prefix=descriptDegree))
-
 
 Graph.metrics = None
 Graph.compute_metrics = compute_metrics

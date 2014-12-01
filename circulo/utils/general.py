@@ -6,12 +6,18 @@ def aggregate(array, prefix="",axis=0):
 
     stats = describe(array, axis)
 
+    if len(array) == 1:
+        variance = -1.0
+    else:
+        variance = float(stats[3])
+
+
     return  {
         prefix+'Size':int(stats[0]),
         prefix+'Min':float(stats[1][0]),
         prefix+'Max':float(stats[1][1]),
         prefix+'Mean':float(stats[2]),
-        prefix+'Unbiased Variance':float(stats[3]),
+        prefix+'Unbiased Variance':variance,
         prefix+'Biased Skewness':float(stats[4]),
         prefix+'Biased Kurtosis':float(stats[5]),
         prefix+'Median':float(median(array,axis))

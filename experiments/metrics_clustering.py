@@ -10,8 +10,6 @@ from scipy.cluster.vq import kmeans2, whiten
 
 
 
-#NOTE: sometimes the error "Matrix is not positive definite" occurs with certain combinations of features
-#TODO: figure out how to avoid this
 metric_list = [
     "Conductance",
     "Cut Ratio",
@@ -89,7 +87,7 @@ def run_experiment(metrics_path, dataset_name):
     matrix_norm = whiten(matrix)
     centroid, label = kmeans2(matrix_norm, k=3)
 
-    print(label)
+    #print(label)
 
     freq = itemfreq(label[gt_start:gt_end])
 
@@ -106,7 +104,7 @@ def run_experiment(metrics_path, dataset_name):
 
     print("GroundTruth Centroids range: ", gt_start, "-> ", gt_end)
     while i < gt_end:
-        print(label[i])
+    #    print(label[i])
         i+=1
 
 

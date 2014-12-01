@@ -86,44 +86,50 @@ def cut_ratio(cover, allow_nan=False):
         rv += [1.0*len(external_edges[i])/denominator if denominator > 0 else float(mode)]
     return rv
 
-def conductance(cover, weights=None):
+def conductance(cover, weights=None, allow_nan=False):
     '''
     Conductance is the ratio between the (weighted) number of external (boundary) edges in a cluster and the cluster's total (weighted) number of edges
     '''
     w_attr, remove = __get_weight_attr(cover.graph, 'conductance', weights)
 
+    mode = "nan" if allow_nan else 0
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
         int_edges_cnt = __weighted_sum(cover.subgraph(i).es(), w_attr)
         ext_edges_cnt = __weighted_sum(external_edges[i], w_attr)
         denominator = (2.0*int_edges_cnt+ext_edges_cnt)
-        rv += [ext_edges_cnt/denominator if denominator > 0 else float('nan')]
+
+        rv += [ext_edges_cnt/denominator if denominator > 0 else float(mode)]
+
 
     __remove_weight_attr(cover.graph, w_attr, remove)
     return rv
 
-def separability(cover, weights=None):
+def separability(cover, weights=None, allow_nan = False):
     '''
     Separability is the ratio between the (weighted) number of internal edges in a cluster and its (weighted) number of external (boundary) edges.
     '''
+
+    mode = "nan" if allow_nan else 0
     w_attr, remove = __get_weight_attr(cover.graph, 'separability', weights)
     rv = []
     external_edges = cover.external_edges()
     for i in range(len(cover)):
         int_edges_cnt = __weighted_sum(cover.subgraph(i).es(), w_attr)
         ext_edges_cnt = __weighted_sum(external_edges[i], w_attr)
-        rv += [1.0*int_edges_cnt/ext_edges_cnt if ext_edges_cnt > 0 else float('nan')]
+        rv += [1.0*int_edges_cnt/ext_edges_cnt if ext_edges_cnt > 0 else float(mode)]
 
     __remove_weight_attr(cover.graph, w_attr, remove)
     return rv
 
 
-def normalized_cut(cover, weights=None):
+def normalized_cut(cover, weights=None, allow_nan = False):
     '''
     Normalized cut is the sum of (weighted) conductance with the fraction of the (weighted) number of external edges over (weighted) number of all non-cluster edges
     '''
     w_attr, remove = __get_weight_attr(cover.graph, 'normalized_cut', weights)
+    mode = "nan" if allow_nan else 0
 
     rv = cover.conductance(weights)
     external_edges = cover.external_edges()
@@ -132,7 +138,7 @@ def normalized_cut(cover, weights=None):
         ext_edges_cnt = __weighted_sum(external_edges[i], w_attr)
         tot_edge_cnt = __weighted_sum(cover.graph.es(), w_attr)
         denominator = (2.0*(tot_edge_cnt - int_edges_cnt)+ext_edges_cnt)
-        rv[i] += ext_edges_cnt/denominator if denominator > 0 else float('nan')
+        rv[i] += ext_edges_cnt/denominator if denominator > 0 else float(allow_nan)
 
     __remove_weight_attr(cover.graph, w_attr, remove)
     return rv
@@ -169,12 +175,13 @@ def flake_out_degree_fraction(cover, weights=None):
         rv += [sum(flake)/cover.subgraph(i).vcount()]
     return rv
 
-def out_degree_fraction(cover, weights=None):
+def out_degree_fraction(cover, weights=None, allow_nan = False):
     '''
     Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges
     and its internal edges.
     '''
     w_attr, remove = __get_weight_attr(cover.graph, 'out_degree_fraction', weights)
+    mode = "nan" if allow_nan else 0
 
     #do this outside the loop because it is computationally expensive
     membership = cover.membership
@@ -189,7 +196,7 @@ def out_degree_fraction(cover, weights=None):
             ext_edge_per_node[node_index] += 1.0 if weights is None else edge[w_attr]
         ratios = []
         for pair in zip(ext_edge_per_node, degree_per_node):
-             ratios += [ pair[0]/pair[1] if pair[1] != 0 else float('nan') ]
+             ratios += [ pair[0]/pair[1] if pair[1] != 0 else float(mode) ]
         rv += [ratios]
 
     __remove_weight_attr(cover.graph, w_attr, remove)
