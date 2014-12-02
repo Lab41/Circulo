@@ -1,17 +1,66 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2014 In-Q-Tel, Inc/Lab41, All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 import sys
-import matplotlib.pyplot as plt
+import os
 import argparse
 import json
-import numpy as np
+from operator import itemgetter
+import glob
 
+import numpy as np
+from matplotlib.pyplot import *
+import matplotlib.pyplot as plt
 
 def main():
     parser = argparse.ArgumentParser(description='Experiment of Correlations in Goodness Metrics')
-    parser.add_argument('metrics_file', help="path to metrics file")
+    parser.add_argument('metrics_path', help="path to metrics results")
+    parser.add_argument('--out_path', default='indicators_results',  help="path to save results")
     args = parser.parse_args()
 
+    #create output directory if not exists
+    if not os.path.exists(args.out_path):
+        os.mkdir(args.out_path)
+
+
+    if not os.path.exists(args.metrics_path) or not os.path.isdir(args.metrics_path):
+        print("Error: Metrics path does not exist")
+        return
+
+
+
+    for i, f in enumerate(glob.glob(args.metrics_path+"/*--groundtruth--*.json")):
+        analyze_metric_file(f, args.out_path)
+
+
+
+def analyze_metric_file(metrics_file, out_path):
+    '''
+    Analyzes a given metrics results file
+
+    Args:
+        metrics_file: path to metrics file
+        out_path: directory where to store the results
+    '''
+
+    job_name = os.path.splitext(os.path.basename(metrics_file))[0]
+
     #read in metrics file
-    json_f = open(args.metrics_file)
+    json_f = open(metrics_file)
     j = json.load(json_f)
     json_f.close()
     metrics = j['metrics']
@@ -30,171 +79,83 @@ def main():
             metrics['Normalized Cut']['results']
             ))
 
-    test_separability(l, args.metrics_file)
+    k = min(100, len(l))
 
+    fig = figure(figsize=(16, 10))
+    fig.suptitle('Goodness Metrics Indicators: '+ job_name)
 
+    #we select nine of the metrics that we wish to test
+    run(l, 0, k, "Separability")
+    run(l, 1, k, "Conductance")
+    run(l, 2, k, "TPR")
+    run(l, 3, k, "Cohesiveness")
+    run(l, 4, k, "Avg ODF")
+    run(l, 5, k, "Cut Ratio")
+    run(l, 6, k, "Expansion")
+    run(l, 7, k, "Normalized Cut")
+    lines = run(l, 8, k, "Frac Med Degree")
+
+    fig.legend(lines, ('S', 'C', 'tpr', 'Coh', 'ODF', 'CutR', 'Den', 'Exp', 'FODF', 'FOMD', 'NC'), loc='right')
+    plt.savefig(os.path.join(out_path, job_name + ".png"), format='png')
 
 
 def running_avg(l):
+    '''
+    Quick hack of a running average function
+
+    Args:
+        l: list of numbers to calculate running average on
+    Returns:
+        list of the running average at each index
+    '''
 
     r = list()
 
-    first = True
-    cnt = 1.0
-    prev = 0.0
+    total_sum = 0.0
 
-    for i in l:
-        r.append( (prev+i)/cnt)
-        cnt+=1.0
-        prev+=i
+    for idx, item  in enumerate(l):
+        total_sum += item
+        r.append( total_sum/(idx+1.0))
 
     return r
 
 
-from operator import itemgetter
 
-def test_separability(metrics_list, dataset_name):
+def run(metrics_list, feature_idx, k, metric_name):
+    '''
+    Creates graph depicting metrics relative to a single metrics specified by
+    the feature_idx
 
-    k = min(100, len(metrics_list))
+    Args:
+        metrics_list: List of lists of metrics
+        feature_idx: Index of the metric being tested. Refer to the zipped list in main
+        k: max size of num of communities we are examining
+        metric_name: name of the metric being tested
+    '''
+
     x_values = range(k)
-
-    #first sort by separability and truncate
-    focus_sep = sorted(metrics_list, key = itemgetter(0), reverse=True)[:k]
-
-    plt.subplot(111)
-
-    plt.title(dataset_name)
-
-    #separability
-    plt.plot(x_values, running_avg([v[0] for v in focus_sep]))
-
     num_features = len(metrics_list[0])
 
-    for i in range(1, num_features):
-        s = sorted(metrics_list, key = itemgetter(i), reverse=True)
-        plt.plot(x_values, running_avg([v[0] for v in s]))
+    #first sort by separability and truncate
+    lines = list()
 
+    plt.subplot(331+feature_idx)
 
-    plt.legend(['S', 'C', 'tpr', 'Coh', 'ODF', 'CutR', 'Den', 'Exp', 'FODF', 'FOMD', 'NC'], loc='upper right')
-    plt.ylabel("Separability")
+    for i in range(num_features):
+        if i == feature_idx:
+            #we must truncate to the main feature
+            s = sorted(metrics_list, key = itemgetter(feature_idx), reverse=True)[:k]
+        else:
+            #use the untruncated list here
+            s = sorted(metrics_list, key = itemgetter(i), reverse=True)
+
+        line, = plt.plot(x_values, running_avg([v[feature_idx] for v in s]))
+        lines.append(line)
+
+    plt.ylabel(metric_name)
     plt.xlabel("Rank, k")
-    plt.show()
 
-
-
-
-def graph_goodness_v2(comm_metrics):
-    '''
-    Graphs the change in the specified metric across communities relative to conductance
-    '''
-
-    metrics = [(c.conductance, c.density, c.degree_avg, c.fomd, c.degree_boundary_avg, c.cut_ratio, c.normalized_cut) for c in comm_metrics]
-
-    metrics_sorted = metrics.sort(key=lambda x: x[0], reverse=True)
-
-    c, d, a, f, e, cr, n  = zip(*metrics)
-
-    plt.subplot(331)
-    plt.plot(c)
-    plt.title("Conductance")
-    plt.subplot(332)
-    plt.plot(d)
-    plt.title("Density")
-    plt.subplot(333)
-    plt.plot(a)
-    plt.title("Average Degree")
-    plt.subplot(334)
-    plt.plot(f)
-    plt.title("FOMD")
-    plt.subplot(336)
-    plt.plot(e)
-    plt.title("Expansion")
-    plt.subplot(337)
-    plt.plot(cr)
-    plt.title("Cut Ratio")
-    plt.subplot(338)
-    plt.plot(n)
-    plt.title("Normalized Cut")
-
-
-    plt.show()
-
-
-
-
-
-def graph_goodness(comm_metrics):
-    '''
-    Graphs the change in the specified metric across communities
-    '''
-
-    plt.subplot(331)
-    plt.plot(sorted([c.density for c in comm_metrics ], reverse=True))
-    plt.ylabel("Density")
-
-    plt.subplot(332)
-    plt.plot(sorted([c.degree_avg for c in comm_metrics ], reverse=True))
-    plt.ylabel("Average Degree")
-
-    plt.title("Each graph is sorted highest to lowest y-value")
-    plt.subplot(333)
-    plt.plot(sorted([c.fomd for c in comm_metrics ], reverse=True))
-    plt.ylabel("FOMD")
-
-    plt.subplot(334)
-    plt.plot(sorted([c.tpr[1] for c in comm_metrics ], reverse=True))
-    plt.ylabel("TPR")
-
-    plt.subplot(335)
-    plt.plot(sorted([c.degree_boundary_avg for c in comm_metrics ], reverse=True))
-    plt.ylabel("Expansion")
-
-    plt.subplot(336)
-    plt.plot(sorted([c.cut_ratio for c in comm_metrics ], reverse=True))
-    plt.ylabel("Cut-Ratio")
-
-    plt.subplot(337)
-    plt.plot(sorted([c.conductance for c in comm_metrics ], reverse=True))
-    plt.ylabel("Conductance")
-
-    plt.subplot(338)
-    plt.plot(sorted([c.normalized_cut for c in comm_metrics ], reverse=True))
-    plt.ylabel("Normalized Cut")
-
-    plt.subplot(339)
-    plt.plot(sorted([c.separability for c in comm_metrics ], reverse=True))
-    plt.ylabel("Separability")
-
-    plt.show()
-
-
-
-
-
-def test_density(self):
-    '''
-    To Be Implemented
-    '''
-
-    pass
-
-
-def test_cohesiveness(self):
-    '''
-    To be Implemented
-    '''
-
-    pass
-
-
-def test_clustering_coefficient(self):
-    '''
-    To be implmented
-    '''
-
-    pass
-
-
+    return lines
 
 
 if __name__ == "__main__":
