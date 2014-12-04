@@ -4,19 +4,21 @@
 #reads json files from directory and plots pdf bubble chart of computation time and omega accuracy
 
 # Sample Usage:
-#   metrics <- getMetrics(datapath)
+#   metrics <- getMetrics(datapath, "dataset name")
 #   plotMetrics(metrics)
 #   plotHist(metrics,'omega')
 #   plotHist(metrics,'time')
+#   plotRunOmega(metrics)
 
 library(ggplot2)
-library(jsonlite)
+#Switched from jsonlite to RJSIONIO for speed reasons
+library(RJSONIO)
 
 # Read metrics from json
-getMetrics <- function(datapath='/Users/paulm/Desktop/metrics') {
+getMetrics <- function(datapath='/Users/paulm/Desktop/metrics', dataset="football") {
 
     #Get file names and load the json files
-    filenames <- list.files(datapath, pattern="*.json", full.names=TRUE)
+    filenames <- list.files(datapath, pattern=paste(".*",dataset,".*.json", sep=""), full.names=TRUE)
     N <- length(filenames)
     results <- lapply(filenames, fromJSON)
 
@@ -28,7 +30,7 @@ getMetrics <- function(datapath='/Users/paulm/Desktop/metrics') {
 
     #Pull computation time and omega from the json files
     ComputationTime <- sapply(1:N, function (x) results[[x]]$elapsed)
-    OmegaAccuracy <-sapply(1:N, function (x) results[[x]]$metrics$omega)
+    OmegaAccuracy <-sapply(1:N, function (x) results[[x]]$omega)
 
     #fussy R data type formatting
     metrics <- cbind(Algorithms,Datasets,ComputationTime,OmegaAccuracy)
@@ -66,6 +68,23 @@ plotMetrics <- function(metrics,toPDF=FALSE) {
         cat(sprintf('printed to %s \n', pdffile))
     } else {
         print(bubbleplot)
+    }
+}
+
+# Plot chart comparing runtime to accuracy
+plotRunOmega <- function(metrics, toPDF=FALSE) {
+	runtimeplot <- ggplot(metrics, aes(x=log10(ComputationTime), y=OmegaAccuracy)) + 
+		geom_point(size=0) + 
+		geom_text(aes(x=log10(ComputationTime), y=OmegaAccuracy, label=Algorithms)) 
+	
+	if (toPDF) {
+        pdffile <- paste(Sys.time(),"metricsGraph.pdf", sep='')
+        pdf(pdffile,height=10,width=12)
+        print(runtimeplot)
+        dev.off()
+        cat(sprintf('printed to %s \n', pdffile))
+    } else {
+        print(runtimeplot)
     }
 }
 
