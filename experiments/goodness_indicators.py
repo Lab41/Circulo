@@ -136,18 +136,21 @@ def get_rankings(running_avgs, feature_idx):
     totals = np.zeros(len(running_avgs))
 
     for cross_section in list(zip(*running_avgs)):
+        #this will always be the feature
         m = max(cross_section)
         diffs = [m-x for x in cross_section]
         for i, diff in enumerate(diffs):
             totals[i]+=diff
 
-    totals_norm = whiten(totals)
-    centroid, label = kmeans2(totals_norm, k = 4)
+    total_max = max(totals)
 
-    #find all those metrics in the same cluster as the primary metric, though
-    #we do not want to include the primary feature itself. This should be the
-    #cluster of metrics that have the minimal total distance to the primary metric
-    matches = [i for i, v in enumerate(label) if v == label[feature_idx] and i != feature_idx]
+    if total_max == 0:
+        return totals
+
+    #normalize
+    totals = totals / float(max(totals))
+
+    matches = [i for i, v in enumerate(totals) if v < .15 and i != feature_idx]
 
     #we need to get the corresponding total diff for each match so we can sort them
     l = list(zip(matches, [totals[i] for i in matches]))
@@ -181,12 +184,7 @@ def run(metrics_list, feature_idx, k):
 
     #basically iterate through features, plotting each one
     for i in range(num_features):
-        if i == feature_idx:
-            #we must truncate to the primary metric to get the top k
-            s = sorted(metrics_list, key = itemgetter(i), reverse=True)[:k]
-        else:
-            #use the untruncated list here. do not truncate here
-            s = sorted(metrics_list, key = itemgetter(i), reverse=True)
+        s = sorted(metrics_list, key = itemgetter(i), reverse=True)[:k]
 
         #now get the running average for the main metric
         running_avgs = running_avg([v[feature_idx] for v in s])
@@ -213,11 +211,9 @@ def create_pies(M, num_possible):
             m(i, j) = number of times metric j was top correlated to metric i
         num_possible: number of opportunties to be top ranked (i.e. #datasets)
     '''
-
     #since we are adding a column, let's make a copy
     M_copy = M.copy()
-
-    new_col = num_possible -  np.sum(M.copy(), axis=1)
+    new_col = num_possible -  np.sum(M_copy, axis=1)
     new_col =  np.reshape(new_col, (np.shape(M_copy)[0], 1))
 
     M_copy = np.append(M_copy, new_col, 1)
@@ -231,8 +227,9 @@ def create_pies(M, num_possible):
         names = metric_names + ["None"]
 
         #add labels to each slice of the pie, but only if it had a ranking value
-        labels = [names[idx] if x > 0 else '' for idx, x in enumerate(M_copy[i])]
-        plt.pie(M_copy[i], labels = labels)
+        labels = [names[idx] for idx, x in enumerate(M_copy[i]) if x > 0]
+        slices = [v for v in M_copy[i] if v > 0]
+        plt.pie(slices, labels = labels, autopct="%1.1f%%")
 
     plt.savefig(os.path.join("indicators_results","pie.png"), format='png')
 
@@ -266,14 +263,13 @@ def main():
 
 
     for i, dataset in enumerate(rates_agg):
-        for f_base_idx, v in enumerate(dataset):
-            if v is None or len(v) is 0:
+        for f_base_idx, rankings in enumerate(dataset):
+            if rankings is None or len(rankings) is 0:
                 #no indicator
                 pass
             else:
-                best_match = v[0]
+                best_match = rankings[0]
                 m[f_base_idx][best_match] +=1
-
 
     create_pies(m, num_files)
 
