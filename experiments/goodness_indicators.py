@@ -28,56 +28,77 @@ import matplotlib.pyplot as plt
 from scipy.cluster.vq import kmeans2, whiten
 
 
-def analyze_metric_file(metrics_file, out_path):
+
+metric_names = [
+    "Separability",
+    "Conductance",
+    "Triangle Participation Ratio",
+    "Cohesiveness",
+    "Average Out Degree Fraction",
+    "Cut Ratio",
+    "Density",
+    "Expansion",
+    "Flake Out Degree Fraction",
+        ]
+
+#enables a single legend for all graphs rather
+#than a legend for each graph
+global_lines = list()
+
+
+def analyze_metric_file(metrics_path, out_path):
     '''
     Analyzes a given metrics results file
 
     Args:
-        metrics_file: path to metrics file
+        metrics_path: path to metrics file
         out_path: directory where to store the results
+
+    Return:
+        array of rates of which metric is the most correlated
     '''
 
-    job_name = os.path.splitext(os.path.basename(metrics_file))[0]
+    job_name = os.path.splitext(os.path.basename(metrics_path))[0]
 
     #read in metrics file
-    json_f = open(metrics_file)
+    json_f = open(metrics_path)
     j = json.load(json_f)
     json_f.close()
     metrics = j['metrics']
 
+    #we select nine of the metrics that we wish to test
     l = list(zip(
-            metrics['Separability']['results'],
-            metrics['Conductance']['results'],
-            metrics['Triangle Participation Ratio']['results'],
-            metrics['Cohesiveness']['results'],
-            metrics['Average Out Degree Fraction']['results'],
-            metrics['Cut Ratio']['results'],
-            metrics['Density']['results'],
-            metrics['Expansion']['results'],
-            metrics['Flake Out Degree Fraction']['results'],
+            metrics[metric_names[0]]['results'],
+            metrics[metric_names[1]]['results'],
+            metrics[metric_names[2]]['results'],
+            metrics[metric_names[3]]['results'],
+            metrics[metric_names[4]]['results'],
+            metrics[metric_names[5]]['results'],
+            metrics[metric_names[6]]['results'],
+            metrics[metric_names[7]]['results'],
+            metrics[metric_names[8]]['results'],
             ))
 
-
+    #we are only interested in no more than the top 100 communities
     k = min(100, len(l))
 
     fig = figure(figsize=(16, 10))
     fig.suptitle('Goodness Metrics Indicators: '+ job_name)
 
-    rates = list()
+    #iterate over each metric, treating it as the comparator
+    #aggregate result is a list of rates
+    rates = [run(l, feature_idx, k) for feature_idx in range(len(metric_names))]
 
-    #we select nine of the metrics that we wish to test
-    for feature_idx in range(len(metric_names)):
-        r = run(l, feature_idx, k)
-        rates.append(r)
-
-
-
+    #plot the results
     global global_lines
     fig.legend(global_lines, ('S', 'C', 'tpr', 'Coh', 'ODF', 'CutR', 'Den', 'Exp', 'FODF'), loc='right')
     plt.savefig(os.path.join(out_path, job_name + ".png"), format='png')
 
 
     return rates
+
+
+
 
 def running_avg(l):
     '''
@@ -102,35 +123,40 @@ def running_avg(l):
 
 
 
-def quantify2(running_avgs, feature_idx):
+def get_rankings(running_avgs, feature_idx):
+    '''
+    Args:
+        running_avgs: a list of running averages, one for each metric
+        feature_idx: the primary metric index
+
+    Returns:
+        list of top correlating indices for the feature index
+    '''
 
     totals = np.zeros(len(running_avgs))
-    comp = list(zip(*running_avgs))
 
-    for a in comp:
-        m = max(a)
-        r = [m-x for x in a]
-        for i, v in enumerate(r):
-            totals[i]+=v
+    for cross_section in list(zip(*running_avgs)):
+        m = max(cross_section)
+        diffs = [m-x for x in cross_section]
+        for i, diff in enumerate(diffs):
+            totals[i]+=diff
 
     totals_norm = whiten(totals)
     centroid, label = kmeans2(totals_norm, k = 4)
 
-    feature_label = label[feature_idx]
+    #find all those metrics in the same cluster as the primary metric, though
+    #we do not want to include the primary feature itself. This should be the
+    #cluster of metrics that have the minimal total distance to the primary metric
+    matches = [i for i, v in enumerate(label) if v == label[feature_idx] and i != feature_idx]
 
-    matches = [i for i, v in enumerate(label) if v == feature_label and i != feature_idx]
+    #we need to get the corresponding total diff for each match so we can sort them
+    l = list(zip(matches, [totals[i] for i in matches]))
 
-    l = list(zip(matches, [x for i, x in enumerate(totals) if i in matches]))
-
-    r = sorted(l, key = itemgetter(1))
-
-
-    match_names = [i  for i, v in r]
-    return match_names
-
+    #return the sorted list of top correlated metric for primary metric
+    return  [i  for i,_ in  sorted(l, key = itemgetter(1))]
 
 
-global_lines = None
+
 
 def run(metrics_list, feature_idx, k):
     '''
@@ -149,91 +175,68 @@ def run(metrics_list, feature_idx, k):
     x_values = range(k)
     num_features = len(metrics_list[0])
 
-    #first sort by separability and truncate
-    lines = list()
-
     plt.subplot(331+feature_idx)
 
     vertical = list()
 
+    #basically iterate through features, plotting each one
     for i in range(num_features):
         if i == feature_idx:
-            #we must truncate to the main feature
-            s = sorted(metrics_list, key = itemgetter(feature_idx), reverse=True)[:k]
+            #we must truncate to the primary metric to get the top k
+            s = sorted(metrics_list, key = itemgetter(i), reverse=True)[:k]
         else:
-            #use the untruncated list here
+            #use the untruncated list here. do not truncate here
             s = sorted(metrics_list, key = itemgetter(i), reverse=True)
 
+        #now get the running average for the main metric
         running_avgs = running_avg([v[feature_idx] for v in s])
         vertical.append(running_avgs)
         #to keep colors consistent, we need to use a global list of 2D lines
-        if global_lines is not None:
-            plt.plot(x_values, running_avgs, color=global_lines[i].get_color())
-        else:
+        if len(global_lines) < num_features:
             line, = plt.plot(x_values, running_avgs)
-            lines.append(line)
-
-    if global_lines is None: global_lines = lines
+            global_lines.append(line)
+        else:
+            plt.plot(x_values, running_avgs, color=global_lines[i].get_color())
 
     plt.ylabel(metric_names[feature_idx])
     plt.xlabel("Rank")
 
-    return quantify2(vertical, feature_idx)
+    return get_rankings(vertical, feature_idx)
 
 
+def create_pies(M, num_possible):
+    '''
+    Plots the pie charts that rank top correlated metrics
 
-from matplotlib.gridspec import GridSpec
+    Args:
+        M: matrix of number of times a metric was top correlated
+            m(i, j) = number of times metric j was top correlated to metric i
+        num_possible: number of opportunties to be top ranked (i.e. #datasets)
+    '''
 
-def create_pies(m, num_possible):
+    #since we are adding a column, let's make a copy
+    M_copy = M.copy()
 
+    new_col = num_possible -  np.sum(M.copy(), axis=1)
+    new_col =  np.reshape(new_col, (np.shape(M_copy)[0], 1))
 
-    new_col = num_possible -  np.sum(m, axis=1)
-    new_col =  np.reshape(new_col, (np.shape(m)[0], 1))
-
-    m = np.append(m, new_col, 1)
+    M_copy = np.append(M_copy, new_col, 1)
 
     fig = figure(figsize=(16, 10))
     fig.suptitle('Indicators',fontsize=20)
 
-
-    the_grid = GridSpec(3,3)
-
-
-    print(m[0])
-
-    for i in range(9):
+    for i in range(len(metric_names)):
         axis =  plt.subplot(331 + i)
         axis.set_title("Primary: " + metric_names[i], bbox={'facecolor':'0.8', 'pad':5})
         names = metric_names + ["None"]
-        labels = [names[idx] if x > 0 else '' for idx, x in enumerate(m[i])]
 
-
-        plt.pie(m[i], labels = labels)
+        #add labels to each slice of the pie, but only if it had a ranking value
+        labels = [names[idx] if x > 0 else '' for idx, x in enumerate(M_copy[i])]
+        plt.pie(M_copy[i], labels = labels)
 
     plt.savefig(os.path.join("indicators_results","pie.png"), format='png')
 
 
-
-    #figure(1, figsize=(6,6))
-    #ax = axes([0.1, 0.1, 0.8, 0.8])
-
-    # The slices will be ordered and plotted counter-clockwise.
-    #labels = 'Frogs', 'Hogs', 'Dogs', 'Logs'
-
-
-    #fracs = [15, 30, 45, 10]
-    #explode=(0, 0.05, 0, 0)
-
-    #pie(fracs, explode=explode, labels=labels,
-
-    #autopct='%1.1f%%', shadow=True, startangle=90)
-    # The default startangle is 0, which would start
-    # the Frogs slice on the x-axis.  With startangle=90,
-    # everything is rotated counter-clockwise by 90 degrees,
-    # so the plotting starts on the positive y-axis.
-
-    #title('Raining Hogs and Dogs', bbox={'facecolor':'0.8', 'pad':5})
-    #show()
 
 def main():
     parser = argparse.ArgumentParser(description='Experiment of Correlations in Goodness Metrics')
@@ -273,19 +276,6 @@ def main():
 
 
     create_pies(m, num_files)
-
-metric_names = [
-    "Separability",
-    "Conductance",
-    "Triangle Participation Ratio",
-    "Cohesiveness",
-    "Average Out Degree Fraction",
-    "Cut Ratio",
-    "Density",
-    "Expansion",
-    "Flake Out Degree Fraction",
-        ]
-
 
 
 if __name__ == "__main__":
