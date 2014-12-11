@@ -74,12 +74,14 @@ plotMetrics <- function(metrics,toPDF=FALSE) {
 # Plot chart comparing runtime to accuracy
 plotRunOmega <- function(metrics, toPDF=FALSE) {
 	runtimeplot <- ggplot(metrics, aes(x=log10(ComputationTime), y=OmegaAccuracy)) + 
-		geom_point(size=0) + 
-		geom_text(aes(x=log10(ComputationTime), y=OmegaAccuracy, label=Algorithms)) 
+		geom_point(size=0) +
+		theme_bw()+
+		geom_text(aes(x=log10(ComputationTime), y=OmegaAccuracy, label=Algorithms, color=Datasets), size=4, angle=45) 
+	
 	
 	if (toPDF) {
-        pdffile <- paste(Sys.time(),"metricsGraph.pdf", sep='')
-        pdf(pdffile,height=10,width=12)
+        pdffile <- paste(Sys.time(),"runtimeVsOmegaAccuracy.png", sep='')
+        png(pdffile, height=10, width=12, units='in', res=300)
         print(runtimeplot)
         dev.off()
         cat(sprintf('printed to %s \n', pdffile))
@@ -114,3 +116,4 @@ plotHist <- function(metrics,col='ComputationTime',toPDF=FALSE) {
         print(p)
     }
 }
+
