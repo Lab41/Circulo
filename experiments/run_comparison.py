@@ -59,15 +59,15 @@ def main():
     json_groups = {}
     json_files = glob.glob(os.path.join(args.input_path, '*.json'))
     for json_file in json_files:
-        prefix = json_file[:json_file.find('--')]
-        if prefix in json_groups:
-            json_groups[prefix].append(json_file)
+        dataset = os.path.basename(json_file).split('--')[0]
+        if dataset in json_groups:
+            json_groups[dataset].append(json_file)
         else:
-            json_groups[prefix] = [json_file]
+            json_groups[dataset] = [json_file]
 
     # Associate ground truth files with the dataset they come from
-    for prefix in json_groups:
-         workers.append(Worker(json_groups[prefix], args.output_path, args.timeout))
+    for (dataset, json_files) in json_groups.items():
+         workers.append(Worker(json_files, args.output_path, args.timeout))
 
     if args.workers is not None:
         pool = multiprocessing.Pool(processes=args.workers)
