@@ -43,12 +43,9 @@ def run_distance_matrix_clustering(fname, n=None):
         npMatrix[i, i] = 1
 
     # Spectral clustering doesn't like values less than 0.
-    # TODO: Does it make sense to set values < 0 to be the abs(value)??? Seems better than just setting it to 0.
-    #       Research meaning of an Omega score < 0
-    for i in range(size):
-        for j in range(size):
-            if npMatrix[i, j] < 0:
-                npMatrix[i,j] = abs(npMatrix[i,j])
+    # Set values < 0 to zero
+    # TODO: Evaluate if setting negative Omega scores to zero is the right thing to do.
+    npMatrix[npMatrix < 0] = 0
 
     # Run spectral clustering for various n_clusters and keep track of how often any two algorithms end up in the same cluster
     print('------------------------------------')
@@ -94,13 +91,9 @@ def print_pairwise_counts(results):
                     else:
                         pairs[pairName] = 1
 
-    tuples = []
-    for pair in pairs:
-        tuples.append([pair, pairs[pair]])
-
     print("Printing Results Across Datasets")
-    for (pair, count) in sorted(tuples, key=itemgetter(1)):
-        print(pair, count)
+    for (pairName, count) in sorted(pairs.items(), key=itemgetter(1)):
+        print(pairName, count)
 
 
 def main():
