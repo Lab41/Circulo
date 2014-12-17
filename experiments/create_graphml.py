@@ -22,7 +22,7 @@ import traceback
 from collections import namedtuple
 import glob
 import sys
-import networkx as nx
+import igraph
 import matplotlib.pyplot as plt
 from circulo.wrappers import community
 from circulo.metrics import omega
@@ -32,7 +32,7 @@ import json
 import datetime
 import multiprocessing
 
-Worker = namedtuple('Worker', 'json_path raw_graph_path output_path timeout')
+Worker = namedtuple('Worker', 'json_path raw_graph_path output_path pick_least_frequent timeout')
 
 
 def main():
@@ -40,6 +40,7 @@ def main():
     parser.add_argument('input_path', type=str, help='file or directory containing results')
     parser.add_argument('raw_graph_path', type=str, help='File or directory graphml files [typically circulo/data/GRAPHS/]')
     parser.add_argument('output_path', type=str, help='output directory to write metric files')
+    parser.add_argument('--least', action="store_true", help='If you add this flag only keep least frequent community for a given node is kept (useful for plotting)')
     parser.add_argument('--workers', type=int, default=multiprocessing.cpu_count(), help='Number of workers to process (DEFAULT: number of processors)')
     parser.add_argument('--timeout', type=int, default=3600, help="timeout for a work item in seconds (DEFAULT: 3600)")
     args = parser.parse_args()
@@ -55,22 +56,19 @@ def main():
     json_groups = {}
     json_files = glob.glob(os.path.join(args.input_path, '*.json'))
     for json_file in json_files:
-        prefix = json_file[:json_file.find('--')]
-
-        if prefix in json_groups:
-            json_groups[prefix].append(json_file)
+        dataset = os.path.basename(json_file).split('--')[0]
+        if dataset in json_groups:
+            json_groups[dataset].append(json_file)
         else:
-            json_groups[prefix] = [json_file]
+            json_groups[dataset] = [json_file]
 
     raw_graph_files = glob.glob(os.path.join(args.raw_graph_path, '*.graphml'))
-    for prefix in json_groups:
+    for (dataset, json_files) in json_groups.items():
         raw_graph_file_path = None
         for raw_graph_file in raw_graph_files:
-            if os.path.basename(raw_graph_file).startswith(os.path.basename(prefix)):
+            if os.path.basename(raw_graph_file).startswith(dataset):
                 raw_graph_file_path = raw_graph_file
-        workers.append(Worker(json_groups[prefix], raw_graph_file_path, args.output_path, args.timeout))
-
-    workers.append(Worker(args.input_path, args.output_path, args.timeout))
+        workers.append(Worker(json_files, raw_graph_file_path, args.output_path, args.least, args.timeout))
 
     if args.workers is not None:
         pool = multiprocessing.Pool(processes = args.workers)
@@ -105,7 +103,7 @@ def __get_least_frequent_community(community_array, community_counts):
 def analyze_json(worker):
     """
     Take in a set of json community detection results files and a graphml file representing the raw graph and output a
-    graphml file that contains, as attributes, the results of the aglortihms
+    graphml file that contains, as attributes, the results of the algorithms
 
     Args:
     worker: Named tuple of json_path raw_graph_path output_path timeout
@@ -115,7 +113,7 @@ def analyze_json(worker):
 
     print('Loading raw Graphml file truth file: %s'%worker.raw_graph_path)
     if worker.raw_graph_path is not None:
-        G = nx.read_graphml(worker.raw_graph_path)
+        G = igraph.load(worker.raw_graph_path)
     else:
         print("ERROR: Not able to load graph")
         return
@@ -127,29 +125,35 @@ def analyze_json(worker):
                 (name, algorithm) = data['job_name'].split('--')[:2]
 
                 algo_name = 'algo_%s'%algorithm
-                # Calculate number of nodes in each community
-                community_counts = {}
-                for node in data['membership']:
-                    for community in node:
-                        if community in community_counts:
-                            community_counts[community] += 1
-                        else:
-                            community_counts[community] = 1
+
+                # Only if we are pulling least frequent
+                if worker.pick_least_frequent:
+                    # Calculate number of nodes in each community
+                    community_counts = {}
+                    for node in data['membership']:
+                        for community in node:
+                            if community in community_counts:
+                                community_counts[community] += 1
+                            else:
+                                community_counts[community] = 1
 
                 # Add property to graph
-                for node in G:
+                for node in G.vs():
                     # Get cover Array
-                    # TODO: Fix this hacky way to turn node id (i.e. n1) into node index
+                    # TODO: Fix this hacky way to turn node id (i.e. "n1") into node index (i.e. 1)
                     try:
-                        community_array = data['membership'][int(node[1:])]
+                        community_array = data['membership'][int(node['id'][1:])]
                     except IndexError:
                         community_array= []
 
-                    # TODO: We have to pick single community when there are multiple (is it right to pick least freq?)
-                    least_frequent_community = __get_least_frequent_community(community_array, community_counts)
-                    if least_frequent_community is None:
-                        least_frequent_community = -1
-                    G.node[node][algo_name] = str(least_frequent_community)
+                    if worker.pick_least_frequent:
+                        # TODO: We have to pick single community when there are multiple (is it right to pick least freq?)
+                        least_frequent_community = __get_least_frequent_community(community_array, community_counts)
+                        if least_frequent_community is None:
+                            least_frequent_community = -1
+                        G.vs[node.index][algo_name] = str(least_frequent_community)
+                    else:
+                        G.vs[node.index][algo_name] = ','.join([str(x) for x in community_array])
 
     except TimeoutError as t:
         print("\t+Timeout ERROR: was analyzing: ", data['job_name'])
@@ -162,7 +166,7 @@ def analyze_json(worker):
 
     graphml_file_output = os.path.join(worker.output_path, "%s.graphml"% name)
     print("Writing Graph: %s"%graphml_file_output )
-    nx.write_graphml(G, graphml_file_output)
+    igraph.write(G, graphml_file_output)
 
 
 if __name__ == "__main__":
