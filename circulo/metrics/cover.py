@@ -143,33 +143,36 @@ def normalized_cut(cover, weights=None, allow_nan = False):
     __remove_weight_attr(cover.graph, w_attr, remove)
     return rv
 
-def maximum_out_degree_fraction(cover, weights=None):
+def maximum_out_degree_fraction(cover, odf=None, weights=None):
     '''
     Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges
     and its internal edges. Maximum ODF returns the maximum fraction for the cluster.
     '''
-    odf = out_degree_fraction(cover, weights=weights)
+    if odf is None:
+        odf = out_degree_fraction(cover, weights)
     return [ nanmax(ratios) for ratios in odf ]
 
-def average_out_degree_fraction(cover, weights=None):
+def average_out_degree_fraction(cover, odf=None, weights=None):
     '''
     Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges
     and its internal edges. Average ODF returns the average fraction for the cluster.
     '''
     rv = []
-    odf = out_degree_fraction(cover, weights)
+    if odf is None:
+        odf = out_degree_fraction(cover, weights)
     for i in range(len(cover)):
       ratios = odf[i]
       rv += [ nansum(ratios)/cover.subgraph(i).vcount() ]
     return rv
 
-def flake_out_degree_fraction(cover, weights=None):
+def flake_out_degree_fraction(cover, odf=None, weights=None):
     '''
     Out Degree Fraction (ODF) of a node in a cluster is the ratio between its number of external (boundary) edges
     and its internal edges. Flake ODF returns the number of nodes for which this ratio is less than 1, i.e. a node has fewer internal edges than external ones.
     '''
     rv = []
-    odf = out_degree_fraction(cover, weights)
+    if odf is None:
+        odf = out_degree_fraction(cover, weights)
     for i in range(len(cover)):
         flake = [ ratio > 1/2.0 for ratio in odf[i] ]
         rv += [sum(flake)/cover.subgraph(i).vcount()]
@@ -243,9 +246,12 @@ def compute_metrics(cover, weights=None, ground_truth_cover=None):
     cut_ratio_results = cut_ratio(cover)
     conductance_results = conductance(cover, weights)
     n_cut_results = normalized_cut(cover, weights)
-    max_out_results = maximum_out_degree_fraction(cover, weights)
-    avg_out_results = average_out_degree_fraction(cover, weights)
-    flake_odf_results = flake_out_degree_fraction(cover, weights)
+
+    # Get out degree fraction results then reuse for max, average, flake
+    odf = out_degree_fraction(cover, weights)
+    max_out_results = maximum_out_degree_fraction(cover, odf=odf, weights=weights)
+    avg_out_results = average_out_degree_fraction(cover, odf=odf, weights=weights)
+    flake_odf_results = flake_out_degree_fraction(cover, odf=odf, weights=weights)
     sep_results = separability(cover,weights)
     results_key = "results"
     agg_key = "aggregations"
