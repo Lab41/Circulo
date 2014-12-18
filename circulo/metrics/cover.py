@@ -1,11 +1,13 @@
 # Goal is to annotate a vertex cover with dictionary representing various cluster metrics
 from igraph import Cover, VertexCover
 from scipy import nansum, nanmax
+from scipy.sparse import dok_matrix
 import uuid
 import collections
 import time
 from circulo.metrics.omega import omega_index
 from circulo.utils.general import aggregate
+import numpy as np
 
 def __get_weight_attr(G, metric_name, weights):
     '''
@@ -150,7 +152,11 @@ def maximum_out_degree_fraction(cover, odf=None, weights=None):
     '''
     if odf is None:
         odf = out_degree_fraction(cover, weights)
-    return [ nanmax(ratios) for ratios in odf ]
+    rv = []
+    for i in range(len(cover)):
+        # It appears that dok doesn't have a working max function...
+        rv += [odf.getcol(i).tocsr().max()]
+    return rv #[ nanmax(ratios) for ratios in odf ]
 
 def average_out_degree_fraction(cover, odf=None, weights=None):
     '''
@@ -161,8 +167,7 @@ def average_out_degree_fraction(cover, odf=None, weights=None):
     if odf is None:
         odf = out_degree_fraction(cover, weights)
     for i in range(len(cover)):
-      ratios = odf[i]
-      rv += [ nansum(ratios)/cover.subgraph(i).vcount() ]
+      rv += [ odf.getcol(i).sum()/cover.subgraph(i).vcount() ]
     return rv
 
 def flake_out_degree_fraction(cover, odf=None, weights=None):
@@ -174,8 +179,11 @@ def flake_out_degree_fraction(cover, odf=None, weights=None):
     if odf is None:
         odf = out_degree_fraction(cover, weights)
     for i in range(len(cover)):
-        flake = [ ratio > 1/2.0 for ratio in odf[i] ]
-        rv += [sum(flake)/cover.subgraph(i).vcount()]
+        count = 0
+        for item in odf.getcol(i):
+            if item > 1/2.0:
+                count += 1
+        rv += [count/cover.subgraph(i).vcount()]
     return rv
 
 def out_degree_fraction(cover, weights=None, allow_nan = False):
@@ -188,19 +196,20 @@ def out_degree_fraction(cover, weights=None, allow_nan = False):
 
     #do this outside the loop because it is computationally expensive
     membership = cover.membership
-
-    rv = []
     external_edges = cover.external_edges()
+    degree_per_node = cover.graph.strength(weights=w_attr)
+
+    # Intialize return value
+    rv = dok_matrix((cover.graph.vcount(), len(cover))) # Rows = Vertex, cols = Cover
     for i in range(len(cover)):
-        ext_edge_per_node = [0]*cover.graph.vcount()
-        degree_per_node = cover.graph.strength(weights=w_attr)
+        ext_edge_per_node = dok_matrix((cover.graph.vcount(), 1))
+
         for edge in external_edges[i]:
             node_index = edge.source if i in membership[edge.source] else edge.target
-            ext_edge_per_node[node_index] += 1.0 if weights is None else edge[w_attr]
-        ratios = []
-        for pair in zip(ext_edge_per_node, degree_per_node):
-             ratios += [ pair[0]/pair[1] if pair[1] != 0 else float(mode) ]
-        rv += [ratios]
+            ext_edge_per_node[node_index, 0] += 1.0 if weights is None else edge[w_attr]
+
+        for (node, always_zero), ext_edges_for_this_node in ext_edge_per_node.items():
+            rv[node, i] += ext_edges_for_this_node/float(degree_per_node[node]) if degree_per_node[node] != 0 else float(mode)
 
     __remove_weight_attr(cover.graph, w_attr, remove)
     return rv
