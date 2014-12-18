@@ -1,584 +1,165 @@
+<!DOCTYPE html>
 <html>
-    <head>
-        <link rel="stylesheet" type="text/css" href="stylesheets/styles.css">
-    </head>
-    <body>
-        <h1>Community Detection Research</h1>
-        <h2>Good Data Sets</h2>
-        <ul>
-            <li>Data which may not have Ground Truth</li>
-            <ul><li><a href="https://snap.stanford.edu/data">Stanford's InfoLab</a></li></ul>
-            <li>Data with Ground Truth</li>
-            <ul><li><a href="https://snap.stanford.edu/data">Stanford's InfoLab</a>
-            </li></ul>
-            <li>Synthetic Data Generation</li>
-            <ul><li>
-                Generated Graph by splitting into 4 groups [11]
-               Create graph which replicates properties of graphs--Kronecker Method [Lescovec et al. 2010] 
-               Need to replicate realworld properties: heavy tails for in and out-degree distribution, heavy tails for eigenvalues and eigenvectors, small diameters and desnificaiton and shrinking diameters over time.
-                
-                
-            </li></ul>
-        </ul>
-        <h2>Methods of Community Detection</h2>
-        <ul>
-            <li><b>Node Based</b>
-                <ul><li>Given an individual node, identify the communities that the node belongs to</li></ul>
-            </li>
-            <li><b>Component Based</b>
-                <ul><li>Given a component(community), discover overlapping sub-communities within it</li></ul>
-            </li>
-            <li><b>Nework Based</b>
-                <ul><li>Given a community (nodes & edges), discover overlapping sub-communities within it</li></ul>
-            </li>
-        </ul>
 
-        <h2>Use Cases</h2>
-        <ul>
-            <li>Nodes belonging to a community are more than likely to have other properties in common [10].</li>
-            <li>Enables data triage through node relationships</li>
-            <li>May identify hierarchies (communities within communities)</li>
-            <li>Finding partitions in nodes to promote efficiencies in distributing computation </li>
-            <li>Enables centrality measures within a community</li>
-            <li>Enables the identification of key edges used to link communities</li>
-        </ul>
-        
-        <h2>Evaluation Metrics</h2>
-        <ul>
-            <li>Overview of using ground truth [8]</li>
-            <li>These metrics were collectively suggested in the paper [14]</li>
-            <li>Good paper outlining potential issues with validating community detection, 2013 [22]</li>
-	    <li>Classes of metrics: Internal Connectivity, Combo of internal and external connectivity</li>
-	    <li>Goodness scores (as second order testing bc increases in community scores increases goodness scores): Separability, Density, Cohesiveness, Cluster Coefficient
-	    <li>For overlapping communities, we will want to use only internal and external metric values.  Combination metrics and modularity scores will result in misleading values that should be inconsistent.</li>
-        </ul>
-        <table border="1">
-            <tr>
-                <th>Metric Name</th>
-                <th>Connectivity Type
-                <th>Ground Truth Required?</th>
-                <th>Details</th>
-            </tr>
-            <tr>
-                <td>Edge/Link Prediction</td>
-                <td>
-                    <td>No</td>
-                    <td>Quality of division is based on ability to predict an edge after removing it</td>
-            </tr>
-            <tr>
-                <td>Modularity [11]</td>
-                <td>Comparative Scoring Function</td>
-                <td>No</td>
-                <td>Tests a given division of a network against the random division <br>
-		    Scale below which modularity cannot identify communities bc random graphs have high-modularity subsets <br>
-		    Does not work well under nodeswap perturbation</td>
-            </tr>
-            <tr>
-                <td>F1 Score</td>
-                <td>Comparative Scoring Function</td>
-                <td>Yes</td>
-                <td>Determination of precision and recall.  Compares membership output of an algorithm to ground truth and returns the ratio of true and false assignments </td>
-            </tr>
-            <tr>
-                <td>Omega Index</td>
-                <td>Comparative Scoring Function</td>
-                <td>Yes</td>
-                <td>Compares non-disjoing clustering results.  The omega index considers the number of clusters in which a pair of objects appears together.</td>
-            </tr>
-            <tr>
-                <td>Normalized Mutual Information [10]</td>
-                <td>Comparative Scoring Function</td>
-                <td>Yes</td>
-                <td>Used to quantify matching of "true" graphs particularly in synthetic graphs, it quantifies teh degree of overlap between graphs. </td>>
-            </tr>
-            
-            <tr>
-                <td>Networks with Semantics</td>
-                <td/>
-                </td>
-                <td>N/A</td>
-                <td/>
-            </tr>
-            
-            <tr>
-                <td>FOMD</td>
-                <td>Internal</td>
-                <td>No</td>
-                <td>Fraction over Median Degree determines the number of nodes that have an internal degree greater than the median degree of all nodes in a group.</td>
-            </tr>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="description" content="Circulo : Community Detection Research Effort">
 
-            <tr>
-                <td>Internal Density</td>
-		<td>Internal</td>
-                <td>No</td>
-		<td>Density is defined by the number of edges (m<sub>s</sub>) in subset S divided by the total number of possible edges between all nodes (n<sub>s</sub>(n<sub>s</sub>-1)/2).  The "2" is there to cancle out duplicated edges.  Internal Density = m<sub>s</sub>/(n<sub>s</sub>(n<sub>s</sub>-1)/2)</td>
-            </tr>
-            
-            <tr>
-                <td>Edges Inside</td>
-                <td>Internal</td>
-                <td>No</td>
-                <td>Somewhat useless by itself since it isn't related to any other attributes of subset S.  The total number of edges (m<sub>s</sub>) present in subset S.  Edges Inside = m<sub>s</sub></td>
-            </tr>
-            
-            <tr>
-                <td>Average degree</td>
-                <td>Internal</td>
-                <td>No</td>
-                <td>The average interal degree across all nodes (n<sub>s</sub>) in subset S.  Average Degree = 2m<sub>s</sub>/n<sub>s</sub></td>
-            </tr>
-            
-            <tr>
-                <td>Fraction over median degree (FOMD)</td>
-                <td>Internal</td>
-                <td>No</td>
-                <td>Determines the number of nodes that have an internal degree greater than the median degree of nodes in Subset S.   </td>
-            </tr>
-            
-            <tr>
-                <td>Triangle Participation Ratio (TPR)</td>
-                <td>Internal</td>
-                <td>No</td>
-                <td>The best mesure for density, cohesiveness, and clustering within the goodness scales.  Robust under random and expand perturbations.  A measure of cohesion.  The fraction of nodes in S that belong to a triad. TPR = (# of nodes belonging to a triad)/n </td>
-            </tr>
-            
-            
-            <tr>
-                <td>Expansion (External Degree)</td>
-		<td>External</td>
-                <td>No</td>
-                <td>This measure of separability gives the average of number of external connections (c<sub>s</sub>) per node (n<sub>s</sub>) in subset S has with graph G.  It can be thought of "External Degree".  Expansion = c<sub>s</sub>/(n<sub>s</sub>(n-n<sub>s</sub>)).
-            </tr>
-            
-            <tr>
-                <td>Cut Ratio (External Density)</td>
-                <td>External</td>
-                <td>No</td>
-                <td>This metric is a measure of sperarability and can be thought of as "External Density".  It is the fraction of external edges (c<sub>s</sub>) of subset S out of the total number of possible edges in graph G.</td>
-            </tr>
-            
-            <tr>
-                <td>Conductance [6,8]</td>
-                <td>Combo (Int. & Ext.)</td>
-                <td>No</td>
-                <td>Ratio of edges inside the cluster to the number of edges leaving the cluster (captures surface area to volume).  Discriminative Algorithm.  Measures best in separability (goodness scale); measures well-separated non-overlapping communities.  Robust under nodeswap and shrink perturbation.  Community like sets of nodes have lower conductance.</td>
-            </tr>
-            
-            <tr>
-                <td>Normalized Cut</td>
-                <td>Combo (Int. & Ext.)</td>
-                <td>No</td>
-                <td>Represents how well subset S is separated from graph G.  It sums up the fraction of external edges over all edges in subset S (conductance) with the fraction of external edges over all non-community edges.</td> 
-            </tr>
-            
-            <tr>
-                <td>Maximum Out Degree Fraction  (Maximum ODF)</td>
-                <td>Combo (Int. & Ext.)</td>
-                <td>No</td>
-                <td>This metric first finds the fraction of external conections to internal connections for each node (n<sub>s</sub>) in S.  It then returns the fraction with the highest value.  For example, S contain 5 nodes all connected to themselves.  There is one node in S that has 7 external connections.  The Max ODF = 7/4.  
-            </tr>
-            
-            <tr>
-                <td>Average ODF</td>
-                <td>Combo (Int. & Ext.)</td>
-                <td>No</td>
-                <td>The sum of the individual fraction of edges outside of the community over the total connections of a node in subset S.  It is then divided by the total number of nodes (n<sub>s</sub>) in subset S.</td>
-            </tr>
-            
-            <tr>
-                <td>Flake-ODF</td>
-                <td>Combo (Int. & Ext.)</td>
-                <td>No</td>
-                <td>This is a fraction of the number of nodes that have fewer internal connections than external connections (***) to the number of nodes (n<sub>s</sub>) in subset S.</td>
-            </tr>
-            
-            <tr>
-		<td>Density</td>
-		<td>Internal</td>
-		<td>No</td>
-		<td>Memebers of a large community are more likely not to be connected to each other.  Two nodes in the same community of size k connected to each other has a probability of [Omega (1/sq.rt(k))]--Arora et al. 2012.  This creates a low-density, large graph.</td>
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
 
-        </table>
-        
-        
-               
-        <h2>Algorithms for Community Detection</h2>
-        <h4><u>Algorithm Classes[7]</u></h4>
-        
-        <ul>
-            <li><u><b>Divisive</b></u>: Focus on edges and verticies that exist between communities. This class tends to be more repeatable, traditional and computationally expensive</li>
-            <li><u><b>Model Based</b></u>: Considers an underlying model of statistical nature that can generate the division of the network.  Time complexity often is derived through testing, and is not explicity characterized.</li>
-            <li><u><b>Quality Optimization</b></u></li>: Usually maximizes the delta from some score such as modularity
-            <li><u><b>Vertex Clustering</b></u>: Embeds the Graph into vector space in order to use conventional data clustering methods such as k-means</li>
-            <li><u><b>Cohesive Subgraph Discovery</b></u>:  This class finds communities of a particular predefined structure within the graph. For example, the structure could be a clique, n-clique, k-core, LS set, lambda set</li>
-        </ul>
+    <title>Circulo</title>
+  </head>
 
-        <h4>Algorithm Attributes</h4>
-        <ul>
-            <li><b>R</b>: Requires Number of Communities</li>
-            <li><b>R+</b>: Requires # of communities, but is able to guess if not provided</li>
-            <li><b>D</b>: Deterministic</li>
-            <li><b>G</b>: Global</li>
-            <li><b>L</b>: Local</li>
-            <li><b>H</b>: Heirarchical
-            <li><b>A</b>: Agglomerative</b></li>
-            <li><b>O</b>: Overlapping</li>
-            <li><b>Q</b>: Distributable </li>
-            <li><b>S</b>:Requires community size</li>
-        </ul>
+  <body>
 
-        <h4>Graph Input Types </h4>
-        <ul>
-            <li><b>w</b> = "weighted"</li>
-            <li><b>-w</b> = "unweighted"</li>
-            <li><b>d</b> = "directed" </li>
-            <li><b>-d</b> = "non-directed"</li>
-        </ul>
-        
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/Lab41/Circulo">View on GitHub</a>
 
- 
-        *NOTE:  A table similar to this already exists in some literature. Check here [10] for more algos that might not be listed yet.
-        <table border="1">
-            <tr>
-                <th>Algorithm Name/Year</th>
-                <th>Class</th>
-                <th>Time/Space Complexity</th>
-                <th>Algo Attributes</th>
-                <th>Implementations</th>
-                <th>Input Graph Type</th>
-                <th>Comments</th>
-                <tr>
-                    <td>Girvan-Newman (<b>Shortest-path betweenness</b>), 2004  [11]</td>
-                    <td>Divisive</td>
-                    <td>O(nm^2)</td>
-                    <td>D,H,G</td>
-                    <td>Mathematica</td>
-                    <td>w,-d</td>
-                    <td>A global approach that iteratively removes links with teh highest betweenness score, a centrality metric that measures the number of times a link lies ont eh path between two other links.  This iteration uses a tree structure to achieve edge betweeness of a graph in O(mn)</td>
-                </tr>
-                <tr>
-                    <td>Girvan-Newman (<b>random-walk betweenness</b>), 2004 [11][16]</td>
-                    <td>Divisive</td>
-                    <td>O((n+m)mn^2)</td><td/><td/><td/>
-                    <td>Uses random traversal through a graph</td>
-                </tr>
-                
-                
-                <tr>
-                    <td>Girvan-Newman (<b>current-flow betweenness</b>), 2004 [11][16]</td>
-                    <td>Divisive</td>
-                    <td>O((n+m)mn^2)</td>
-                    <td/><td/><td/>
-                    <td>Uses a resistor network concept</td>
-                </tr>
-                
-                
-                
-                <tr>
-                    <td>Infomaps[13]</td>
-                    <td>Model Based/Information Theory/ Random Walk</td>
-                    <td>O((n^2)Log(n))</td><td/>
-                    <td>snap, igraph</td>
-                    <td>w,d</td>
-                    <td>Attempts to find partition that yields the minimum description length of an infinite random walk on the network. It determines community and network structure by analyzing the flow of information, proxied throughr andom walk calculations, among various groups of nodes.</td>
-                </tr>
-                
-                
-                <tr>
-                    <td>
-                        Fast Newman [12]
-                        <td>Quality Optimization</td>
-                        <td>O((m + n)n)</td>
-                        <td>A,H</td>
-                        <td>Snap</td>
-                        <td>w,-d</td>
-                        <td>Optimize Q over all divisions using agglomerative hierarchical clustering</td>
-                </tr>
-                <tr>
-                    <td>Clauset-Newman-Moore [9]</td>
-                    <td>Model Based, Quality Optimization</td>
-                    <td>O(md log n) where d is depth of dendrogram</td>
-                    <td/>
-                    <td>Snap, igraph</td>
-                    <td></td>
-                    <td>Improves upon Fast Newman, remains based oon the greedy optimization of modularity.  A modularity of >0.3 is a good indicator of a significant community structure.</td>
-                </tr>
-                <tr>
-                    <td>BIGCLAM (Cluster Affilitation Model for Big Networks)[14]</td>
-                    <td>Model Based</td>
-                    <td>Unclear</td>
-                    <td>O,H,G,Q,R+</td>
-                    <td>Snap</td>
-                    <td>-w,-d</td>
-                    <td>Partitioning that most likely produces the edges of a given graph, given the notion that nodes in the same community are more likely to share an edge. It captures the probability that a pair of nodes are connected as a funciton of that shared membership. <a href="http://www.youtube.com/watch?v=htWQWN1xAZQ">Video Lecture</a></td>
-                </tr>
-                
-                <tr>
-                    <td>Label Propogation, 2007 [17]</td>
-                    <td>Vertex Clustering</td>
-                    <td/>
-                    <td>A</td>
-                    <td/>
-                    <td/>
-                    <td>Label Propagation uses the structure of the graph to cluster vertices.  Nodes are iteratively labeled with the label that most of its neighbors holds.  Densely connected groups form a consensus with a unique label. </td>
-                </tr>
-                
-                <tr>
-                    <td>Fast Unfolding, 2008 [19]</td>
-                    <td>Quality Optimization</td>
-                    <td/>
-                    <td>H</td>
-                    <td>igraph</td>
-                    <td>w,-d</td>
-                    <td>An iterative algorithm that calculates modularity based on nearest neighbros, joining nodes if the values are positive, and then builds a new network whose nodes are now communities based on step one. This it repeated until maximum modularity is achieved.</td>
-                </tr>
-                
-                <tr>
-                    <td>WalkTrap, 2005 [18]</td>
-                    <td>Vertex Clustering, Quality Optimization</td>
-                    <td>O(mn^2)</td>
-                    <td>A</td>
-                    <td>igraph</td>
-                    <td>w,-d</td>
-                    <td>Defines a similarity metric between nodes based on distance to all other nodes from a random walk. Merges nodes in an agglomarative fashion that minimizes distance from other nodes in the community. Then picks partition that has highest modularity.</td>
-                </tr>
-                
-                <tr>
-                    <td> CESNA (Communities from Edge Structure and Node Attributes) [26]</td>
-                   <td> Subgraph Discovery </td>
-                   <td> 1 million nodes in 10 hours</td>
-                   <td> Q,R+</td>
-                   <td> Snap</td>
-                   <td> -w,-d</td>
-                   <td> Detects overlapping communities in networks with node attributes.  Assumes that nodes that belong ot the same communities are likely to be connected to each other, communities can overlap, the more common communities a set of nodes share the more likely they are to be connected, and nodes in the same community are likely to share common attributes.</td>
-                </tr>
-                <tr>
-                    <td>Radicchi et al [15]</td>
-                    <td>Model Based, Divisive</td>
-                    <td>O(m^2) on large systems</td>
-                    <td/>
-                    <td>None</td>    
-                    <td>-d</td>
-                    <td>A local algorithm that returns similar results to Girvan Newman betweenness but reduces computational cost by using a local quantitiy--the number of loops of a given length that contains an edge--to choose which edge to remove. </td>
-                </tr>
-                
-                <tr>
-                    <td>Leading Eigenvector, 2006 [20]</td>
-                    <td/>
-                    <td/>
-                    <td/>
-                    <td>igraph</td>
-                    <td/>
-                    <td/>
-                </tr>
-                
-                
-                <tr>
-                    <td>Latent Space Models [21]</td>
-                    <td/>
-                    <td/>
-                    <td/>
-                    <td></td>
-                    <td/>
-                    <td/>
-                </tr>
-                <tr>
-                    <td>CoDA (Communities through directed affiliations)[23]</td>
-                    <td>Model Based</td>
-                    <td>Unclear</td>
-                    <td>O,H,G,Q,R+</td>
-                    <td>snap</td>
-                    <td>-w,d</td>
-                    <td>Extension of BIGCLAM that incorporated directedness to discover community type. It detects overlapping communities as wel as cohesively and 2-mode communities, whether connected or hierarically nested.</td>
-                </tr>
-		<tr>
-                    <td>Clique Clique Percolation [27]</td>
-                    <td>Cohesive Subgraph Discovery</td>
-                    <td/>
-                    <td>G,D,S</td>
-                    <td>CFinder</td>
-                    <td>-w,-d</td>
-                    <td>Begins by identifying all cliques of size k in a network.  All cliques are collapsed into single vertex.  Vertices are connected if cliques that they are representing share k-1 members—connected components identify which cliques compose a community. Input value of k must be chosen and typically is between 3 and 6.</td>
-                <tr>
-                    <td>CONGA (Cluster-Overlapping Newman Girvan Algorithm), 2007 [28]</td>
-                    <td>Divisive</td>
-                    <td>O(m^3)</td>
-                    <td>D,G,O</td>
-                    <td>None</td>
-                    <td>-w,-d</td>
-                    <td>CONGA, like Girvan Newman, relies on calculation of betweenness to determine splits, but splits on vertices, rather than edges. The algorithm specifies when and how to split vertices allowing for overlapping membership.</td>
-                </tr>
-                <tr>
-                    <td>CONGO (CONGA Optimized), 2008 [32]</td>
-                    <td>Divisive</td>
-                    <td>O(n log n) Sparse Networks</td>
-                    <td>D,G,O</td>
-                    <td>None</td>
-                    <td>-w,-d</td>
-                    <td>Expands upon the CONGA algorithm by achieving a local form of betweenness.</td>
-                </tr>
+          <h1 id="project_title">Circulo</h1>
+          <h2 id="project_tagline">Community Detection Research Effort</h2>
 
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/Lab41/Circulo/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/Lab41/Circulo/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
 
-                <tr>
-                    <td>Fuzzy Overlapping Group (FOG) [29]</td>
-                    <td>Divisive</td>
-                    <td>O(L^3)
-                    <td>O</td>
-                    <td>ORA</td>
-                    <td/>
-                    <td>A combination of a stochastic model and maximum likelihood method group detection algorithm for inferring fuzzy overlapping groups. Groups are built from links which allows for multiple memberships varying levels of association from entities to groups.</td>
-                </tr>
-                <tr>
-                    <td>Bipartite Stochastic Block Model (biSBM), 2014 [30]</td>
-                    <td>Model Based</td>
-                    <td>O(N_aK_a(K_a + k)) + O(N_bK_b(K_b + k))</td>
-                    <td/>
-                    <td>Matlab</td>
-                    <td>w</td>
-                    <td>The degree corrected Bipartite Stochastic Block Model uses probability to search for maximum likelihood partition of a network into communities.  It models a network's observed degree sequence before finding community structure.  It divdes verticies into groups of like types.  These calculations are done iteratively to continually propose movements of vertices that increases the likelihood function. In ref to run time, k is avg degree of each node, N_a and N_b or
-                        number of vertices of type a and b, K_a and K_b are number of communities of type a and b</td>
-                </tr>
-                <tr>
-                    <td>Spectral Clustering [31]</td>
-                    <td>Model Based</td>
-                    <td>Determined by Eigenvalue Computation</td>
-                    <td>L,Q,R</td>
-                    <td/>
-                    <td>w,d</td>
-                    <td>Spectral clustering algorithms rely on the calculation of eigenvalues of a similarity matrix to find optimal partitions, give a predetermined number of partitions.  It relaxes the complex problem of minimizing cut ratio over every possible k-partition to find the k-smallest eigenvalues and related eigenvectors of the Laplacian of the graph.</td>
-                </tr>
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
+<a id="circulo-a-community-detection-evaluation-framework" class="anchor" href="#circulo-a-community-detection-evaluation-framework" aria-hidden="true"><span class="octicon octicon-link"></span></a>Circulo: A Community Detection Evaluation Framework</h1>
 
-                
-                
-                
-        </table>
+<h3>
+<a id="contribute" class="anchor" href="#contribute" aria-hidden="true"><span class="octicon octicon-link"></span></a>Contribute</h3>
 
-        <h2> Role-centric algorithms </h2>
-        <table border="1">
-            <tr>
-                <th>Algorithm Name/Year</th>
-                <th>Class</th>
-                <th>Time/Space Complexity</th>
-                <th>Algo Attributes</th>
-                <th>Implementations</th>
-                <th>Input Graph Type</th>
-                <th>Comments</th>
-            </tr>
-            <tr>
-                <td> RolX </td>
-                <td> Role identification/discovery </td>
-                <td/>
-                <td> Q </td>
-                <td> SNAP </td>
-                <td> -w,-d </td>
-                <td> Generates list of roles as "profiles" of local/global node metrics, and assigns nodes a linear
-                    combination of these roles. </td>
-            </tr>
-        </table>
-        
-        
-        <h2>Implementation Frameworks</h2>
-        <table border="1">
-            <tr><th>Name</th><th>Author(s)</th><th>Homepage</th><th>Comments</th>
-                <tr><td>Snap</td><td/><td>http://snap.stanford.edu</td><td/></tr>
-                <tr><td>igraph</td><td/><td>http://igraph.sourceforge.net/index.html</td>
-                    <td>
-                        igrpah is a free software package for creating and manipulating undirected and directed graphs. It includes implementations for classic graph theory problems. igraph has four implementations: R, C/C++, Python, and Ruby
-                    </td></tr>
-        </table>
-        
-        <h2>Notable Papers</h2>
-        <table border="1">
-            <th>Topic</th>
-            <th>Title</th>
-            <th>Comments</th>
-            <tr>
-                <td>Comparing Algorithms</td>
-                <td>Community Detection Algorithms: A Comparative Analysis [3]</td>
-                <td/>
-            </tr>
-            <tr>
-                <td>
-                    Overview
-                </td>
-                <td>
-                    Communities in networks [4]
-                </td>
-                <td/>
-            </tr>
-            <tr>
-                <td>Overview</td>
-                <td>Community Detection in Graphs (2010) [5]</td>
-                <td/>
-            </tr>
-            
-            <tr>
-                <td>Overview</td>
-                <td>Community Detection in Social Media [7]</td>
-                <td/>
-            </tr>
-            
-            <tr>
-                <td>Comparing Algorithms</td>
-                <td>Empirical Comparison of Algorithms for Network Community Detection [6]</td>
-                <td/>
-            </tr>
-            <tr>
-                
-                <td>Evaluating Algorithms</td>
-                <td>Defining and Evaluating Network Communities based on Ground-truth[8]</td>
-                <td></td>
-            </tr>
-            <tr>
-                <td>Centrality Measures / Community Detection</td>
-                <td>Using Centrality Measures to Identify Key Members of an Innovation Collaboration Network [24]</td>
-                <td/>
-            </tr>
-            <tr>
-                <td>Overlapping community detection</td>
-                <td>Overlapping community detection in networks: the state-of-the-art and comparative study [25]</td>
-            </tr> 
-        </table>
-        
-        
-        <ul>
-            <li><b>n</b> = number of verticies</li>
-            <li><b>m</b> = number of edges</li>
-        </ul>
+<p>Contributors welcome! If you want to contribute, please issue a pull request.</p>
 
-                
-        <h3>References</h3>
-        [1] Michelle Girvan and M. E. J. Newman, 2001 <a href="http://arxiv.org/pdf/cond-mat/0112110.pdf">Community structure in social and biological networks</a><br>
-        [2] M. E. J. Newman, 2001  <a href="http://www-personal.umich.edu/~mejn/papers/016132.pdf">Scientific collaboration networks. II. Shortest paths, weighted networks, and centrality</a><br>
-        [3] Andrea Lancichinetti and Santo Fortunato, 2010 <a href="http://arxiv.org/pdf/0908.1062v2.pdf">Community detection algorithms: a comparative analysis</a><br>
-        [4] Mason A. Porter, Jukka-Pekka Onnela, and Peter J. Mucha, 2009 <a href="http://www.ams.org/notices/200909/rtx090901082p.pdf">Communities in Networks</a><br>
-        [5] Santo Fortunato, <a href="http://arxiv.org/pdf/0906.0612v2.pdf">Community detection in graphs</a><br>
-        [6] Jure Leskovec, Kevin J. Lang, Michael W. Mahoney, <a href="http://cs.stanford.edu/people/jure/pubs/communities-www10.pdf">Empirical Comparison of Algorithms for Network Community Detection</a><br>
-        [7] Symeon Papadopoulos, Yiannis Kompatsiaris, Athena Vakali, Ploutarchos Spyridonos, <a href="http://static.springer.com/sgw/documents/1387631/application/pdf/10-3.pdf">Community detection in Social Media Performance and application considerations</a><br>
-        [8] Jaewon Yang and Jure Leskovec, <a href="http://cs.stanford.edu/people/jure/pubs/comscore-icdm12.pdf">Defining and Evaluating Network Communities based on Ground-truth</a><br>
-        [9] Aaron Clauset, M. E. J. Newman, Cristopher Moore, <a href="http://arxiv.org/pdf/cond-mat/0408187.pdf">Finding community structure in very large networks</a><br>
-        [10] Leon Danon, Albert D ́iaz-Guilera, Jordi Duch, and Alex Arenas <a href="http://arxiv.org/pdf/cond-mat/0505245.pdf">Comparing community structure identification</a><br>
-        [11] M. E. J. Newman, and M. Girvan, 2004,  <a href="http://arxiv.org/pdf/condmat/0308217.pdf">Finding and evaluating community structure in networks</a><br>
-        [12] M. E. J. Newman, <a href="http://arxiv.org/pdf/cond-mat/0309508.pdf">Fast algorithm for detecting community structure in networks</a><br>
-        [13] Martin Rosvall and Carl T. Bergstrom<a href="http://www.mapequation.org/assets/publications/RosvallBergstromPNAS2008Full.pdf">Maps of random walks on complex networks reveal community structure</a><br>
-        [14] Jaewon Yang and Jure Leskovec <a href="http://infolab.stanford.edu/~crucis/pubs/paper-nmfagm.pdf">Overlapping Community Detection at Scale: A Nonnegative Matrix Factorization Approach</a><br>
-        [15] Filippo Radicchi, Claudio Castellano, Federico Cecconi, Vittorio Loreto, and Domenico Parisi <a href="http://www.pnas.org/content/101/9/2658.full.pdf+html">Defining and identifying communities in networks</a><br>
-        [16] M.E.J. Newman, 2004, <a href="http://arxiv.org/pdf/condmat/0309045.pdf">A measure of betweenness centrality based on random walks</a><br>
-        [17] Usha Nandini Raghavan, Reka Albert, Soundar Kumara, 2007, <a href="http://arxiv.org/pdf/0709.2938v1.pdf">Near linear time algorithm to detect community structures in large-scale networks</a><br>
-        [18] Pascal Pons and Matthieu Latapy, 2007 <a href="http://arxiv.org/pdf/physics/0512106v1.pdf">Computing communities in large networks using random walks</a><br>
-        [19] Vincent D. Blondel1; Jean-Loup Guillaume, Renaud Lambiotte, and Etienne Lefebvre, <a href="http://arxiv.org/pdf/0803.0476v2.pdf">Fast unfolding of communities in large networks</a><br>
-            [20] M. E. J. Newman, 2006 <a href="http://arxiv.org/pdf/physics/0605087v3.pdf">Finding community structure in networks using the eigenvectors of matrices</a><br>
-            [21] Lei Tang, Huan Liu, Community Detetection and Mining in Social Media<br>
-            [22] Conrad Lee and Pádraig Cunningham, 2013<a href="http://comnet.oxfordjournals.org/content/2/1/19.full.pdf+html">Community detection: effective on large social networks</a><br>
-            [23] Detecting Cohesive and 2-mode Communities in Directed and Undirected Networks     by J. Yang, J. McAuley, J. Leskovec.     ACM International Conference on Web Search and Data Mining (WSDM), 2014. <br> 
-            [24] John Cardente, <a href="http://dsgeek.com/docs/jcardente_cs224w_projreport.pdf">Using Centrality Measures to Identify Key Members of an Innovation Collaboration Network</a><br> 
-            [25] Jierui Xie, Stephen Kelley, Boleslaw K. Szymanski, <a href="http://arxiv.org/abs/1110.5813">Overlapping community detection in networks: the state-of-the-art and comparative study</a><br>
-            [26] Jaewon Yang, Julian McAuley, Jure Leskovec, Community Detection in Networks with Node Attributes</a><br>
-            [27] Gergely Palla, Imre Derenyi, Illes Farkas, and Tamas Vicsek, Uncovering the overlapping community structure of complex networks in nature and society.</a><br>
-            [28] Steve Gregory, An algorithm to Find Overlapping Community Structure in Networks.</a><br>
-            [29] George David and Kathleen Carley, Clearing the FOG: Fuzzy, Overlapping Groups in Social Networks. </a><br>
-            [30] Daniel Larremore, Aaron Clauset, and Abigail Jacobs, Efficiently inferring community structure in bipartite networks.</a><<br>
-            [31] Ulrike von Luxburg, A Tutorial On Spectral Clustering.</a><br>
-            [32] Steve Gregory, <a href="http://www.cs.bris.ac.uk/publications/Papers/2000885.pdf">A Fast Algorithm to Find Overlapping Communities in Networks</a>, 2008
-        </body>
-    </html> 
+<h2>
+<a id="about" class="anchor" href="#about" aria-hidden="true"><span class="octicon octicon-link"></span></a>About</h2>
+
+<h4>
+<a id="the-framework" class="anchor" href="#the-framework" aria-hidden="true"><span class="octicon octicon-link"></span></a>The Framework:</h4>
+
+<p><b>Circulo is a "Community Detection" Evaluation Framework</b> written primarily in Python.   The Framework performs statistical analysis against partitions of a Graph resulting from the execution of a given community detection algorithm.  The resulting quantitative measures can be used to drive experiments such as measuring algorithm efficacy against specific dataset types or comparing different algorithm execution results against the same dataset. The framework includes the following components:</p>
+
+<ul>
+<li>
+<strong>Data ETL (Extract Transform Load) Engine</strong>: Circulo includes functionality to incorporate existing datasets into the evaluation framework.  By default, the framework includes several dataset "downloaders" in the directory <a href="circulo/data">circulo/data</a>. To learn how to add a dataset, please see the data <a href="circulo/data/README.md">README</a>. We encourage users to issue pull requests for new datasets.</li>
+<li>
+<strong>Algorithm Execution Engine:</strong>  Circulo includes several algorithms by default which are located in the <a href="circulo/algorithms">algorithms</a> directory. Using the framework, these algorithms can run in parallel against the included datasets by running the <a href="circulo/setup/run_algos.py">run_algos.py</a> tool. Because some algorithms include parameters that can better cater execution to the type of input Graph (i.e directed and/or weighted), algorithm execution is wrapped in the file <a href="circulo/wrappers/community.py">community.py</a>. This enables the same algorithm to automatically operate differently depending on the dataset--enabling the algorithm to adapt to the dataset if allowed. To add an algorithm to the framework, add the files to <a href="circulo/algorithms">algorithms</a> and update the wrapper <a href="circulo/wrappers/community.py">community.py</a> appropriately.</li>
+<li>
+<strong>Metrics Engine:</strong> The metrics engine provides quantitative analysis of a given partitionin g of a graph. The metrics include internal statistical measures of a community (i.e. density), external measurements (i.e. expansion), and network wide metrics (ground truth comparisons).<br>
+</li>
+<li>
+<strong>Experiments Engine:</strong> Different types of experiments have been designed to find patterns in the metric results.  For example, how do algorithms compare when considering both time and accuracy. This component is meant to be a "playground" for experimentation on metric results. Experiments may vary significantly. Each file in the <a href="experiments">experiments</a> directory is meant to be an independent experiment.  See the <a href="experiment/README.md">README</a> for more information.</li>
+</ul>
+
+<h4>
+<a id="the-research" class="anchor" href="#the-research" aria-hidden="true"><span class="octicon octicon-link"></span></a>The Research</h4>
+
+<p>Prior to building the Circulo framework, Lab41 conducted a market survey into Community Detection algorithms and metrics. The survey was used to guide the development of Circulo. The survey includes, but is not limited to, summaries of algorithms, references to academic literature, and general information about the field. The survey can be found here: <a href="http://lab41.github.io/survey-community-detection/">http://lab41.github.io/survey-community-detection/</a>.</p>
+
+<h4>
+<a id="the-underlying-graph-framework" class="anchor" href="#the-underlying-graph-framework" aria-hidden="true"><span class="octicon octicon-link"></span></a>The Underlying Graph Framework</h4>
+
+<p>Since we did not want to reimplement the notion of a graph, we decided to pick an existing Graph Framework as a backdrop for our work.  Though any of the popular graph frameworks could have been used, iGraph was chosen as our primary graph framework. iGraph offers a number of features:</p>
+
+<ul>
+<li>First and foremost, iGraph implements a number of community detection algorithms out of the box. It also provides two data structures for community detection: VertexClustering (non-overlapping communities) and VertexCover (overlapping communities)</li>
+<li>iGraph is written in C at its core making it fast</li>
+<li>iGraph has wrappers for Python and R</li>
+<li>iGraph is a mature framework</li>
+</ul>
+
+<p>Other frameworks which could be used include GraphX, GraphLab, SNAP, NetworkX.</p>
+
+<h2>
+<a id="installation-and-setup" class="anchor" href="#installation-and-setup" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation and Setup</h2>
+
+<h4>
+<a id="package-requirements" class="anchor" href="#package-requirements" aria-hidden="true"><span class="octicon octicon-link"></span></a>Package Requirements</h4>
+
+<ul>
+<li> git</li>
+<li> python3</li>
+<li> igraph (Refer to Appendix A for further instructions)</li>
+<li> matplotlib</li>
+<li> cairo (if you want to plot directly from igraph)</li>
+<li> scipy</li>
+<li> scikit.learn</li>
+</ul>
+
+<h4>
+<a id="installation" class="anchor" href="#installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Installation</h4>
+
+<p>Below are instructions for using Circulo</p>
+
+<pre><code>#clone Circulo repository (note: this also clone SNAP)
+git clone --recursive https://github.com/Lab41/circulo.git
+#set PYTHONPATH env variable
+export PYTHONPATH=/path/to/Circulo
+#make the snap code base
+pushd lib/snap; make; popd
+</code></pre>
+
+<h4>
+<a id="running-the-evaluation-framework" class="anchor" href="#running-the-evaluation-framework" aria-hidden="true"><span class="octicon octicon-link"></span></a>Running the Evaluation Framework</h4>
+
+<p>At the core, the evaluation framework run various community detection algorithms against various datasets. </p>
+
+<pre><code>#To run your algorithms against the data
+python circulo/setup/run_algos [parameters ...] 
+#To run metrics against the results of run_algos
+python circulo/setup/run_metrics [parameters ...]
+</code></pre>
+
+<h2>
+<a id="appendix" class="anchor" href="#appendix" aria-hidden="true"><span class="octicon octicon-link"></span></a>Appendix</h2>
+
+<h4>
+<a id="appendix-a-igraph-installation" class="anchor" href="#appendix-a-igraph-installation" aria-hidden="true"><span class="octicon octicon-link"></span></a>Appendix A: iGraph Installation</h4>
+
+<h5>
+<a id="ubuntu" class="anchor" href="#ubuntu" aria-hidden="true"><span class="octicon octicon-link"></span></a>Ubuntu</h5>
+
+<pre><code>sudo apt-get install igraph
+sudo apt-get install libxml2-dev libz-dev python-dev
+</code></pre>
+
+<h5>
+<a id="os-x" class="anchor" href="#os-x" aria-hidden="true"><span class="octicon octicon-link"></span></a>OS X</h5>
+
+<pre><code>#using brew install igraph dylibs
+brew install homebrew/science/igraph
+
+#install Cairo
+#installs the core libraries for cairo
+brew install cairo 
+
+#installs the python site-packages. NOTE: pip does not work for pycairo. 
+#If you want to use pip, create sym links to the site packages in brew
+brew install py3cairo
+
+#install python igraph
+pip3 install python-igraph
+</code></pre>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Circulo maintained by <a href="https://github.com/Lab41">Lab41</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
