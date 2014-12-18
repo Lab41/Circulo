@@ -66,10 +66,10 @@ clauset_newman_moore--fastgreedy 7
 
 #### Plot Community Detection 
 - Folder: __gephi_plot__
-- Goal: The graphml file created by create_graphml.py makes it easy to view the datset in Gephi and explore the graph. This Java program creates static PDFs of the results from the various aglorithms using Gephi as a layout and plotting engine
+- Goal: The graphml file created by create_graphml.py makes it easy to view the datset in Gephi and explore the graph. This Java program creates static PDFs of the results from the various aglorithms using Gephi as a layout and plotting engine to visualize the results.
 - __COMPILE__: Use Maven to compile the project. mvn compile assembly:single will give you a jar that contains all the dependcies needed to run the executable
 - __RUN__: java -jar gephi_plot-0.0.1-SNAPSHOT-jar-with-dependencies.jar <Directory with graphml files or graphml file> <output dir (it won't create a folder for you)>
-- __RESULTS__: A set of PDFs are produced using the community detection results to color a visualization of the underlying graph that has been layed out using force-directed layout (Gephi's Force-Atlas 2). This plot is the flights data colored using the Infomap community detection results:
+- __RESULTS__: A set of PDFs are produced using the community detection results to color a visualization of the underlying graph that has been laid out using force-directed layout (Gephi's Force-Atlas 2). This plot is the flights data colored using the Infomap community detection results:
 
 ![Flights data colored using Infomap results](images/flights_algo_infomap.png)
 
