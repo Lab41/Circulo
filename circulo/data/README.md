@@ -1,42 +1,39 @@
-## Summary
+# Circulo Datasets 
 
-This directory contains links to various data sets and scrips to extract them into a format [readable by igraph](http://igraph.org/python/doc/tutorial/tutorial.html#igraph-and-the-outside-world). 
-
-Each subdirectory's `run.py` provides the methods `get_graph()` and most provide `get_ground_truth()`. `get_graph` returns an igraph graph of the given data, described in the individual dataset's README. `get_ground_truth` returns a VertexClustering object of what we believe to be ground truth in the given data, again described in the specific README.
-
-Running `python3 run.py` in some subdirectory will populate that directory with a new `data/` directory containing all relevant files, including a file in igraph-readable format.
+###Summary
+This directory contains the python scripts that download the individual datasets for the Circulo framework.  Each subdirectory represents a single dataset. Each dataset is converted into graphml and stored in the [GRAPHS](circulo/data/GRAPHS) directory by the run.py script. As such, run.py is responsible for downloading and converting raw data into a graphml formatted file.  Each run.py script must contain a class that inherits from the CirculoData class found in the [databot](circulo/data/databot.py) module.  
 
 
-## Adding a new dataset
+###How do I add a new dataset?
 
-To write an etl script for a new dataset, follow these steps. We'll pretend our new dataset is called "friends":
+The key to understanding how to import a dataset into Circulo is to be familiar with the CirculoData class in the [databot](circulo/data/databot.py) module. We'll pretend our new dataset is called "friends".  To import the friends dataset into the Circulo framework, follow these steps:
 
 1. Create a new subdirectory with a name describing the new dataset: `mkdir friends`
-2. Copy the etl template into the new directory, naming it `run.py`: `cp run_template.py friends/run.py`
-2. Copy the README template into the new directory, naming it `README.md`: `cp README_template.md friends/README.md`
-4. Implement all functions in `run.py`. If the file is already in igraph readable format, this should only involve changing the constants at the top of the file. Otherwise, you'll have to do the conversion yourself, in `__prepare__`.
-5. Add an empty __init__.py to the subdirectory: `echo '' > friends/__init__.py`
-5. Fill out the README
-6. Add a row to the Progress table in this README.
+2. Create the python file `friends/run.py` and be sure that `run.py` contains a class that inherits from CirculoData. In this case, we will call the class `FriendsData`. 
+3. Copy the README template into the new directory, naming it `README.md`: `cp README_template.md friends/README.md`. Be sure to be as thorough as possible when writing the README so that others will understand your dataset.
+4. Override the necessary functions from the CirculoData class in the FriendsData class in `run.py`.  Please see other `run.py` files for examples.  The amount of code required in the `run.py` file largely depends on how close the original data is to a graph format. 
+5. Add a row to the Dataset Index in this README.
 
-## Progress
-| Dataset | Description | `run.py` implemented? | README written? | Ground Truth implemented?
-| ------- | ------------|:---------------------:|:---------------:|:----:|
-| congress_voting | Historical congress voting data | Yes | Yes | Yes |
-| flights | Flights data from <http://openflights.org/data.html> | Yes | Yes | Yes |
-| football | NCAA D1A games played in the Fall 2000 season | Yes | Yes | Yes |
-| karate | Famous data set of Zachary's karate club | Yes | Yes | **No** |
-| nba_schedule | Games played in the 2013-2014 NBA season | Yes | Yes | Yes |
-| netscience | Graph of collaborators on papers about network science | Yes | Yes | **No** |
-| pgp | Interactions in pretty good privacy | Yes | Yes | **No** |
-| school | Face-to-face interactions in a primary school | Yes | Yes | **No** |
-| twitter | Several datasets taken from twitter | **No** | **No** | **No** |
-| scotus | Supreme court case citation network | Yes | Yes | **No** |
-| revolution | Colonial American dissidents club attendence network | Yes | Yes | **No** |
-| malaria | Amino acids in malaria parasite | Yes | Yes | **No** |
+## Dataset Index
+| Dataset | Description | Has Ground Truth?
+| ------- | ------------|:---------------------:|
+| amazon | Co-purchasing Data | Yes |
+| house_voting | 2014 congress (house) voting data | Yes |
+| flights | Flights data from <http://openflights.org/data.html> | Yes |
+| football | NCAA D1A games played in the Fall 2000 season |  Yes |
+| karate | Famous data set of Zachary's karate club | Yes |
+| malaria | Amino acids in malaria parasite | **No** |
+| nba_schedule | Games played in the 2013-2014 NBA season | Yes |
+| netscience | Graph of collaborators on papers about network science | **No** |
+| pgp | Interactions in pretty good privacy |  **No** |
+| revolution |This is a bipartite graph representing colonial American dissidents' membership |**No**|
+| school | Face-to-face interactions in a primary school | Yes |
+| scotus | Supreme court case citation network | **No** |
+| senate_voting | 2014 congress (senate) voting data | Yes |
+| southern_women | bipartite graph of southern women social groups | __No__ |
 
 ## Resources
-Here are some links with lots of graphs. Most of these sites also point you towards other resources. If you need a graph that we don't provide a script for, these sires are a good place to start looking.
+Here are some links with lots of graphs. Most of these sites also point you towards other resources. If you need a graph that we don't provide a script for, these sites are a good place to start looking.
 
 <http://nexus.igraph.org>: igraph's own repository of graphs. Available in several formats.
 

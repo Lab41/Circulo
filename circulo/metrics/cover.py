@@ -248,7 +248,7 @@ def compute_metrics(cover, weights=None, ground_truth_cover=None):
     flake_odf_results = flake_out_degree_fraction(cover, weights)
     sep_results = separability(cover,weights)
     results_key = "results"
-    agg_key = "aggegations"
+    agg_key = "aggregations"
 
 
     cover.metrics = {
