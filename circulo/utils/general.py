@@ -1,6 +1,10 @@
 from scipy.stats import describe
 from scipy import median
 import igraph
+import numpy as np
+from itertools import combinations
+
+from circulo.metrics.omega import omega_index
 
 def aggregate(array, prefix="",axis=0):
 
@@ -39,3 +43,33 @@ def get_largest_component(G, descript="not specified"):
     return G
 
 
+
+def run_comparison(memberships, comparator="omega"):
+    '''
+    Given a list of memberships, uses the comparator to compare results
+
+    Args:
+        membershps: a list of membership arrays
+        comparator: the algorithm to use at the comparator (default: omega)
+
+    Return:
+        a symetric matrix containing the results
+    '''
+
+    size = len(memberships)
+    pairs = combinations(range(size), 2)
+    M = np.zeros((size, size), dtype=float)
+    np.fill_diagonal(M, 1)
+
+    if comparator == "omega":
+        comp_func = omega_index
+    else:
+        raise NotImplementedError('Unknown comparison function')
+
+    #fill in top right
+    for i, j in pairs:
+        score = comp_func(memberships[i], memberships[j])
+        M[i,j] = score
+        M[j,i] = score
+
+    return M

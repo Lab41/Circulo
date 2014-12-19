@@ -13,114 +13,71 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import numpy as np
 from sklearn.cluster import spectral_clustering
 import argparse
 from math import floor, sqrt
 from operator import itemgetter
+from itertools import combinations
 import os
 import glob
+import json
+import operator
 
+from circulo.utils.general import run_comparison
 
-def run_distance_matrix_clustering(fname, n=None):
-    """
-    Take a given input file (output of run_comparison.py which is a distance matrix of the results where Omega score
-     is the distance metric) and use spectral clustering to figure out which algorithms are most similar in the results.
-
-    Args:
-        fname: Input csv file. It
-    """
-
-    # Read in csv file. Parse header row and keep the rest for processing
-    f = open(fname)
-    # Read header row before passing to loadtxt
-    headerRow = f.readline().split(',')
-    npMatrix = np.loadtxt(f, delimiter=',')
-    size = len(npMatrix)
-
-    # Set diagonals to 1
-    for i in range(size):
-        npMatrix[i, i] = 1
-
-    # Spectral clustering doesn't like values less than 0.
-    # Set values < 0 to zero
-    # TODO: Evaluate if setting negative Omega scores to zero is the right thing to do.
-    npMatrix[npMatrix < 0] = 0
-
-    # Run spectral clustering for various n_clusters and keep track of how often any two algorithms end up in the same cluster
-    print('------------------------------------')
-    print("Cluster Results for: ", os.path.basename(fname))
-
-    if n is None:
-        # Set default value to sqrt(n)/2 if not specified by user
-        n = max(3, floor(sqrt(size)/2))
-
-    if n > size:
-        raise ValueError('N=%d is greater than the size (%d)'%(n, size))
-
-    print("N=%d"%n)
-    results = []
-    result = spectral_clustering(npMatrix, n_clusters=n)
-    for i in range(max(result)):
-        algorithms = []
-        # Map clusters to names
-        for j, val in enumerate(result):
-            if val == i:
-                algorithms.append(headerRow[j])
-        # Print Clusters
-        print(algorithms)
-        results.append(algorithms)
-    return results
-
-def print_pairwise_counts(results):
-    """
-    Print pairwise counts across results sets of how often two algorithms appear in the same cluster
-    Args:
-     results: list of list of clusters
-    """
-    pairs = {}
-    for clusters in results:
-        for cluster in clusters:
-            if len(cluster) > 1:
-                cluster.sort()
-            for x in range(len(cluster)):
-                for y in range(x+1,len(cluster) ):
-                    pairName = cluster[x] + '--' + cluster[y]
-                    if pairName in pairs:
-                        pairs[pairName] += 1
-                    else:
-                        pairs[pairName] = 1
-
-    print("Printing Results Across Datasets")
-    for (pairName, count) in sorted(pairs.items(), key=itemgetter(1)):
-        print(pairName, count)
-
+THRESHOLD = .7
 
 def main():
-    parser = argparse.ArgumentParser(description=
-                                     'Use Relative Omega Scores to determine similarity of algorithms')
-    parser.add_argument('input_path', type=str, help='file or directory containing  csv files')
-    parser.add_argument('--n', type=int, help='Number of clusters to look for')
+    parser = argparse.ArgumentParser(description= 'Use Relative Omega Scores to determine similarity of algorithms')
+    parser.add_argument('results_path', type=str, help='directory containing  algorithm results')
     args = parser.parse_args()
 
-    if not os.path.exists(args.input_path):
-        print("Path \"{}\" does not exist".format(args.input_path))
+    if not os.path.exists(args.results_path):
+        print("Path \"{}\" does not exist".format(args.results_path))
         return
 
+    dataset_groups = {}
+    algos = set()
 
-    if os.path.isdir(args.input_path):
-        file_names = glob.glob(os.path.join(args.input_path, '*.csv'))
-        results = []
-        for file_name in file_names:
-            results.append(run_distance_matrix_clustering(file_name, args.n))
-
-        print_pairwise_counts(results)
-    else:
-        if os.path.isfile(args.input_path):
-            run_distance_matrix_clustering(args.input_path, args.n)
+    #sets the list of json files to a Key (dataset name)
+    #Allows us to quickly iterate over all result files for each dataset
+    #At the same time, we collect the list of algos from the results
+    for fname in glob.glob(os.path.join(args.results_path, '*.json')):
+        dataset = os.path.basename(fname).split('--')[0]
+        algos.add(os.path.basename(fname).split('--')[1])
+        if dataset in dataset_groups:
+            dataset_groups[dataset].append(fname)
         else:
-            print("Invalid Path: %s"%args.input_path)
-            return
+            dataset_groups[dataset] = [fname]
+
+    #create count dict for all possible pairs of algos (includes groundtruth)
+    counts=dict.fromkeys(combinations(sorted([a for a in algos]),2),0)
+
+    #now iterate over each dataset name (there json files) and update the
+    #counts accordingly
+    for dataset_name, json_files in dataset_groups.items():
+        memberships = []
+        algo_names = []
+        for fjson in json_files:
+
+            algo_names.append(os.path.basename(fjson).split("--")[1])
+
+            with open(fjson) as f:
+                memberships.append(json.load(f)['membership'])
+
+        coords = np.argwhere(run_comparison(memberships) > THRESHOLD)
+
+        for v in coords:
+            x,y = v.flatten()
+            if x != y and algo_names[x] < algo_names[y]:
+                counts[(algo_names[x], algo_names[y])]+=1
+
+    sorted_counts = sorted(counts.items(), key=operator.itemgetter(1), reverse=True)
+    print("Total Datasets: ", len(dataset_groups))
+    print(sorted_counts)
+
 
 if __name__ == "__main__":
     main()

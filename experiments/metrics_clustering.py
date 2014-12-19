@@ -87,8 +87,6 @@ def run_experiment(metrics_path, dataset_name):
     matrix_norm = whiten(matrix)
     centroid, label = kmeans2(matrix_norm, k=3)
 
-    #print(label)
-
     freq = itemfreq(label[gt_start:gt_end])
 
     m = max(freq, key=lambda y: y[1])

@@ -1,65 +1,63 @@
-The experiments are listed below:
+#Experiments
 
 
-#### Ground Truth Similarity Test
-- File: __metrics_clustering.py__
-- Goal: Determine if metrics applied to communities from Ground Truth are simialr when grouped with metrics of non Ground Truth communities. The experiemnt leverages kmeans clustering where the features are the metrics, and the observations are a set of features for a given community.
-- __RUN__: python experiments/metrics_clustering.py metrics_dir dataset_name
-- __RESULTS__:
+### Ground Truth Similarity Test
+- __PATH__: [metrics_clustering.py](metrics_clustering.py)
+- __GOAL__: Determine if metrics applied to communities from Ground Truth are similar when grouped with metrics of non Ground Truth communities. The experiemnt leverages kmeans clustering where the features are the metrics, and the observations are a set of features for a given community.  The intuition behind this experiment is that if the ground truth communities fall under the same cluster, then there must exist some combination of metrics that represent the ideal community for this
+  particular dataset.
+- __RUN__: `python experiments/metrics_clustering.py metrics_dir dataset_name`
+- __RESULTS__: The results show the _Groundtruth similarity_ (the largest percentage of ground truth communities in the same cluster), and the Frequency of ground truth communities in the same cluster. For example, you might see the following:
+    Groundtruth similarity:  0.5833333333333334 
+    Frequency of groundtruth communities as part of centroids [[0 7][1 5]]  
 
-#### Time vs Accuracy (two approaches)
-- File: __metricsCharts.R__
-- Function: plotRunOmega
-- Goal: For a given data set with Ground Truth, measure how the result accuracy changes with certain algorithms, specifically taking into consideration executation time (time complexity)
-- __RUN__: metrics <- getMetrics("/path/to/json/metrics", "dataset name (i.e. football)")
--          plotRunOmega(metrics)
-- __RESULTS__: This example shows the log of the calculation time vs. omega score for all the datsets in the Lab41/Circulo-Data Results 2 release
+### Time vs Accuracy (two approaches)
+#####Approach 1
+- __PATH__: [metricsCharts.R](metricsCharts.R)   (Function: plotRunOmega)
+- __GOAL__: For a given data set with Ground Truth, measure how the result accuracy changes with certain algorithms, specifically taking into consideration executation time (time complexity). The idea would be to test, for example, time is correlated with accuracy.
+- __RUN__:
+    - ` metrics <- getMetrics("/path/to/json/metrics", "dataset name (i.e. football)")`
+    -  `plotRunOmega(metrics)`
+- __RESULTS__: This example shows the log of the calculation time vs. omega score for all the datsets from https://github.com/Lab41/Circulo-Data/releases/tag/2  
 
 ![Log(time) vs. Omega Score](images/time_vs_omega.png)
-
-- File: __metricsCharts.R__
-- Function: plotMetrics
-- Goal: Compare results computation time and accuracy across datasets
-- __RUN__: metrics <- getMetrics("/path/to/json/metrics", "dataset name (i.e. football)")
--          plotMetrics(metrics)
+#####Approach 2 
+- __PATH__: [metricsCharts.R](metricsCharts.R) (Function: plotMetrics)
+- __GOAL__: Goal: Compare results computation time and accuracy across datasets
+- __RUN__: 
+    - `metrics <- getMetrics("/path/to/json/metrics", "dataset name (i.e. football)")`
+    - `plotMetrics(metrics)`
 - __RESULTS__: This exmple shows the datasets vs algorithms. The size of the bubble represents Omega score and the color represents how long it took to compute that result
 
 ![Dataset vs. Algorithm](images/bubble_plot.png)
 
-#### Comparing algorithm results using Omega score
-- File: __run_comparison.py__
-- Goal: Creates csv files that use omega score to create a matrix of distances between the various results sets. Ground truth is treated as just another algorithm
-- __RUN__: python3 run_comparison.py <Path to results json files> <output path for csv files> 
-- __RESULTS__: This produces a csv file with relative distances between algorithm results
 
-#### Cluster Results of run_comparison.py
-- File: __cluster_omega_comparison.py__
-- Goal: Take results of run_comparison.py (distance matrix between the algorithm results) and cluster results to find similar algorithms
-- __RUN__: python3 cluster_omega_comparison.py <path to csv file(s)> [--n <number of clusters desired>]
-- __RESULTS__: A list of how often each pair of algorithms appears in the same cluster is produced. A few lines of the result are provided below:
-``` 
-5
-multilevel--spinglass 5
-infomap--spinglass 5
-leading_eigenvector--walktrap
- 5
-leading_eigenvector--multilevel 6
-multilevel--walktrap
- 6
-clauset_newman_moore--fastgreedy 7
-```
+### Similar Algorithms
+- __PATH__: [cluster_omega_comparison](cluster_omega_comparison.py)
+- __GOAL__: Determine which algorithms produce similar results by comparing how similar their respective partitions are to eachother.
+- __RUN__: `python cluster_omega_comparison.py <path to algo results)>`
+- __RESULTS__: Counts of how often two algos produce similar results. For example:
 
-#### Histogram metrics across datasets
-- File: __histogram_metrics.py__:
-- Goal: This script allows you to compare the result of metrics across algorithms for a single dataset. It creates a histogram for each metric/algorithm pair showing the number of communities for that metric that fall into the specified bin. 
+    5
+    multilevel--spinglass 5
+    infomap--spinglass 5
+    leading_eigenvector--walktrap
+    5
+    leading_eigenvector--multilevel 6
+    multilevel--walktrap 6
+    clauset_newman_moore--fastgreedy 7
+
+
+### Histogram metrics across datasets
+- __PATH__: __histogram_metrics.py__:
+- __GOAL__: This script allows you to compare the result of metrics across algorithms for a single dataset. It creates a histogram for each metric/algorithm pair showing the number of communities for that metric that fall into the specified bin. 
 - __RUN__: python3 histogram_metrics.py <folder of your metrics json file> <Dataset desired i.e. amazon> [Optional: --metrics Density,Cohesiveness]
 - __RESULTS__: This example shows the distributions of five parameters across datasets for the football data
 
 ![Histogram of Football Data ](images/football_histogram.png)
 
-#### Combine results into single graphml file
-- File: __create_graphml.py__
-- Goal: Create a single graphml file that contains the results off the community detection algorithms as attributes on each vertex. This is useful for visualizing results in Gephi manually or running the java code in this directory to plot them automatically
+### Combine results into single graphml file
+- __PATH__: __create_graphml.py__
+- __GOAL__: Create a single graphml file that contains the results off the community detection algorithms as attributes on each vertex. This is useful for visualizing results in Gephi manually or running the java code in this directory to plot them automatically
 - __RUN__: python3 create_graphml.py <path to results json files> <Path to graphs, typically circulo/circulo/data/GRAPHS> <output directory for new graphml files> [--least]
 -   The --least option causes the "community" stated for a node to be the smallest community (# of nodes) the node is a part of. This is useful for plotting in Gephi
 - __RESULTS__: Graphml files that have attritubes for each algorithm that describe which community they were placed in.
