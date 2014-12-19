@@ -153,9 +153,9 @@ def maximum_out_degree_fraction(cover, odf=None, weights=None):
     if odf is None:
         odf = out_degree_fraction(cover, weights)
     rv = []
+    max_seen = odf.max(1).tocsc()
     for i in range(len(cover)):
-        # It appears that dok doesn't have a working max function...
-        rv += [odf.getcol(i).tocsr().max()]
+        rv.append(max_seen[i,0])
     return rv #[ nanmax(ratios) for ratios in odf ]
 
 def average_out_degree_fraction(cover, odf=None, weights=None):
@@ -166,8 +166,10 @@ def average_out_degree_fraction(cover, odf=None, weights=None):
     rv = []
     if odf is None:
         odf = out_degree_fraction(cover, weights)
+
+    sums = odf.sum(1)
     for i in range(len(cover)):
-      rv += [ odf.getcol(i).sum()/cover.subgraph(i).vcount() ]
+      rv += [ sums[i,0]/cover.subgraph(i).vcount() ]
     return rv
 
 def flake_out_degree_fraction(cover, odf=None, weights=None):
@@ -180,8 +182,9 @@ def flake_out_degree_fraction(cover, odf=None, weights=None):
         odf = out_degree_fraction(cover, weights)
     for i in range(len(cover)):
         count = 0
-        for item in odf.getcol(i):
-            if item > 1/2.0:
+        # TODO: This functional can probably still be improved by using something that takes advantage of the sparsity
+        for item in odf[:,i]:
+            if item[0,0] > 1/2.0:
                 count += 1
         rv += [count/cover.subgraph(i).vcount()]
     return rv
@@ -258,6 +261,7 @@ def compute_metrics(cover, weights=None, ground_truth_cover=None):
 
     # Get out degree fraction results then reuse for max, average, flake
     odf = out_degree_fraction(cover, weights)
+    odf = odf.tocsc()
     max_out_results = maximum_out_degree_fraction(cover, odf=odf, weights=weights)
     avg_out_results = average_out_degree_fraction(cover, odf=odf, weights=weights)
     flake_odf_results = flake_out_degree_fraction(cover, odf=odf, weights=weights)
