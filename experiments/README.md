@@ -32,7 +32,7 @@
 
 
 ### Similar Algorithms
-- __PATH__: [cluster_omega_comparison](cluster_omega_comparison.py)
+- __PATH__: [cluster_omega_comparison.py](cluster_omega_comparison.py)
 - __GOAL__: Determine which algorithms produce similar results by comparing how similar their respective partitions are to eachother.
 - __RUN__: `python cluster_omega_comparison.py <path to algo results)>`
 - __RESULTS__: Counts of how often two algos produce similar results. For example:
@@ -41,12 +41,22 @@
 
 
 ### Histogram metrics across datasets
-- __PATH__: __histogram_metrics.py__:
+- __PATH__: [histogram_metrics.py](histograph_metrics.py):
 - __GOAL__: This script allows you to compare the result of metrics across algorithms for a single dataset. It creates a histogram for each metric/algorithm pair showing the number of communities for that metric that fall into the specified bin. 
-- __RUN__: python3 histogram_metrics.py <folder of your metrics json file> <Dataset desired i.e. amazon> [Optional: --metrics Density,Cohesiveness]
+- __RUN__: `python histogram_metrics.py <folder of your metrics json file> <Dataset desired i.e. amazon> [Optional: --metrics Density,Cohesiveness]`
 - __RESULTS__: This example shows the distributions of five parameters across datasets for the football data
 
 ![Histogram of Football Data ](images/football_histogram.png)
+
+### Goodness Metrics
+- __PATH__: [goodness_indicators.py](goodness_indicators.py)
+- __GOAL__: This experiment is based on _Jaewon Yang and Jure Leskovec, http://cs.stanford.edu/people/jure/pubs/comscore-icdm12.pdf, Defining and Evaluating Network Communities based on Ground-truth_. It determines which community metrics are most correlated.
+- __RUN__: `python goodness_indicators.py metrics_dir`
+- __RESULTS__: An example result for the football ground truth dataset is shown below:
+
+![Correlated Metrics](images/football--groundtruth--0.png)
+
+
 
 ### Combine results into single graphml file
 - __PATH__: __create_graphml.py__
