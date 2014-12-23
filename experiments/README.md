@@ -37,14 +37,7 @@
 - __RUN__: `python cluster_omega_comparison.py <path to algo results)>`
 - __RESULTS__: Counts of how often two algos produce similar results. For example:
 
-    5
-    multilevel--spinglass 5
-    infomap--spinglass 5
-    leading_eigenvector--walktrap
-    5
-    leading_eigenvector--multilevel 6
-    multilevel--walktrap 6
-    clauset_newman_moore--fastgreedy 7
+![Counts](images/counts.png)
 
 
 ### Histogram metrics across datasets

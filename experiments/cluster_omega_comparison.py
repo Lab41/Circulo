@@ -75,8 +75,11 @@ def main():
                 counts[(algo_names[x], algo_names[y])]+=1
 
     sorted_counts = sorted(counts.items(), key=operator.itemgetter(1), reverse=True)
+
     print("Total Datasets: ", len(dataset_groups))
-    print(sorted_counts)
+
+    for s in sorted_counts:
+        print(s)
 
 
 if __name__ == "__main__":
