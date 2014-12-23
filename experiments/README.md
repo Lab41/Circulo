@@ -57,19 +57,13 @@
 ![Correlated Metrics](images/football--groundtruth--0.png)
 
 
-
-### Combine results into single graphml file
-- __PATH__: __create_graphml.py__
-- __GOAL__: Create a single graphml file that contains the results off the community detection algorithms as attributes on each vertex. This is useful for visualizing results in Gephi manually or running the java code in this directory to plot them automatically
-- __RUN__: python3 create_graphml.py <path to results json files> <Path to graphs, typically circulo/circulo/data/GRAPHS> <output directory for new graphml files> [--least]
--   The --least option causes the "community" stated for a node to be the smallest community (# of nodes) the node is a part of. This is useful for plotting in Gephi
-- __RESULTS__: Graphml files that have attritubes for each algorithm that describe which community they were placed in.
-
 #### Plot Community Detection 
-- Folder: __gephi_plot__
-- Goal: The graphml file created by create_graphml.py makes it easy to view the datset in Gephi and explore the graph. This Java program creates static PDFs of the results from the various aglorithms using Gephi as a layout and plotting engine to visualize the results.
+- __PATH__: [gephi_plot](gephi_plot)
+- __GOAL__: The graphml file created by create_graphml.py makes it easy to view the datset in Gephi and explore the graph. This Java program creates static PDFs of the results from the various aglorithms using Gephi as a layout and plotting engine to visualize the results.
 - __COMPILE__: Use Maven to compile the project. mvn compile assembly:single will give you a jar that contains all the dependcies needed to run the executable
-- __RUN__: java -jar gephi_plot-0.0.1-SNAPSHOT-jar-with-dependencies.jar <Directory with graphml files or graphml file> <output dir (it won't create a folder for you)>
+- __RUN__:
+    - `python create_graphml.py <path to results json files> <Path to graphs, typically circulo/circulo/data/GRAPHS> <output directory for new graphml files> [--least]`
+    - `java -jar gephi_plot-0.0.1-SNAPSHOT-jar-with-dependencies.jar <Directory with graphml files or graphml file> <output dir (it won't create a folder for you)>`
 - __RESULTS__: A set of PDFs are produced using the community detection results to color a visualization of the underlying graph that has been laid out using force-directed layout (Gephi's Force-Atlas 2). This plot is the flights data colored using the Infomap community detection results:
 
 ![Flights data colored using Infomap results](images/flights_algo_infomap.png)
