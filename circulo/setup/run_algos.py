@@ -274,7 +274,7 @@ def main():
     DEFAULT_OUTPUT_DIR = "results"
 
     comm_choices = [ a.replace('comm_', '') for a in dir(community) if a.startswith('comm_')]
-    data_choices = ['amazon', 'flights', 'football', 'house_voting', 'karate', 'malaria', 'nba_schedule', 'netscience', 'pgp', 'revolution', 'school', 'scotus', 'senate_voting', 'southernwomen']
+    data_choices = ['as_data', 'amazon', 'flights', 'football', 'house_voting', 'karate', 'malaria', 'nba_schedule', 'netscience', 'pgp', 'revolution', 'school', 'scotus', 'senate_voting', 'southernwomen']
 
     # Parse user input
     parser = argparse.ArgumentParser(description='Run community detection on a dataset.')

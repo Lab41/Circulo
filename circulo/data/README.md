@@ -18,6 +18,7 @@ The key to understanding how to import a dataset into Circulo is to be familiar 
 | Dataset | Description | Has Ground Truth?
 | ------- | ------------|:---------------------:|
 | amazon | Co-purchasing Data | Yes |
+| as_data | Autonomous System Relationship Data | Yes |
 | house_voting | 2014 congress (house) voting data | Yes |
 | flights | Flights data from <http://openflights.org/data.html> | Yes |
 | football | NCAA D1A games played in the Fall 2000 season |  Yes |
