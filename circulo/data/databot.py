@@ -83,6 +83,8 @@ class CirculoData:
             G_copy : A copy of the original graph
         '''
 
+        print("[ Info - ", self.dataset_name, "] - Using default pruning mechanism. Removing all edges with weight less than the median weight + .0001")
+
         if G.is_weighted() is False:
             print("Error: Unable to prune a graph without edge weights")
             return G

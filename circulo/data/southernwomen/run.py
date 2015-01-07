@@ -15,8 +15,12 @@ class SouthernWomenData(CirculoData):
         shutil.copyfile(os.path.join(self.raw_data_path, DOWNLOAD_FILE), self.graph_path)
 
     def get_ground_truth(self, G):
-        print("Ground truth is not available for this dataset")
         raise(NotImplementedError)
+
+    def get_context(self):
+        return {
+                CirculoData.CONTEXT_OPTIMAL_PARTITIONS:10
+                }
 
 
 def main():

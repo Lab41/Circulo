@@ -118,6 +118,13 @@ def run_single(worker):
         traceback.print_exc(file=sys.stdout)
         return
 
+
+    #make sure that every node is in at least one community. If not, then we discard the results
+    #since the metrics require that every node belong to a community.
+    for l in vc.membership:
+        if l is None or len(l) == 0:
+            print("\t[WARNING ", worker.job_name, "]: The algo did not assign all nodes to at least one community")
+
     results = {
             'job_name': worker.job_name,
             'elapsed' : time.time() - t0,
@@ -225,7 +232,7 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
                 json.dump(results, f)
 
         except Exception as e:
-            print("Unable to find Ground Truth partition for ", databot.dataset_name, ": ", e)
+            print("\t[WARNING -", databot.dataset_name, "] - Ground Truth was not provided")
 
         #prepare the inputs for the multiprocessing pool
         for algo_name in algos:

@@ -227,17 +227,19 @@ class FlightData(CirculoData):
             G_copy : A copy of the original graph
         '''
 
-        if G.is_weighted() is False:
-            print("Error: Unable to prune a graph without edge weights")
-            return G
+        print("PRUNING FUNCTION")
 
-        weights = G.es()['weight']
+        #if G.is_weighted() is False:
+        #    print("Error: Unable to prune a graph without edge weights")
+        #    return G
 
-        threshold = statistics.median(weights) - .0001
+        #weights = G.es()['weight']
 
-        orig_edge_count = G.ecount()
-        edges = G.es.select(weight_lt=threshold)
-        G.delete_edges(edges)
+        #threshold = statistics.median(weights) - .0001
+
+        #orig_edge_count = G.ecount()
+        #edges = G.es.select(weight_lt=threshold)
+        #G.delete_edges(edges)
 
 
 
