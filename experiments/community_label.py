@@ -162,7 +162,7 @@ def label_communities(input_file, results_filename, algorithm, attributes_to_ign
                 # TODO: Consider showing for singleton communities?
                 if max_label_val_count > 1 and max_label_val_count / float(total_count) >= .5:
                     tfidf = max_label_val_count / node_graph_counts[label][max_label_val]
-                    print('%s\t%s: %s of %s Nodesfor tf-idf %s' % (
+                    print('%s\t%s: %s of %s Nodes for tf-idf %s' % (
                         label, max_label_val, max_label_val_count, total_count, tfidf))
         if count_type in ('edge', 'both'):
             for label in edge_labels_to_count:
@@ -178,14 +178,14 @@ def label_communities(input_file, results_filename, algorithm, attributes_to_ign
                     # TODO: Consider showing for singleton communities?
                     if max_label_val_count > 1 and max_label_val_count / float(total_count) >= .5:
                         tfidf = max_label_val_count / edge_graph_counts[label][max_label_val]
-                        print('%s\t%s: %s of %s for tf-idf %s' % (
+                        print('%s\t%s: %s of %s Edges for tf-idf %s' % (
                             label, max_label_val, max_label_val_count, total_count, tfidf))
 
 
 def main():
     parser = argparse.ArgumentParser(description=
                                      'Attempt to label communities based on common attributes')
-    parser.add_argument('input_path', type=str, help='file or directory containing  graphml files with results')
+    parser.add_argument('graphml_file', type=str, help='Graphml file representing graph')
     parser.add_argument('results_file', type=str, help='Results JSON File')
     parser.add_argument('--ignore', type=str, default="",
                         help='Attributes to suppress (comma delimited) i.e. stops,timezone')
@@ -198,7 +198,7 @@ def main():
     args.ignore = set(args.ignore.split(','))
 
     # TODO: Allow labeling by edge or node instead of both?
-    label_communities(args.input_path, args.results_file, args.ignore, "both")
+    label_communities(args.graphml_file, args.results_file, args.ignore, "both")
 
 
 if __name__ == "__main__":
