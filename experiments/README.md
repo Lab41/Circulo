@@ -10,6 +10,14 @@
     Groundtruth similarity:  0.5833333333333334 
     Frequency of groundtruth communities as part of centroids [[0 7][1 5]]  
 
+### Label Communities
+- __PATH__: [community_label.py](community_label.py)
+- __GOAL__: Attempt to label communities by using node and edge attributes. For each community look at attribute values that are common in that community. 
+- __RUN__: `python community_label.py <graphml file> <results file>`
+- __RESULTS__: For each community the most common label for each attribute is displayed [Note the most common attribute is only displayed if it is assigned to more than half of the nodes in the community]
+
+![Community Labels](images/community_label_results.png)
+
 ### Time vs Accuracy (two approaches)
 #####Approach 1
 - __PATH__: [metricsCharts.R](metricsCharts.R)   (Function: plotRunOmega)
