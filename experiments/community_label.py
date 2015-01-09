@@ -2,20 +2,20 @@ import os
 import igraph
 import argparse
 from operator import itemgetter
-import itertools
+import json
 
 
-def get_community_counts(G, algo_name, labels_to_count, count_type="node"):
+def get_community_counts(G, node_ids_to_communities, labels_to_count, count_type="node"):
     count_type = count_type.lower()
     if count_type in ('node', 'vertex'):
-        return get_community_counts_by_node(G, algo_name, labels_to_count)
+        return get_community_counts_by_node(G, node_ids_to_communities, labels_to_count)
     elif count_type == "edge":
-        return get_community_counts_by_edge(G, algo_name, labels_to_count)
+        return get_community_counts_by_edge(G, node_ids_to_communities, labels_to_count)
     else:
         raise ValueError('%s is not a valid count type. Must be "node" or "edge"' % count_type)
 
 
-def get_community_counts_by_node(G, algo_name, labels_to_count):
+def get_community_counts_by_node(G, node_ids_to_communities, labels_to_count):
     """
     Using node attributes create an aggregation (by community) of counts for every attribute/attribute value
 
@@ -23,60 +23,60 @@ def get_community_counts_by_node(G, algo_name, labels_to_count):
     # TODO: Consider estimating cardinality of columns before counting
     community_counts = {}  # {community:{label:{label_val:count}}}
     # Iterate through nodes
-    for node in G.vs:
+    for i, node in enumerate(G.vs):
         attributes = node.attributes()
-        community = attributes[algo_name]
+        for community in node_ids_to_communities[i]:
+            # If this our first time seeing community then add
+            if community not in community_counts:
+                community_counts[community] = {}
+                for label in labels_to_count:
+                    community_counts[community][label] = {}
 
-        # If this our first time seeing community then add
-        if community not in community_counts:
-            community_counts[community] = {}
+            # Keep count for each community of the count of each value
             for label in labels_to_count:
-                community_counts[community][label] = {}
-
-        # Keep count for each community of the count of each value
-        for label in labels_to_count:
-            attribute_val = attributes[label]
-            if attribute_val in community_counts[community][label]:
-                community_counts[community][label][attribute_val] += 1
-            else:
-                community_counts[community][label][attribute_val] = 1
+                attribute_val = attributes[label]
+                if attribute_val in community_counts[community][label]:
+                    community_counts[community][label][attribute_val] += 1
+                else:
+                    community_counts[community][label][attribute_val] = 1
     return community_counts
 
 
-def get_community_counts_by_edge(G, algo_name, labels_to_count):
+def get_community_counts_by_edge(G, node_ids_to_communities, labels_to_count):
     """
     Using edge attributes create an aggregation (by community) of counts for every attribute/attribute value
 
     """
-    # Build mapping of node id to community
-    node_id_to_community = {}
-    for i, node in enumerate(G.vs):
-        attributes = node.attributes()
-        community = attributes[algo_name]
-        node_id_to_community[i] = community
+    # # Build mapping of node id to community
+    # node_id_to_community = {}
+    # for i, node in enumerate(G.vs):
+    #     #attributes = node.attributes()
+    #     #community = attributes[algo_name]
+    #     node_id_to_community[i] = set(node_ids_to_communities[i])
 
     # Build up community counts where edge is internal to community
     community_counts = {}  # {community:{label:{label_val:count}}}
     for edge in G.es:
-        if node_id_to_community[edge.source] == node_id_to_community[edge.target]:
-            community = node_id_to_community[edge.source]
-        else:
+        communities = set(node_ids_to_communities[edge.source]) & set(node_ids_to_communities[edge.target])
+        if communities is None:
             # For edges between communities to make totals work
-            community = 'external'
-        # If this our first time seeing community then add
-        if community not in community_counts:
-            community_counts[community] = {}
-            for label in labels_to_count:
-                community_counts[community][label] = {}
+            communities = set(['external'])
 
-        attributes = edge.attributes()
-        # Keep count for each community of the count of each value
-        for label in labels_to_count:
-            attribute_val = attributes[label]
-            if attribute_val in community_counts[community][label]:
-                community_counts[community][label][attribute_val] += 1
-            else:
-                community_counts[community][label][attribute_val] = 1
+        for community in communities:
+            # If this our first time seeing community then add
+            if community not in community_counts:
+                community_counts[community] = {}
+                for label in labels_to_count:
+                    community_counts[community][label] = {}
+
+            attributes = edge.attributes()
+            # Keep count for each community of the count of each value
+            for label in labels_to_count:
+                attribute_val = attributes[label]
+                if attribute_val in community_counts[community][label]:
+                    community_counts[community][label][attribute_val] += 1
+                else:
+                    community_counts[community][label][attribute_val] = 1
 
     return community_counts
 
@@ -99,15 +99,28 @@ def get_graph_counts(community_counts, labels_to_count):
     return graph_counts
 
 
-def label_communities(input_file, algorithm, attributes_to_ignore, count_type="both"):
+def label_communities(input_file, results_filename, algorithm, attributes_to_ignore, count_type="both"):
     # TODO: Consider refactoring to split edge vs node code more completely and only merge for display
     G = igraph.load(input_file)
-    # iterate through verticies, collect labels we are interested in
 
+    # Build up node_ids_to_community
+    node_ids_to_communities = {}
+    results = json.load(open(results_filename))
+
+    community_size = {} # Total size of each community
+    for i, communities in enumerate(results['membership']):
+        node_ids_to_communities[i] = communities
+        for community in communities:
+            if community not in community_size:
+                community_size[community] = 1
+            else:
+                community_size[community] += 1
+
+
+    # iterate through verticies, collect labels we are interested in
     count_type = count_type.lower()
     edge_labels_to_count = []
     node_labels_to_count = []
-
     if count_type in ('node', 'vertex', 'both'):
         for graph_key in G.vs[0].attribute_names():
             if not graph_key.startswith('algo') and not graph_key.startswith('id') \
@@ -115,39 +128,29 @@ def label_communities(input_file, algorithm, attributes_to_ignore, count_type="b
                 node_labels_to_count.append(graph_key)
 
     if count_type in ('edge', 'both'):
-        print(G.es[0].attribute_names())
         for graph_key in G.es[0].attribute_names():
             if not graph_key.startswith('algo') and not graph_key.startswith('id') \
                     and not graph_key.startswith('weight') and graph_key not in attributes_to_ignore:
                 edge_labels_to_count.append(graph_key)
 
-    print(edge_labels_to_count + node_labels_to_count)
-
-    # Algo is stored in vertex props and not edge props
-    algo_names_possible = set([])
-    for graph_key in G.vs[0].attribute_names():
-        if graph_key.startswith('algo'):
-            algo_names_possible.add(graph_key)
-
-    algo_name = 'algo_' + algorithm
-    if algo_name not in algo_names_possible:
-        raise ValueError('%s not in possible algorithms %s' % (algo_name, str(list(algo_names_possible))))
+    print('Attributes: ', edge_labels_to_count + node_labels_to_count)
 
     print('Getting Node Counts')
     if count_type in ('node', 'vertex', 'both'):
-        node_community_counts = get_community_counts(G, algo_name, node_labels_to_count, "node")
+        node_community_counts = get_community_counts(G, node_ids_to_communities, node_labels_to_count, "node")
         node_graph_counts = get_graph_counts(node_community_counts, node_labels_to_count)
 
     print('Getting Edge Counts')
     if count_type in ('edge', 'both'):
-        edge_community_counts = get_community_counts(G, algo_name, edge_labels_to_count, "edge")
+        edge_community_counts = get_community_counts(G, node_ids_to_communities, edge_labels_to_count, "edge")
         edge_graph_counts = get_graph_counts(edge_community_counts, edge_labels_to_count)
 
     print('Displaying Community Labels')
     for community in sorted(node_community_counts, key=int):
         print('------------------------------------------------')
-        print('Displaying Community', community)
+        print('Displaying Community', community, '[%d Nodes]'%community_size[community])
         if count_type in ('node', 'vertex', 'both'):
+            # Figure out if we want to print each label
             for label in node_labels_to_count:
                 # Get items
                 items = node_community_counts[community][label].items()
@@ -183,7 +186,7 @@ def main():
     parser = argparse.ArgumentParser(description=
                                      'Attempt to label communities based on common attributes')
     parser.add_argument('input_path', type=str, help='file or directory containing  graphml files with results')
-    parser.add_argument('algorithm', type=str, help='Algorithm desired (i.e. infomap)')
+    parser.add_argument('results_file', type=str, help='Results JSON File')
     parser.add_argument('--ignore', type=str, default="",
                         help='Attributes to suppress (comma delimited) i.e. stops,timezone')
     args = parser.parse_args()
@@ -195,7 +198,7 @@ def main():
     args.ignore = set(args.ignore.split(','))
 
     # TODO: Allow labeling by edge or node instead of both?
-    label_communities(args.input_path, args.algorithm, args.ignore, "both")
+    label_communities(args.input_path, args.results_file, args.ignore, "both")
 
 
 if __name__ == "__main__":
