@@ -62,6 +62,7 @@ def compute_metrics(G, refresh = True):
     if refresh or G.metrics == None:
 
         #we treat a single node graph to have a density of 1
+        #TODO: This is undefined for multigraphs. Prob should simplify if this happens
         density = G.density() if G.vcount() > 1 else 1.0
 
         G.metrics = {

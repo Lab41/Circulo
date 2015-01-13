@@ -97,6 +97,23 @@ def analyze_json(worker):
 
     G = instance.get_graph()
 
+    #apply similar alterations as were done with the algos
+    alterations = data['alterations']
+
+    if len(alterations) > 0:
+        if "weighted" in alterations:
+            G.es()['weight'] = 1
+
+        if "undirected" in alterations:
+            G.to_undirected(combine_edges={'weight':sum})
+
+        if "simple" in alterations:
+            G.simplify(combine_edges={'weight':sum})
+
+        if "pruned" in alterations:
+            instance.prune(G)
+
+
     weights = 'weight' if G.is_weighted() else None
     #some datasets might not have ground truth
     try:

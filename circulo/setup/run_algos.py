@@ -102,11 +102,12 @@ def run_single(worker):
     t0 = time.time()
 
     #fetch the algorithm from the community module
-    func = getattr(community, 'comm_'+worker.algo)(worker.graph, worker.databot, worker.job_name)
+    alterations, func = getattr(community, 'comm_'+worker.algo)(worker.graph, worker.databot, worker.job_name)
 
     try:
         #run the algorithm
         algo_result = func()
+
         #convert the result to a vertex cover (vc)
         vc = to_cover(algo_result)
 
@@ -127,6 +128,7 @@ def run_single(worker):
 
     results = {
             'job_name': worker.job_name,
+            'alterations': alterations,
             'elapsed' : time.time() - t0,
             'membership' : vc.membership,
             'algo' : worker.algo,
@@ -219,6 +221,7 @@ def run(algos, dataset_names, output_dir, iterations, workers, timeout):
 
             results = {
                 'job_name': job_name,
+                'alterations':[],
                 'elapsed' : 0,
                 'membership' : ground_truth_membership,
                 'algo' : "groundtruth",

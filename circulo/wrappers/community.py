@@ -13,10 +13,12 @@ def cleanup(G, databot, descript, algo_directed, algo_simple, algo_uses_weights)
     We start with specific matches and work our way to more general.
     '''
 
+    alterations = []
+
     #first we check if algo and data have same directedness and type.
     if G.is_directed() == algo_directed and G.is_simple() == algo_simple:
         weight_attr =  "weight" if G.is_weighted() else None
-        return G, weight_attr
+        return G, weight_attr, alterations
 
     if algo_directed and not G.is_directed():
         print("\t[Info - ", descript, "] - Warning: Passing undirected graph to directed algo")
@@ -27,12 +29,13 @@ def cleanup(G, databot, descript, algo_directed, algo_simple, algo_uses_weights)
     #add edge weights if not existing
     if not G_copy.is_weighted():
         G_copy.es()['weight'] = 1
-
+        alterations.append('weighted')
 
     #if the graph is directed and algo is not directed, we make the graph undirected
     if G_copy.is_directed() and not algo_directed:
         orig_edge_count = G_copy.ecount()
         G_copy.to_undirected(combine_edges={'weight':sum})
+        alterations.append('undirected')
         edges_removed = orig_edge_count - G_copy.ecount()
         print("\t[Info - ", descript, "] Converted directed to undirected: ", edges_removed, " edges collapsed of ", orig_edge_count)
 
@@ -40,6 +43,7 @@ def cleanup(G, databot, descript, algo_directed, algo_simple, algo_uses_weights)
     if  algo_simple and not G.is_simple():
         orig_edge_count = G_copy.ecount()
         G_copy.simplify(combine_edges={'weight':sum})
+        alterations.append('simple')
         edges_removed = orig_edge_count - G_copy.ecount()
         print("\t[Info - ", descript, "] Simplifying multigraph: ", edges_removed, " edges collapsed of ", orig_edge_count)
 
@@ -54,6 +58,7 @@ def cleanup(G, databot, descript, algo_directed, algo_simple, algo_uses_weights)
         if not algo_uses_weights:
             orig_edge_count = G_copy.ecount()
             databot.prune(G_copy)
+            alterations.append('pruned')
             num_pruned = orig_edge_count - G_copy.ecount()
             print("\t[Info - ", descript,"] Pruned ", num_pruned," of ", orig_edge_count," edges")
 
@@ -62,7 +67,7 @@ def cleanup(G, databot, descript, algo_directed, algo_simple, algo_uses_weights)
     if num_components is not 1:
         print("\t[WARNING: ", descript, "] graph has become disconnected with ", num_components, " components.")
 
-    return G_copy, "weight"
+    return G_copy, "weight", alterations
 
 
 stochastic_algos = {
@@ -78,69 +83,69 @@ stochastic_algos = {
         }
 
 def comm_infomap(G, databot, descript):
-    G, weights  = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
-    return partial(igraph.Graph.community_infomap, G, edge_weights=weights, vertex_weights=None)
+    G, weights, alterations  = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
+    return alterations, partial(igraph.Graph.community_infomap, G, edge_weights=weights, vertex_weights=None)
 
 def comm_fastgreedy(G, databot, descript):
-    G, weights  = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
-    return partial(igraph.Graph.community_fastgreedy, G, weights=weights)
+    G, weights, alterations  = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
+    return alterations, partial(igraph.Graph.community_fastgreedy, G, weights=weights)
 
 def comm_edge_betweenness(G, databot, descript):
     #edge betweenness does support undirected and directed, so just say that the algo_directed is the
     #same as the data being passed to it
-    G, weights  = cleanup(G, databot, descript, algo_directed=G.is_directed(), algo_simple=True, algo_uses_weights=True)
-    return partial(igraph.Graph.community_edge_betweenness, G, G.is_directed(), weights)
+    G, weights, alterations  = cleanup(G, databot, descript, algo_directed=G.is_directed(), algo_simple=True, algo_uses_weights=True)
+    return alterations, partial(igraph.Graph.community_edge_betweenness, G, G.is_directed(), weights)
 
 def comm_leading_eigenvector(G, databot, descript):
-    G, weights = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
-    return partial(igraph.Graph.community_leading_eigenvector, G, weights=weights)
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
+    return alterations, partial(igraph.Graph.community_leading_eigenvector, G, weights=weights)
 
 def comm_multilevel(G, databot, descript):
-    G, weights = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
     return partial(igraph.Graph.community_multilevel, G,  weights=weights)
 
 def comm_label_propagation(G, databot, descript):
-    G, weights = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
-    return partial(igraph.Graph.community_label_propagation, G, weights=weights)
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
+    return alterations, partial(igraph.Graph.community_label_propagation, G, weights=weights)
 
 def comm_walktrap(G, databot, descript):
-    G, weights = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
-    return partial(igraph.Graph.community_walktrap, G, weights=weights)
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
+    return alterations, partial(igraph.Graph.community_walktrap, G, weights=weights)
 
 def comm_spinglass(G, databot, descript):
-    G, weights = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
-    return partial(igraph.Graph.community_spinglass, G, weights=weights)
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
+    return alterations, partial(igraph.Graph.community_spinglass, G, weights=weights)
 
 def comm_conga(G, databot, descript):
-    G, weights = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
-    return partial(circulo.algorithms.conga.conga, G)
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
+    return alterations, partial(circulo.algorithms.conga.conga, G)
 
 def comm_congo(G, databot, descript):
-    G, weights = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
-    return  partial(circulo.algorithms.congo.congo, G)
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
+    return  alterations, partial(circulo.algorithms.congo.congo, G)
 
 def comm_radicchi_strong(G, databot, descript):
-    G, weights = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
-    return partial(circulo.algorithms.radicchi.radicchi,G,'strong')
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
+    return alterations, partial(circulo.algorithms.radicchi.radicchi,G,'strong')
 
 def comm_radicchi_weak(G, databot, descript):
-    G, weights = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
-    return partial(circulo.algorithms.radicchi.radicchi,G,'weak')
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
+    return alterations, partial(circulo.algorithms.radicchi.radicchi,G,'weak')
 
 def comm_bigclam(G, databot, descript):
-    G, weights = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
     ctx = databot.get_context()
     num_comms =  ctx[CirculoData.CONTEXT_OPTIMAL_PARTITIONS] if CirculoData.CONTEXT_OPTIMAL_PARTITIONS in ctx.keys() else 100
 
     min_comms = int(num_comms * .8)
     max_comms = int(num_comms * 1.2)
 
-    return partial(circulo.algorithms.snap_bigclam.bigclam, G, detect_comm=num_comms, min_comm=min_comms, max_comm=max_comms)
+    return alterations, partial(circulo.algorithms.snap_bigclam.bigclam, G, detect_comm=num_comms, min_comm=min_comms, max_comm=max_comms)
 
 def comm_coda(G, databot, descript):
-    G, weights = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
-    return partial(circulo.algorithms.snap_coda.coda, G)
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
+    return alterations, partial(circulo.algorithms.snap_coda.coda, G)
 
 def comm_clauset_newman_moore(G, databot, descript):
-    G, weights = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
-    return partial(circulo.algorithms.snap_cnm.clauset_newman_moore, G)
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
+    return alterations, partial(circulo.algorithms.snap_cnm.clauset_newman_moore, G)
