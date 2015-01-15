@@ -1,10 +1,4 @@
-import circulo.algorithms.overlap
-from circulo.algorithms import spectral
-from circulo.algorithms import min_conductance
-from circulo.algorithms import radicchi
-from circulo.algorithms import congo
-from circulo.algorithms import snap_bigclam
-from circulo.algorithms import snap_coda
-from circulo.algorithms import snap_cnm
-from circulo.algorithms import conga
-from circulo.algorithms import overlap
+import os
+import glob
+modules = glob.glob(os.path.dirname(__file__)+"/*.py")
+__all__ = [ os.path.basename(f)[:-3] for f in modules]

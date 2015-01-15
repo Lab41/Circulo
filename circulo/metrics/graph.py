@@ -3,7 +3,7 @@
 
 from igraph import Graph
 from circulo.utils.general import aggregate
-
+import circulo.algorithms.min_conductance
 
 def triangle_participation(G):
     '''

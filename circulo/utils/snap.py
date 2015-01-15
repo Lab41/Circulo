@@ -8,7 +8,6 @@ from collections import OrderedDict
 
 import circulo
 
-
 __author__="""Paul M"""
 
 __all__ = []
@@ -94,8 +93,7 @@ def divisive(G, algo_id, output):
 
 
 def setup(G):
-
-    snap_home = os.path.join(os.path.dirname(circulo.__file__), "..", "lib","snap")
+    snap_home = os.path.join(os.path.dirname(circulo.__path__._path[0]), "lib","snap")
 
     if not os.path.exists(os.path.join(snap_home,"examples","bigclam","bigclam")):
         raise Exception("SNAP must be downloaded and built prior to using the snap algorithms")

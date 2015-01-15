@@ -1,1 +1,0 @@
-#from circulo import algorithms

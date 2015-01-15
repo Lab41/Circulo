@@ -1,8 +1,25 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2014 In-Q-Tel, Inc/Lab41, All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import igraph
 from igraph import VertexCover
 import os
 import sys
 import urllib.request
+from collections import defaultdict
 from circulo.utils.general import get_largest_component
 from circulo.data.databot import *
 
@@ -86,51 +103,44 @@ class FlightData(CirculoData):
         and there is an edge wherever there is a flight from one airport to
         another. Note that an edge a->b does not imply b->a.
         """
-        #print("Parsing airport data...")
+
         # Create G with airports as vertices
         G = FlightData.initialize_vertices(os.path.join(self.raw_data_path, FLIGHTS_DATA))
-        #print("Parsing route data...")
+
         # Add all edges to G
         FlightData.initialize_edges(G, os.path.join(self.raw_data_path, ROUTES_DATA))
-        #print("Graph successfully created.")
-        #print("Deleting airports with no flights...")
-        # Delete all vertices with degree 0
-        FlightData.delete_empty_airports(G)
-        #print("Writing to " + self.graph_path + "...")
 
+        # Delete all vertices with degree 0
+        G.delete_vertices(G.vs.select(_degree = 0))
 
         #make sure that the graph is not disconnected. if so take larger component
         components = G.components(mode=igraph.WEAK)
         if len(components) > 1:
-            #print("[Graph Prep - Flights]... Disconnected Graph Detected. Using largest component.")
-            #print("[Graph Prep - Flights]... Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
             G = G.subgraph(max(components, key=len))
-            #print("[Graph Prep - Flights]... Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
 
         G.write_graphml(self.graph_path)
 
 
     def initialize_vertices(flights_file):
         """
-        Reads a file fileName, that is assumed to conform to AIRPORTS_SCHEMA.
+        Reads file "flights_file" that is assumed to conform to AIRPORTS_SCHEMA.
         Returns a directed igraph.Graph where there is a vertex for each
         airport, with vertex attributes described in AIRPORTS_SCHEMA.
         """
-        vertices = {}
-        for a in AIRPORTS_SCHEMA:
-            vertices[a] = []
 
+        vertex_attrs = defaultdict(list)
+        vertex_count = 0
         with open(flights_file, 'r') as f:
             for line in f:
+                vertex_count+=1
                 line = line.strip().split(',')
                 for a in AIRPORTS_SCHEMA:
                     attr = line[AIRPORTS_SCHEMA[a]]
                     if attr == "\\N":
                         attr = None
-                    vertices[a].append(attr)
-        numVertices = len(vertices[a])
-        #print("Adding vertices to graph...")
-        return igraph.Graph(n=numVertices, directed=True, vertex_attrs=vertices)
+                    vertex_attrs[a].append(attr)
+
+        return igraph.Graph(n=vertex_count, directed=True, vertex_attrs=vertex_attrs)
 
 
     def initialize_edges(G, routes_file):
@@ -150,9 +160,8 @@ class FlightData(CirculoData):
         though it's not.
         """
         edges = []
-        attrs = {}
-        for a in ROUTES_SCHEMA:
-            attrs[a] = []
+
+        attrs = defaultdict(list)
 
         with open(routes_file, 'r') as f:
             for line in f:
@@ -162,86 +171,39 @@ class FlightData(CirculoData):
                 try:
                     source = G.vs.find(source_id).index
                     dest = G.vs.find(dest_id).index
+                    edges.append((source, dest))
                 except ValueError:
                     badRoute = source_id + " ==> " + dest_id
+                    #UNCOMMENT FOR DEBUG INFO
                     #print("Skipping " + badRoute + " (Insufficient information to create edge.)")
-                edges.append((source, dest))
+
                 for a in ROUTES_SCHEMA:
                     attr = line[ROUTES_SCHEMA[a]]
                     if attr == "\\N":
                         attr = None
                     attrs[a].append(attr)
-        #print("Adding edges to graph...")
+
         G.add_edges(edges)
+
         for a in ROUTES_SCHEMA:
             G.es[a] = attrs[a]
 
 
-    def delete_empty_airports(G):
+    def get_ground_truth(self, G):
         """
-        Given G, deletes all nodes with degree 0.
+        This Ground Truth is the country of the airport
         """
-        toDelete = []
-        for v in G.vs:
-            if not v.degree():
-                toDelete.append(v)
-        G.delete_vertices(toDelete)
-
-
-    def get_ground_truth(self, G=None):
-        """
-        Ground Truth is hard to define for the flight info. This Ground
-        Truth simply clusters the nodes by country. Another possibility
-        would be DST, which is essentially continents, or timezone. Returns a
-        VertexClustering object.
-        """
-        if G is None:
-            G = self.get_graph()
 
         if G is None:
-            #print("Error: Unable to retrieve graph")
             return
 
-        #print(G)
-        cluster_dict = {}
+        cluster_dict = defaultdict(list)
 
         for airport_id, airport_location in enumerate(G.vs['country']):
-            if airport_location not in cluster_dict:
-                cluster_dict[airport_location] = []
             cluster_dict[airport_location].append(airport_id)
 
-        cluster_list = [v for v in cluster_dict.values()]
-
-        return VertexCover(G, cluster_list)
-
-    def prune(self,G):
-        '''
-        Sometimes when an algorithm runs against a graph, the algorithm needs to collapse the edges
-        of that Graph either because it does not support directed or multigraph Graphs. In this
-        case, the Graph may become nearly "complete" and therefore pruning is necessary.  The
-        pruning function is called when the Graph has been collapsed and the result at least 80%
-        the number of edges of a complete Graph. The default prune function removes all edges
-        with edge weight less than the median
-
-        Args:
-            G_copy : A copy of the original graph
-        '''
-
-        print("PRUNING FUNCTION")
-
-        #if G.is_weighted() is False:
-        #    print("Error: Unable to prune a graph without edge weights")
-        #    return G
-
-        #weights = G.es()['weight']
-
-        #threshold = statistics.median(weights) - .0001
-
-        #orig_edge_count = G.ecount()
-        #edges = G.es.select(weight_lt=threshold)
-        #G.delete_edges(edges)
-
-
+        return VertexCover(G, [v for v in cluster_dict.values()]
+)
 
 def main():
     databot = FlightData("flights")

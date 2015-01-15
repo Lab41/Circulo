@@ -1,7 +1,11 @@
 from functools import partial
 import igraph
+
 import circulo.algorithms
+from circulo.algorithms import *
+
 import statistics
+
 
 from circulo.data.databot import CirculoData
 
@@ -102,7 +106,7 @@ def comm_leading_eigenvector(G, databot, descript):
 
 def comm_multilevel(G, databot, descript):
     G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)
-    return partial(igraph.Graph.community_multilevel, G,  weights=weights)
+    return alterations, partial(igraph.Graph.community_multilevel, G,  weights=weights)
 
 def comm_label_propagation(G, databot, descript):
     G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=True)

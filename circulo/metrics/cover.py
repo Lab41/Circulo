@@ -7,6 +7,7 @@ import collections
 import time
 from circulo.metrics.omega import omega_index
 from circulo.utils.general import aggregate
+import circulo.metrics.graph
 import numpy as np
 
 def __get_weight_attr(G, metric_name, weights):

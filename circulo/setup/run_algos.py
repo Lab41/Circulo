@@ -39,13 +39,14 @@ import signal
 import os
 import errno
 import inspect
-
+import logging
 
 from circulo.wrappers import community
 from circulo.wrappers.community import stochastic_algos
 from circulo.data.databot import CirculoData
 from circulo.algorithms.overlap import CrispOverlap
 
+logging.basicConfig(filename='circulo_error.log', level=logging.INFO, filemode='w')
 
 #Named tuple used for passing data into the child processes of the multiprocessing pool
 Worker = namedtuple('Worker', 'job_name algo databot out_dir iteration timeout graph')
@@ -120,11 +121,13 @@ def run_single(worker):
         return
 
 
+    show_warning = False
+
     #make sure that every node is in at least one community. If not, then we discard the results
     #since the metrics require that every node belong to a community.
     for l in vc.membership:
         if l is None or len(l) == 0:
-            print("\t[WARNING ", worker.job_name, "]: The algo did not assign all nodes to at least one community")
+            show_warning = True
 
     results = {
             'job_name': worker.job_name,
@@ -135,6 +138,9 @@ def run_single(worker):
             'dataset' : worker.databot.dataset_name,
             'iteration' : worker.iteration
             }
+
+    if show_warning:
+        logging.warning(worker.job_name + ": The algo did not assign all nodes to at least one community")
 
     #write results out to json
     with open(os.path.join(worker.out_dir, worker.job_name+'.json'), "w") as f:

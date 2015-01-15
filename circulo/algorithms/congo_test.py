@@ -1,4 +1,4 @@
-import congo as CONGO
+import circulo.algorithms.congo as CONGO
 import unittest
 import igraph
 import itertools
