@@ -1,8 +1,24 @@
-'''
-Incomplete due to complexity with attribute files. May finish later if needed
-'''
+#!/usr/bin/env python
+#
+# Copyright (c) 2014 In-Q-Tel, Inc/Lab41, All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import igraph
+import os
+import subprocess
+from circulo.utils import snap
 
-def cesna(G,  f_attributes, f_attribute_names, data_prefix='snap_', nodes='', detect_comm=10, min_comm=3, max_comm=5, trials=5, threads=4, aw=0.5,lw=1, alpha=0.05, beta=0.3, mf=0):
+def cesna(G, attributes_to_include, data_prefix='snap_', node_filepath='', detect_comm=100, min_comm=5, max_comm=100, trials=5, threads=4, alpha=.3, beta=0.3):
 
     '''
     Parameters
@@ -25,13 +41,18 @@ def cesna(G,  f_attributes, f_attribute_names, data_prefix='snap_', nodes='', de
 
     snap_home, graph_file = snap.setup(G)
 
+    snap_home2, f_attribute_names, f_attributes = snap.attribute_setup(G, attributes_to_include)
+    print(f_attributes, f_attribute_names)
     if graph_file is None:
         return
 
     path_cesna = os.path.join(snap_home, "examples", "cesna", "cesna")
 
     try:
-        out = subprocess.Popen([path_cesna, "-o:"+data_prefix, "-i:"+graph_file, "-l:"+nodes, "-a:"+f_attributes, "-n:"+f_attribute_names,  "-c:"+str(detect_comm), "-mc:"+str(min_comm), "xc:"+str(max_comm), "-nc:"+str(trials), "-nt:"+str(threads), "-aw:"+str(aw), "-lw:"+str(lw), "-sa:"+str(alpha), "-sb:"+str(beta), "-mf:"+str(mf)]).wait()
+        FNULL = open(os.devnull, 'w')
+        #out = subprocess.Popen([path_cesna,"-o:"+data_prefix,"-i:"+graph_file,"-l:"+node_filepath,"-c:"+str(detect_comm), "-mc:"+str(min_comm), "-xc:"+str(max_comm), "-nc:"+str(trials), "-nt:"+str(threads), "-sa:"+str(alpha), "-sb:"+str(beta),  "-a:"+f_attributes, "-n:"+f_attribute_names], stdout=FNULL).wait()
+        #"-c:"+str(detect_comm),
+        out = subprocess.Popen([path_cesna,"-o:"+data_prefix,"-i:"+graph_file,"-l:"+node_filepath, "-c:-1", "-mc:"+str(min_comm), "-xc:"+str(max_comm), "-nc:"+str(trials), "-nt:"+str(threads), "-sa:"+str(alpha), "-sb:"+str(beta),  "-a:"+f_attributes, "-n:"+f_attribute_names]).wait()
 
 
     except TypeError as e:
@@ -40,7 +61,18 @@ def cesna(G,  f_attributes, f_attribute_names, data_prefix='snap_', nodes='', de
 
     os.remove(graph_file)
 
-    return read_communities(data_prefix + "cmtyvv.txt", G)
+    return snap.read_communities_by_community(data_prefix + "cmtyvv.txt", G)
 
 
 
+def main():
+
+    G = igraph.load('/Users/ytesfaye/tmp/GRAPHS/flights.graphml')
+    #snap_home, filename = setup(G)
+
+    vc = cesna(G)
+    print(vc)
+
+
+if __name__ == "__main__":
+    main()

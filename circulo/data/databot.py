@@ -29,7 +29,7 @@ class CirculoData:
 
     #class variable
     CONTEXT_OPTIMAL_PARTITIONS = "optimal_partitions"
-
+    CONTEXT_ATTRS_TO_USE = "attributes_to_use"
 
     def __init__(self, dataset_name):
         data_dir = os.path.dirname(__file__)

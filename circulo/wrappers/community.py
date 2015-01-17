@@ -141,10 +141,25 @@ def comm_bigclam(G, databot, descript):
     ctx = databot.get_context()
     num_comms =  ctx[CirculoData.CONTEXT_OPTIMAL_PARTITIONS] if CirculoData.CONTEXT_OPTIMAL_PARTITIONS in ctx.keys() else 100
 
-    min_comms = int(num_comms * .8)
-    max_comms = int(num_comms * 1.2)
+    #min_comms = int(num_comms * .8)
+    #max_comms = int(num_comms * 1.2)
+    min_comms = int(num_comms * .1)
+    max_comms = int(num_comms * 5)
 
     return alterations, partial(circulo.algorithms.snap_bigclam.bigclam, G, detect_comm=num_comms, min_comm=min_comms, max_comm=max_comms)
+
+def comm_cesna(G, databot, descript):
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
+    ctx = databot.get_context()
+    num_comms =  ctx[CirculoData.CONTEXT_OPTIMAL_PARTITIONS] if CirculoData.CONTEXT_OPTIMAL_PARTITIONS in ctx.keys() else 200
+
+    min_comms = int(num_comms * .5)
+    max_comms = int(num_comms * 5)
+
+    attrs_to_use = ctx[CirculoData.CONTEXT_ATTRS_TO_USE]
+    print('Min/max number of communities', min_comms, max_comms)
+    return alterations, partial(circulo.algorithms.snap_cesna.cesna, G, attrs_to_use, detect_comm=num_comms, min_comm=min_comms, max_comm=max_comms)
+
 
 def comm_coda(G, databot, descript):
     G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)

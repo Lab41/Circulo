@@ -6,6 +6,9 @@ import igraph
 from  igraph.clustering import VertexCover
 from collections import OrderedDict
 
+from sklearn.feature_extraction import DictVectorizer
+import numpy as np
+
 import circulo
 
 __author__="""Paul M"""
@@ -90,6 +93,49 @@ def divisive(G, algo_id, output):
     return read_communities_by_node(output, G)
 
 
+def attribute_setup(G, attrs_of_interest):
+    """
+    Create node name and node attribute files. Uses DictVectorizer to encode free form attribute input into set of
+    binary classes. node_attribute_name_file contains the mapping of binary classes to names
+    """
+    snap_home = os.path.join(os.path.dirname(circulo.__file__), "..", "lib","snap")
+
+    if not os.path.exists(os.path.join(snap_home,"examples","bigclam","bigclam")):
+        raise Exception("SNAP must be downloaded and built prior to using the snap algorithms")
+
+    f = tempfile.mkstemp()
+    node_attribute_name_file = f[1]
+
+    f2 = tempfile.mkstemp()
+    node_attribute_file = f2[1]
+
+    # Create an array of attributes of interest
+    # TODO: consider more efficient way of limiting keys
+    attr_array = []
+    for node in G.vs:
+        node_attributes_dict = {}
+        for attr_name, attr_val in node.attributes().items():
+            if attr_name in attrs_of_interest:
+                node_attributes_dict[attr_name] = attr_val
+        attr_array.append(node_attributes_dict)
+
+    vec = DictVectorizer(dtype=np.int32)
+    vectorized_array = vec.fit_transform(attr_array).toarray()
+    try:
+        with open(node_attribute_name_file, 'w') as out:
+            for i, name in enumerate(vec.get_feature_names()):
+                out.write("{}\t{}\n".format(i, name))
+
+        with open(node_attribute_file, 'w') as out:
+            for node_num, bool_feature_array in enumerate(vectorized_array):
+                for attr_num, val in enumerate(bool_feature_array):
+                    if val != 0:
+                        out.write("{}\t{}\n".format(node_num, attr_num))
+    except:
+        print("Error writing attribute info")
+        return None
+
+    return (snap_home, node_attribute_name_file, node_attribute_file)
 
 
 def setup(G):

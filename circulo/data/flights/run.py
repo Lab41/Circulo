@@ -188,6 +188,13 @@ class FlightData(CirculoData):
         for a in ROUTES_SCHEMA:
             G.es[a] = attrs[a]
 
+    def get_context(self):
+        """
+        Specify which node attributes should be used in algorithms that take into account node attributes
+        """
+        return {
+            CirculoData.CONTEXT_ATTRS_TO_USE:set(['country'])
+        }
 
     def get_ground_truth(self, G):
         """
