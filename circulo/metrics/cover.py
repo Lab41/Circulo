@@ -82,6 +82,7 @@ def cut_ratio(cover, allow_nan=False):
     mode = "nan" if allow_nan == True else 0
     rv = []
     external_edges = cover.external_edges()
+
     size_g = cover.graph.vcount()
     for i in range(len(cover)):
         size_i = cover.size(i)
@@ -153,10 +154,12 @@ def maximum_out_degree_fraction(cover, odf=None, weights=None):
     '''
     if odf is None:
         odf = out_degree_fraction(cover, weights)
+        odf = odf.tocsc()
+
     rv = []
-    max_seen = odf.max(1).tocsc()
+    max_seen = odf.max(0).tocsc()
     for i in range(len(cover)):
-        rv.append(max_seen[i,0])
+        rv.append(max_seen[0,i])
     return rv #[ nanmax(ratios) for ratios in odf ]
 
 def average_out_degree_fraction(cover, odf=None, weights=None):
@@ -167,10 +170,11 @@ def average_out_degree_fraction(cover, odf=None, weights=None):
     rv = []
     if odf is None:
         odf = out_degree_fraction(cover, weights)
+        odf.tocsc()
 
-    sums = odf.sum(1)
+    sums = odf.sum(0)
     for i in range(len(cover)):
-      rv += [ sums[i,0]/cover.subgraph(i).vcount() ]
+      rv += [ sums[0,i]/cover.subgraph(i).vcount() ]
     return rv
 
 def flake_out_degree_fraction(cover, odf=None, weights=None):
@@ -181,6 +185,8 @@ def flake_out_degree_fraction(cover, odf=None, weights=None):
     rv = []
     if odf is None:
         odf = out_degree_fraction(cover, weights)
+        odf = odf.tocsc()
+
     for i in range(len(cover)):
         count = 0
         # TODO: This functional can probably still be improved by using something that takes advantage of the sparsity
@@ -202,7 +208,6 @@ def out_degree_fraction(cover, weights=None, allow_nan = False):
     membership = cover.membership
     external_edges = cover.external_edges()
     degree_per_node = cover.graph.strength(weights=w_attr)
-
     # Intialize return value
     rv = dok_matrix((cover.graph.vcount(), len(cover))) # Rows = Vertex, cols = Cover
     for i in range(len(cover)):
@@ -219,26 +224,31 @@ def out_degree_fraction(cover, weights=None, allow_nan = False):
     return rv
 
 
-def external_edges(cover) :
-    '''
-    @param cover a VertexCover object.
-    @returns an array of external edges per cluster in the cover.
-    '''
+def external_edges(cover):
     array_of_sets = [ [] for v in cover ]
-    #Iterate over crossing edges
 
-    #it is important to get the membership vector here because it is computationally expensive to get it from the cover
-    # You do not want to get the vector each time you do a lookup
-    membership_arr = cover.membership
+    # Go through membership array and find nodes in each community
+    community_sets = {}
+    membership_arrays = cover.membership
+    for vertex_id, vertex_communities in enumerate(membership_arrays):
+        for community in vertex_communities:
+            if community not in community_sets:
+                community_sets[community] = set()
+            community_sets[community].add(vertex_id)
 
-    for edge in [ a[1] for a in zip(cover.crossing(), cover.graph.es()) if a[0]]:
-        cluster_ids = membership_arr[edge.source]
+    # Move from dictionary of communities to array of communities
+    # TODO: Maybe we don't have to do this??
+    membership_sets = [community_sets[community] for community in sorted(community_sets.keys())]
 
-        if not cover.graph.is_directed():
-            cluster_ids += membership_arr[edge.target]
-
-        for cluster_id in cluster_ids:
-            array_of_sets[cluster_id].append(edge)
+    for (edge, crossing) in zip(cover.graph.es, cover.crossing()):
+        if crossing:
+            src,dst = edge.tuple
+            for i, membership_set in enumerate(membership_sets):
+                #print(i)
+                if src in membership_set and dst not in membership_set:
+                    array_of_sets[i].append(edge)
+                elif dst in membership_set and src not in membership_set:
+                    array_of_sets[i].append(edge)
 
     return array_of_sets
 
