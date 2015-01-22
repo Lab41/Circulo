@@ -2,8 +2,9 @@ import igraph
 import os
 import subprocess
 from circulo.utils.snap import setup,read_communities_by_community
+from multiprocessing import cpu_count
 
-def bigclam(G, data_prefix='snap_', node_filepath='', detect_comm=100, min_comm=5, max_comm=100, trials=2, threads=4, alpha=0.3, beta=0.3):
+def bigclam(G, data_prefix='snap_', node_filepath='', detect_comm=100, min_comm=5, max_comm=100, trials=5, threads=cpu_count(), alpha=0.3, beta=0.3):
     '''
     BigClam from Snap
 
@@ -23,7 +24,7 @@ def bigclam(G, data_prefix='snap_', node_filepath='', detect_comm=100, min_comm=
     Returns:  List of SubGraphs representing the communities.  The SubGraphs are automatically serialized to disk as file data_prefix+'cmtyvv.txt'
     '''
 
-    snap_home, graph_file = setup(G)
+    snap_home, graph_file = setup(G, include_header=False)
 
 
     if graph_file is None:
@@ -33,8 +34,7 @@ def bigclam(G, data_prefix='snap_', node_filepath='', detect_comm=100, min_comm=
 
     try:
         FNULL = open(os.devnull, 'w')
-        #out = subprocess.Popen([path_bigclam,"-o:"+data_prefix,"-i:"+graph_file,"-l:"+node_filepath,"-c:"+str(detect_comm), "-mc:"+str(min_comm), "-xc:"+str(max_comm), "-nc:"+str(trials), "-nt:"+str(threads), "-sa:"+str(alpha), "-sb:"+str(beta)], stdout=FNULL).wait()
-        out = subprocess.Popen([path_bigclam,"-o:"+data_prefix,"-i:"+graph_file,"-l:"+node_filepath,"-c:"+str(-1), "-mc:"+str(min_comm), "-xc:"+str(max_comm), "-nc:"+str(trials), "-nt:"+str(threads), "-sa:"+str(alpha), "-sb:"+str(beta)], stdout=FNULL).wait()
+        out = subprocess.Popen([path_bigclam,"-o:"+data_prefix,"-i:"+graph_file,"-l:"+node_filepath,"-c:"+str(detect_comm), "-mc:"+str(min_comm), "-xc:"+str(max_comm), "-nc:"+str(trials), "-nt:"+str(threads), "-sa:"+str(alpha), "-sb:"+str(beta)], stdout=FNULL).wait()
 
     except TypeError as e:
         print("Error occurred: {}".format(e))
@@ -43,7 +43,7 @@ def bigclam(G, data_prefix='snap_', node_filepath='', detect_comm=100, min_comm=
 
     os.remove(graph_file)
 
-    return read_communities_by_community(data_prefix + "cmtyvv.txt", G)
+    return read_communities_by_community(data_prefix + "cmtyvv.txt", G, delete_file=True)
 
 
 def main():

@@ -19,7 +19,7 @@ __all__ = []
 ENV_SNAPPATH_VAR = "SNAPHOME"
 
 
-def read_communities_by_community(f_name, G):
+def read_communities_by_community(f_name, G, delete_file=False):
     '''
     Reads a community file in the format where each line represents a community where the line is a list of nodes separated by white space
     '''
@@ -36,6 +36,9 @@ def read_communities_by_community(f_name, G):
             except ValueError as e:
                 print("Node type is unclear for line: {}".format(line))
                 return
+
+    if delete_file:
+        os.remove(f_name)
 
     return VertexCover(G, comm_list)
 
@@ -54,18 +57,18 @@ def read_communities_by_node(f_name, G):
 
     #dict with keys as community_id and values are a list of nodes
     community_dict = dict()
-
+    max_node_id = len(G.vs)
     with open(f_name, 'r') as community_file:
         for line in community_file:
             if line.startswith('#'):
                 continue
 
             node_id, community_id = (int(x) for x in line.split())
+            if node_id <= max_node_id:
+                if community_id not in community_dict:
+                    community_dict[community_id] = []
 
-            if community_id not in community_dict:
-                community_dict[community_id] = []
-
-            community_dict[community_id].append(node_id)
+                community_dict[community_id].append(node_id)
 
     return VertexCover(G,  [v for v in community_dict.values()])
 
@@ -133,7 +136,7 @@ def attribute_setup(G, attrs_of_interest):
     return (node_attribute_name_file, node_attribute_file)
 
 
-def setup(G):
+def setup(G, include_header=True):
     snap_home = os.path.join(os.path.dirname(circulo.__path__._path[0]), "lib","snap")
 
     if not os.path.exists(os.path.join(snap_home,"examples","bigclam","bigclam")):
@@ -147,8 +150,18 @@ def setup(G):
         #some snap algos can't handle single space edge delimiters, and igraph can't output
         #tab delimited edgelist, so we always convert the single spaced output to a tabbed output
         with open(filename, 'w') as out:
-            for u,v in G.get_edgelist():
-                out.write("{}\t{}\n".format(u, v))
+            if include_header:
+                out.write("# Directed Node Graph\n")
+                out.write("# Descriptions\n")
+                out.write("# Nodes: {}\tEdges: {}\n".format(len(G.vs), len(G.es)))
+                out.write("# SrcNId\tDstNId\n")
+            for src in G.vs:
+                for dst in src.neighbors(mode=igraph.ALL):
+                    out.write("{}\t{}\n".format(src.index, dst.index))
+                #print(node.neighbors())
+            #for u,v in G.get_edgelist():
+            #    out.write("{}\t{}\n".format(u, v))
+            #    out.write("{}\t{}\n".format(v, u))
 
     except:
         print("Error writing edgelist")

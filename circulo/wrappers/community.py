@@ -124,25 +124,27 @@ def comm_radicchi_weak(G, databot, descript):
     G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
     return alterations, partial(circulo.algorithms.radicchi.radicchi,G,'weak')
 
-def comm_bigclam(G, databot, descript):
+def comm_clique_percolation(G, databot, descript):
     G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
-    ctx = databot.get_context()
-    num_comms =  ctx[CirculoData.CONTEXT_OPTIMAL_PARTITIONS] if CirculoData.CONTEXT_OPTIMAL_PARTITIONS in ctx.keys() else 100
+    return alterations, partial(circulo.algorithms.snap_cpm.clique_percolation,G)
 
-    #min_comms = int(num_comms * .8)
-    #max_comms = int(num_comms * 1.2)
-    min_comms = int(num_comms * .1)
-    max_comms = int(num_comms * 5)
+
+def comm_bigclam(G, databot, descript):
+    G, weights, alterations = cleanup(G, databot, descript, algo_directed=True, algo_simple=True, algo_uses_weights=False)
+    ctx = databot.get_context()
+    num_comms = -1 # Detect automatically
+    min_comms = 1
+    max_comms = len(G.vs)
 
     return alterations, partial(circulo.algorithms.snap_bigclam.bigclam, G, detect_comm=num_comms, min_comm=min_comms, max_comm=max_comms)
 
 def comm_cesna(G, databot, descript):
     G, weights, alterations = cleanup(G, databot, descript, algo_directed=False, algo_simple=True, algo_uses_weights=False)
     ctx = databot.get_context()
-    num_comms =  ctx[CirculoData.CONTEXT_OPTIMAL_PARTITIONS] if CirculoData.CONTEXT_OPTIMAL_PARTITIONS in ctx.keys() else 200
+    num_comms =  -1 # Detect automatically
 
-    min_comms = int(num_comms * .5)
-    max_comms = int(num_comms * 5)
+    min_comms = 1
+    max_comms = len(G.vs)
 
     try:
         attrs_to_use = ctx[CirculoData.CONTEXT_ATTRS_TO_USE]

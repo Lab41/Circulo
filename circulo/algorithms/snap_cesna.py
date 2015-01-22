@@ -18,8 +18,9 @@ import os
 import subprocess
 from circulo.utils import snap
 import shutil
+from multiprocessing import cpu_count
 
-def cesna(G, attributes_to_include, data_prefix='snap_', node_filepath='', detect_comm=100, min_comm=5, max_comm=100, trials=5, threads=4, alpha=.3, beta=0.3):
+def cesna(G, attributes_to_include, data_prefix='snap_', node_filepath='', detect_comm=100, min_comm=5, max_comm=100, trials=5, threads=cpu_count(), alpha=.3, beta=0.3):
 
     '''
     Parameters
@@ -50,7 +51,7 @@ def cesna(G, attributes_to_include, data_prefix='snap_', node_filepath='', detec
 
     try:
         FNULL = open(os.devnull, 'w')
-        out = subprocess.Popen([path_cesna,"-o:"+data_prefix,"-i:"+graph_file,"-l:"+node_filepath, "-c:-1", "-mc:"+str(min_comm), "-xc:"+str(max_comm), "-nc:"+str(trials), "-nt:"+str(threads), "-sa:"+str(alpha), "-sb:"+str(beta),  "-a:"+f_attributes, "-n:"+f_attribute_names],stdout=FNULL).wait()
+        out = subprocess.Popen([path_cesna,"-o:"+data_prefix,"-i:"+graph_file,"-l:"+node_filepath, "-c:" + str(detect_comm), "-mc:"+str(min_comm), "-xc:"+str(max_comm), "-nc:"+str(trials), "-nt:"+str(threads), "-sa:"+str(alpha), "-sb:"+str(beta),  "-a:"+f_attributes, "-n:"+f_attribute_names],stdout=FNULL).wait()
 
 
     except TypeError as e:
@@ -59,7 +60,7 @@ def cesna(G, attributes_to_include, data_prefix='snap_', node_filepath='', detec
 
     os.remove(graph_file)
 
-    return snap.read_communities_by_community(data_prefix + "cmtyvv.txt", G)
+    return snap.read_communities_by_community(data_prefix + "cmtyvv.txt", G, delete_file=True)
 
 
 

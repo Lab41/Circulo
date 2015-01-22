@@ -55,7 +55,7 @@ plotMetrics <- function(metrics,toPDF=FALSE) {
     
     bubbleplot <- ggplot(data, aes(x=Datasets, y=Algorithms))+
           geom_point(aes(size=OmegaAccuracy, colour=ComputationTime), alpha=0.75)+
-          scale_size_continuous(limits=c(0,1),range =c(5, 25))+
+          scale_size_continuous(limits=c(-0.5,1),range =c(5, 25))+
           scale_colour_gradient2(low="dark green",mid="yellow", high="red", trans='log')+
           theme_bw()+
           ggtitle(Sys.time())
