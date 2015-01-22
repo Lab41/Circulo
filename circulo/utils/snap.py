@@ -98,11 +98,6 @@ def attribute_setup(G, attrs_of_interest):
     Create node name and node attribute files. Uses DictVectorizer to encode free form attribute input into set of
     binary classes. node_attribute_name_file contains the mapping of binary classes to names
     """
-    snap_home = os.path.join(os.path.dirname(circulo.__file__), "..", "lib","snap")
-
-    if not os.path.exists(os.path.join(snap_home,"examples","bigclam","bigclam")):
-        raise Exception("SNAP must be downloaded and built prior to using the snap algorithms")
-
     f = tempfile.mkstemp()
     node_attribute_name_file = f[1]
 
@@ -110,7 +105,6 @@ def attribute_setup(G, attrs_of_interest):
     node_attribute_file = f2[1]
 
     # Create an array of attributes of interest
-    # TODO: consider more efficient way of limiting keys
     attr_array = []
     for node in G.vs:
         node_attributes_dict = {}
@@ -119,6 +113,7 @@ def attribute_setup(G, attrs_of_interest):
                 node_attributes_dict[attr_name] = attr_val
         attr_array.append(node_attributes_dict)
 
+    # TODO: Don't make dense array for sparse input
     vec = DictVectorizer(dtype=np.int32)
     vectorized_array = vec.fit_transform(attr_array).toarray()
     try:
@@ -135,7 +130,7 @@ def attribute_setup(G, attrs_of_interest):
         print("Error writing attribute info")
         return None
 
-    return (snap_home, node_attribute_name_file, node_attribute_file)
+    return (node_attribute_name_file, node_attribute_file)
 
 
 def setup(G):
