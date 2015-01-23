@@ -57,7 +57,7 @@ class NBAData(CirculoData):
 
         team_dict = {}
 
-        G = igraph.Graph()
+        G = igraph.Graph(directed=True)
 
         data_regex = os.path.join(self.raw_data_path,"data","csv",'*.csv')
 
@@ -92,6 +92,15 @@ class NBAData(CirculoData):
 
                     G.add_edge(team0, team1)
 
+
+        #we need to set a weight of 1 to every edge
+        G.es['weight'] = 1
+
+        #we simplify the multigraph
+        G.simplify(combine_edges={'weight':sum})
+
+        #we collapse the graph
+        self.prune(G)
         G.write_graphml(self.graph_path)
 
     def get_context(self):
@@ -141,21 +150,10 @@ class NBAData(CirculoData):
         for vertex_id, team_name in enumerate(G.vs['name']):
             cluster_list[divisions[team_name]].append(vertex_id)
 
+
         return VertexCover(G, cluster_list)
 
     def prune(self,G):
-        '''
-        Sometimes when an algorithm runs against a graph, the algorithm needs to collapse the edges
-        of that Graph either because it does not support directed or multigraph Graphs. In this
-        case, the Graph may become nearly "complete" and therefore pruning is necessary.  The
-        pruning function is called when the Graph has been collapsed and the result at least 80%
-        the number of edges of a complete Graph. The default prune function removes all edges
-        with edge weight less than the median
-
-        Args:
-            G_copy : A copy of the original graph
-        '''
-
         if G.is_weighted() is False:
             return G
 
@@ -166,7 +164,6 @@ class NBAData(CirculoData):
         orig_edge_count = G.ecount()
         edges = G.es.select(weight_lt=threshold)
         G.delete_edges(edges)
-
         #this is a special case because this pruning will create a disconnected component, so let's add back in one edge
         v0 = G.vs.find(name="washington-wizards")
         v1 = G.vs.find(name="san-antonio-spurs")

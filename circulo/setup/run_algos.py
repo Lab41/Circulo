@@ -106,6 +106,10 @@ def run_single(worker):
     alterations, func = getattr(community, 'comm_'+worker.algo)(worker.graph, worker.databot, worker.job_name)
 
     try:
+        if func is None:
+            print("\t[ WARNING: ", worker.job_name, " ] - Did not execute")
+            return
+
         #run the algorithm
         algo_result = func()
 

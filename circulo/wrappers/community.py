@@ -51,28 +51,13 @@ def cleanup(G, databot, descript, algo_directed, algo_simple, algo_uses_weights)
         edges_removed = orig_edge_count - G_copy.ecount()
         print("\t[Info - ", descript, "] Simplifying multigraph: ", edges_removed, " edges collapsed of ", orig_edge_count)
 
+    #just quick check to see if the graph is nearly complete. If so we want to warn the user
+    #since many algos don't do well with nearly complete graphs
+    if G_copy.is_simple():
+        complete_edges = G_copy.vcount()*(G.vcount()-1)/2
 
-    #safety check: let user know if Graph is close to complete
-    #we consider 80% of num complete edges as close to complete
-    complete_edges = G_copy.vcount()*(G.vcount()-1)/2
-
-    if complete_edges *.8 < G_copy.ecount():
-        print("\t[WARNING: ",descript,"] Graph is nearly complete")
-        #we only prune graphs that do not use weights
-        if not algo_uses_weights:
-            orig_edge_count = G_copy.ecount()
-            databot.prune(G_copy)
-            alterations.append('pruned')
-            num_pruned = orig_edge_count - G_copy.ecount()
-            print("\t[Info - ", descript,"] Pruned ", num_pruned," of ", orig_edge_count," edges")
-
-    components = G.components(mode=igraph.WEAK)
-
-    if len(components) is not 1:
-        print("\t[WARNING: ", descript, "] graph has become disconnected with ", num_components, " components. Consider updating your prune function.  Will automatically use the largest component")
-        G_copy = G.subgraph(max(components, key=len))
-
-
+        if complete_edges *.8 < G_copy.ecount():
+            print("\t[WARNING: ",descript,"] Graph is nearly complete")
 
     return G_copy, "weight", alterations
 
@@ -159,7 +144,11 @@ def comm_cesna(G, databot, descript):
     min_comms = int(num_comms * .5)
     max_comms = int(num_comms * 5)
 
-    attrs_to_use = ctx[CirculoData.CONTEXT_ATTRS_TO_USE]
+    try:
+        attrs_to_use = ctx[CirculoData.CONTEXT_ATTRS_TO_USE]
+    except KeyError:
+        print("\t[skipping cesna because attributes not provided for ", descript)
+        return None,None
     print('Min/max number of communities', min_comms, max_comms)
     return alterations, partial(circulo.algorithms.snap_cesna.cesna, G, attrs_to_use, detect_comm=num_comms, min_comm=min_comms, max_comm=max_comms)
 

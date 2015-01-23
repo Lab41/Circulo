@@ -103,15 +103,24 @@ class HouseData(CirculoData):
                         else:
                             G.add_edge(v0, v1, weight=1)
 
+        #the graph is highly connected, so we will prune it
+        self.prune(G)
+
+        components = G.components(mode=igraph.WEAK)
+
+        #the dataset by default is diconnected, so we must take the largest component
+        if len(components) is not 1:
+            G = G.subgraph(max(components, key=len))
+
+
         G.write_graphml(self.graph_path)
 
     def prune(self,G):
 
         if G.is_weighted() is False:
             print("Error: Unable to prune a graph without edge weights")
-            return G
+            return
 
-        print("\t[Info ] - Pruning house graph")
         weights = G.es()['weight']
         threshold = .65 * max(weights)
         orig_edge_count = G.ecount()
