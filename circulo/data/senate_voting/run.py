@@ -59,17 +59,16 @@ class SenateData(CirculoData):
                 if c_type != row[4]:
                     continue
                 elif row[4] == "sen":
-                    congress_id = row[20]
+                    congress_id = row[21]
                 else:
                     raise("Unidentified congress: {}".format(row[4]))
 
                 G.add_vertex(
                     congress_id,
                     full_name="{} {}".format(row[1],row[0]),
-                    party=row[6],
+                    party=row[7],
                     state=row[5]
                     )
-
 
 
         missing_ids = set()
@@ -80,7 +79,6 @@ class SenateData(CirculoData):
                 data = json.load(inputfile)
                 #print("Processing: {}".format(fname))
                 for vt in data['votes']:
-                    #print(vt)
                     congress_ids = [n['id'] for n in data['votes'][vt]]
                     #print(congress_ids)
                     pairs = itertools.combinations(congress_ids,2)

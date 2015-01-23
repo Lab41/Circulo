@@ -58,16 +58,16 @@ class HouseData(CirculoData):
                 if c_type != row[4]:
                     continue
                 elif row[4] == "sen":
-                    congress_id = row[20]
+                    congress_id = row[21]
                 elif row[4] == "rep":
-                    congress_id = row[17]
+                    congress_id = row[18]
                 else:
                     raise("Unidentified congress: {}".format(row[4]))
 
                 G.add_vertex(
                     congress_id,
                     full_name="{} {}".format(row[1],row[0]),
-                    party=row[6],
+                    party=row[7],
                     state=row[5]
                     )
 
@@ -79,15 +79,11 @@ class HouseData(CirculoData):
         for fname in glob.glob(src_files):
             with open(fname,'r') as inputfile:
                 data = json.load(inputfile)
-                #print("Processing: {}".format(fname))
                 for vt in data['votes']:
-                    #print(vt)
                     congress_ids = [n['id'] for n in data['votes'][vt]]
-                    #print(congress_ids)
                     pairs = itertools.combinations(congress_ids,2)
 
                     for congress_id0, congress_id1 in pairs:
-                        #print("{} {}".format(congress_id0, congress_id1))
                         try:
                             v0 = G.vs.find(congress_id0)
                         except ValueError as e:
@@ -107,27 +103,20 @@ class HouseData(CirculoData):
                         else:
                             G.add_edge(v0, v1, weight=1)
 
-        #print("Ids not found: {}".format(missing_ids))
-
-        #prune the graph
-        weights = G.es()['weight']
-        threshold =  .65 * max(weights)
-        edges = G.es.select(weight_lt=threshold)
-        G.delete_edges(edges)
-
-        #make sure that the graph is not disconnected. if so take larger component
-        components = G.components(mode=igraph.WEAK)
-        if len(components) > 1:
-            #print("[Graph Prep - Congress]... Disconnected Graph Detected. Using largest component.")
-            #print("[Graph Prep - Congress]... Original graph: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
-            G = G.subgraph(max(components, key=len))
-            #print("[Graph Prep - Congress]... Largest component: {} vertices and {} edges.".format(G.vcount(), G.ecount()))
-
-
-
         G.write_graphml(self.graph_path)
 
+    def prune(self,G):
 
+        if G.is_weighted() is False:
+            print("Error: Unable to prune a graph without edge weights")
+            return G
+
+        print("\t[Info ] - Pruning house graph")
+        weights = G.es()['weight']
+        threshold = .65 * max(weights)
+        orig_edge_count = G.ecount()
+        edges = G.es.select(weight_lt=threshold)
+        G.delete_edges(edges)
 
     def __party_to_cluster__(self, party):
         if party == "Democrat":

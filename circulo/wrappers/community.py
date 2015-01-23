@@ -20,7 +20,7 @@ def cleanup(G, databot, descript, algo_directed, algo_simple, algo_uses_weights)
     alterations = []
 
     #first we check if algo and data have same directedness and type.
-    if G.is_directed() == algo_directed and G.is_simple() == algo_simple:
+    if G.is_directed() == algo_directed and G.is_simple() == algo_simple and G.is_weighted() == algo_uses_weights:
         weight_attr =  "weight" if G.is_weighted() else None
         return G, weight_attr, alterations
 
@@ -66,10 +66,13 @@ def cleanup(G, databot, descript, algo_directed, algo_simple, algo_uses_weights)
             num_pruned = orig_edge_count - G_copy.ecount()
             print("\t[Info - ", descript,"] Pruned ", num_pruned," of ", orig_edge_count," edges")
 
-    num_components =  len(G_copy.components(mode=igraph.WEAK))
+    components = G.components(mode=igraph.WEAK)
 
-    if num_components is not 1:
-        print("\t[WARNING: ", descript, "] graph has become disconnected with ", num_components, " components.")
+    if len(components) is not 1:
+        print("\t[WARNING: ", descript, "] graph has become disconnected with ", num_components, " components. Consider updating your prune function.  Will automatically use the largest component")
+        G_copy = G.subgraph(max(components, key=len))
+
+
 
     return G_copy, "weight", alterations
 
