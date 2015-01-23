@@ -19,6 +19,7 @@ import gzip
 import bz2
 import os
 from operator import itemgetter
+from collections import defaultdict
 
 
 from circulo.data.databot import CirculoData
@@ -38,7 +39,7 @@ class ASData(CirculoData):
         ASN_STRING = 'aut'
 
         data_by_org_id = {}  # Dictionary of properties by org ID {org_id:{prop_name:prop_value}}
-        # Read source file using #format lines to parse fields
+        # Read source file using # format lines to parse fields
         with gzip.open(fname, 'rt') as f:
             for line in f:
                 line = line.strip()
@@ -82,6 +83,7 @@ class ASData(CirculoData):
         edges = []
         relationships = []
         print("Reading links")
+        num_nodes = -1
         # Read in raw AS Links
         with bz2.open(filename, 'rt') as f:
             for line in f:
@@ -94,9 +96,13 @@ class ASData(CirculoData):
                         # TODO: Consider changing to directed graph and duplicating peer links in  both directions?
                         edges.append((src, dst))
                         relationships.append(relationship)
+                        # Keep track of max node seen
+                        if src > num_nodes:
+                            num_nodes = src
+                        if dst > num_nodes:
+                            num_nodes = dst
 
         print("Creating Graph")
-        num_nodes = max(max(max(edges, key=itemgetter(0))), max(max(edges, key=itemgetter(1))))
         g = igraph.Graph(directed=False)
         g.add_vertices(num_nodes+1) # Need +1 since ASN are 1 indexed but verticies are 0 indexed
         g.add_edges(edges)
@@ -129,34 +135,25 @@ class ASData(CirculoData):
         # There aren't edge weights so there's no way to prune
         pass
 
-    def get_ground_truth(self, G=None):
+    def get_ground_truth(self, G):
         """
         Get a Vertex Cover representing the ground truth for this graph. It's not apparent what the right "ground truth"
         is but a guess is "country". It might be true that "source" (which is the registrar that handled the transaction
         ) is a better guess
         """
         if G is None:
-            G = self.get_graph()
-
-        if G is None:
             return
 
-        LABEL_TAG = 'country'
+        GROUND_TRUTH_FIELD = 'country'
 
-        membership = G.vs[LABEL_TAG]
+        membership = G.vs[GROUND_TRUTH_FIELD]
         # Map community names to integers
         community_name_to_id = {}
         max_community_seen = 0
 
-        cluster_dict = {}
+        cluster_dict = defaultdict(list)
         for vertex_id, community_name in enumerate(membership):
-            if community_name not in community_name_to_id:
-                community_name_to_id[community_name] = max_community_seen  # Add to dict
-                cluster_dict[max_community_seen] = []  # Initialize
-                max_community_seen += 1
-
-            community_id = community_name_to_id[community_name]
-            cluster_dict[community_id].append(vertex_id)
+           cluster_dict[community_name].append(vertex_id)
 
         cluster_list = [v for v in cluster_dict.values()]
         return VertexCover(G, cluster_list)
