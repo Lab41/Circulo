@@ -119,10 +119,10 @@ class ASData(CirculoData):
         # Take largest connected component
         components = g.components(mode=igraph.WEAK)
         if len(components) > 1:
-            print("[Graph Prep - Congress]... Disconnected Graph Detected. Using largest component.")
-            print("[Graph Prep - Congress]... Original graph: {} vertices and {} edges.".format(g.vcount(), g.ecount()))
+            print("[Graph Prep - as_data]... Disconnected Graph Detected. Using largest component.")
+            print("[Graph Prep - as_data]... Original graph: {} vertices and {} edges.".format(g.vcount(), g.ecount()))
             g = g.subgraph(max(components, key=len))
-            print("[Graph Prep - Congress]... Largest component: {} vertices and {} edges.".format(g.vcount(), g.ecount()))
+            print("[Graph Prep - as_data]... Largest component: {} vertices and {} edges.".format(g.vcount(), g.ecount()))
         g.write_graphml(self.graph_path)
 
     def prune(self, G):
