@@ -149,7 +149,6 @@ def comm_cesna(G, databot, descript):
     except KeyError:
         print("\t[skipping cesna because attributes not provided for ", descript)
         return None,None
-    print('Min/max number of communities', min_comms, max_comms)
     return alterations, partial(circulo.algorithms.snap_cesna.cesna, G, attrs_to_use, detect_comm=num_comms, min_comm=min_comms, max_comm=max_comms)
 
 

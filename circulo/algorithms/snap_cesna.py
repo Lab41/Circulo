@@ -43,9 +43,6 @@ def cesna(G, attributes_to_include, data_prefix='snap_', node_filepath='', detec
     snap_home, graph_file = snap.setup(G)
 
     f_attribute_names, f_attributes = snap.attribute_setup(G, attributes_to_include)
-    shutil.copyfile(f_attribute_names, 'attribute_names.txt')
-    shutil.copyfile(f_attributes, 'attribute.txt')
-    print(f_attributes, f_attribute_names)
     if graph_file is None:
         return
 
@@ -53,7 +50,7 @@ def cesna(G, attributes_to_include, data_prefix='snap_', node_filepath='', detec
 
     try:
         FNULL = open(os.devnull, 'w')
-        out = subprocess.Popen([path_cesna,"-o:"+data_prefix,"-i:"+graph_file,"-l:"+node_filepath, "-c:-1", "-mc:"+str(min_comm), "-xc:"+str(max_comm), "-nc:"+str(trials), "-nt:"+str(threads), "-sa:"+str(alpha), "-sb:"+str(beta),  "-a:"+f_attributes, "-n:"+f_attribute_names]).wait()
+        out = subprocess.Popen([path_cesna,"-o:"+data_prefix,"-i:"+graph_file,"-l:"+node_filepath, "-c:-1", "-mc:"+str(min_comm), "-xc:"+str(max_comm), "-nc:"+str(trials), "-nt:"+str(threads), "-sa:"+str(alpha), "-sb:"+str(beta),  "-a:"+f_attributes, "-n:"+f_attribute_names],stdout=FNULL).wait()
 
 
     except TypeError as e:
