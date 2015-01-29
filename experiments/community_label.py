@@ -99,7 +99,7 @@ def get_graph_counts(community_counts, labels_to_count):
     return graph_counts
 
 
-def label_communities(input_file, results_filename, algorithm, attributes_to_ignore, count_type="both"):
+def label_communities(input_file, results_filename, attributes_to_ignore, count_type="both"):
     # TODO: Consider refactoring to split edge vs node code more completely and only merge for display
     G = igraph.load(input_file)
 
@@ -121,6 +121,7 @@ def label_communities(input_file, results_filename, algorithm, attributes_to_ign
     count_type = count_type.lower()
     edge_labels_to_count = []
     node_labels_to_count = []
+    print('Labels to Ignore: ', attributes_to_ignore)
     if count_type in ('node', 'vertex', 'both'):
         for graph_key in G.vs[0].attribute_names():
             if not graph_key.startswith('algo') and not graph_key.startswith('id') \
@@ -146,7 +147,7 @@ def label_communities(input_file, results_filename, algorithm, attributes_to_ign
         edge_graph_counts = get_graph_counts(edge_community_counts, edge_labels_to_count)
 
     print('Displaying Community Labels')
-    for community in sorted(node_community_counts, key=int):
+    for community in sorted(community_size, key=int):
         print('------------------------------------------------')
         print('Displaying Community', community, '[%d Nodes]'%community_size[community])
         if count_type in ('node', 'vertex', 'both'):
@@ -162,8 +163,9 @@ def label_communities(input_file, results_filename, algorithm, attributes_to_ign
                 # TODO: Consider showing for singleton communities?
                 if max_label_val_count > 1 and max_label_val_count / float(total_count) >= .5:
                     tfidf = max_label_val_count / node_graph_counts[label][max_label_val]
-                    print('%s\t%s: %s of %s Nodes for tf-idf %s' % (
-                        label, max_label_val, max_label_val_count, total_count, tfidf))
+                    #print('%s\t%s: %s of %s Nodes for tf-idf %s' % (
+                    print('%s\t%s: %s of %s Nodes [Percent of label in graph: %0.2f]' % (
+                        label, max_label_val, max_label_val_count, total_count, tfidf*100))
         if count_type in ('edge', 'both'):
             for label in edge_labels_to_count:
                 # Edge counts don't contain all communities since not all communities have internal edges???
@@ -178,8 +180,8 @@ def label_communities(input_file, results_filename, algorithm, attributes_to_ign
                     # TODO: Consider showing for singleton communities?
                     if max_label_val_count > 1 and max_label_val_count / float(total_count) >= .5:
                         tfidf = max_label_val_count / edge_graph_counts[label][max_label_val]
-                        print('%s\t%s: %s of %s Edges for tf-idf %s' % (
-                            label, max_label_val, max_label_val_count, total_count, tfidf))
+                        print('%s\t%s: %s of %s Edges [Percent of label in graph: %0.2f]' % (
+                            label, max_label_val, max_label_val_count, total_count, tfidf*100))
 
 
 def main():
@@ -191,8 +193,8 @@ def main():
                         help='Attributes to suppress (comma delimited) i.e. stops,timezone')
     args = parser.parse_args()
 
-    if not os.path.exists(args.input_path):
-        print("Path \"{}\" does not exist".format(args.input_path))
+    if not os.path.exists(args.graphml_file):
+        print("Path \"{}\" does not exist".format(args.graphml_file))
         return
 
     args.ignore = set(args.ignore.split(','))
