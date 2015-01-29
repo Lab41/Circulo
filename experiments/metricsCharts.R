@@ -38,6 +38,8 @@ getMetrics <- function(datapath='/Users/paulm/Desktop/metrics', dataset="footbal
     metrics <-data.frame(metrics[ind,],stringsAsFactors=FALSE)
     metrics <- data.frame(lapply(metrics, unlist),stringsAsFactors=FALSE)
     metrics$ComputationTime <- as.numeric(metrics$ComputationTime)
+    # Normalize computation time by dataset
+    metrics$ComputationTime <- ave(metrics$ComputationTime, list(metrics$Datasets), FUN=function(L) L/min(L))
     metrics$OmegaAccuracy <- as.numeric(metrics$OmegaAccuracy)
 
     
@@ -54,11 +56,12 @@ plotMetrics <- function(metrics,toPDF=FALSE) {
     data <- data[keep,]
     
     bubbleplot <- ggplot(data, aes(x=Datasets, y=Algorithms))+
-          geom_point(aes(size=OmegaAccuracy, colour=ComputationTime), alpha=0.75)+
-          scale_size_continuous(limits=c(-0.5,1),range =c(5, 25))+
-          scale_colour_gradient2(low="dark green",mid="yellow", high="red", trans='log')+
-          theme_bw()+
-          ggtitle(Sys.time())
+          geom_point(aes(size=ComputationTime, colour=OmegaAccuracy), alpha=0.75)+
+          scale_size_continuous(range =c(8, 25), trans='log')+
+          scale_colour_gradient2(midpoint=0.4, low="red",mid="yellow", high="dark green")+
+          theme_bw() + 
+          theme(text = element_text(size=20))+
+          ggtitle('Accuracy and Computation Time across Datasets and Algorithms')
 
     if (toPDF) {
         pdffile <- paste(Sys.time(),"metricsGraph.pdf", sep='')
