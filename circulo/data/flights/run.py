@@ -24,7 +24,7 @@ from circulo.utils.general import get_largest_component
 from circulo.data.databot import *
 
 # Data from from http://openflights.org/data.html
-AIRPORTS_URL = 'https://sourceforge.net/p/openflights/code/HEAD/tree/openflights/data/airports.dat?format=raw'
+AIRPORTS_URL = 'https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat'
 
 FLIGHTS_DATA = "flights.csv"
 ROUTES_DATA = "routes.csv"
@@ -35,7 +35,7 @@ AIRPORTS_SCHEMA = {"name": 0, "airport_name": 1, "city": 2, "country": 3,
                    "IATA/FAA": 4, "ICAO": 5, "latitude": 6, "longitude": 7,
                    "altitude": 8, "timezone": 9, "DST": 10}
 
-ROUTES_URL = 'https://sourceforge.net/p/openflights/code/HEAD/tree/openflights/data/routes.dat?format=raw'
+ROUTES_URL = 'https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat'
 ROUTES_SCHEMA = {"airline": 0, "airline_id": 1, "source_airport": 2,
                  "source_id": 3, "dest_airport": 4, "dest_id": 5,
                  "codeshare": 6, "stops": 7, "equipment": 8}
