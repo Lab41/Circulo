@@ -13,6 +13,7 @@ The key to understanding how to import a dataset into Circulo is to be familiar 
 3. Copy the README template into the new directory, naming it `README.md`: `cp README_template.md friends/README.md`. Be sure to be as thorough as possible when writing the README so that others will understand your dataset.
 4. Override the necessary functions from the CirculoData class in the FriendsData class in `run.py`.  Please see other `run.py` files for examples.  The amount of code required in the `run.py` file largely depends on how close the original data is to a graph format. 
 5. Add a row to the Dataset Index in this README.
+6. In setup/run_algos.py there is a list called "data_choices", add your newly created datasets to that list (it must match the folder name)
 
 ## Dataset Index
 | Dataset | Description | Has Ground Truth?
